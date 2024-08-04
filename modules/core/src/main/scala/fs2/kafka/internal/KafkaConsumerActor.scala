@@ -10,6 +10,7 @@ import java.time.Duration
 import java.util
 
 import scala.collection.immutable.SortedSet
+import scala.concurrent.duration.FiniteDuration
 
 import cats.data.Chain
 import cats.effect.*
@@ -129,7 +130,7 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
     ref.flatModify(_.withAssignedPartitions(assigned)).flatten
 
   private[this] def revoked(revoked: SortedSet[TopicPartition]): F[Unit] =
-    ref.flatModify(_.withRevokedPartitions(revoked)).flatten
+    ref.flatModify(_.withRevokedPartitions(settings.sessionTimeout, revoked)).flatten
 
   def offsetCommitAsync(offsets: Map[TopicPartition, OffsetAndMetadata]): F[Unit] =
     runCommitAsync(offsets)(cb => requests.offer(Request.Commit(offsets, cb)))
@@ -405,6 +406,7 @@ private[kafka] object KafkaConsumerActor {
       * callbacks.
       */
     def withRevokedPartitions(
+      sessionTimeout: FiniteDuration,
       revoked: SortedSet[TopicPartition]
     )(implicit logging: Logging[F]): (State[F, K, V], F[F[Unit]]) = {
       val (revokedToClose, stillAssigned) = partitionState.partition(e => revoked.contains(e._1))
@@ -416,7 +418,9 @@ private[kafka] object KafkaConsumerActor {
         for {
           _ <- logging.log(RevokedPartitions(revoked, revokedToClose, newState))
           _ <- revokedToClose.values.toList.traverse_(_.close)
-        } yield onRebalances.traverse_(_.onRevoked(revoked))
+        } yield onRebalances
+          .traverse_(_.onRevoked(revoked))
+          .timeoutTo(sessionTimeout, logging.log(LogEntry.RevokeTimeoutOccurred(revoked, newState)))
       )
     }
 
