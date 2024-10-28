@@ -14,7 +14,7 @@ val disciplineVersion = "2.3.0"
 
 val logbackVersion = "1.3.14"
 
-val vulcanVersion = "1.11.0"
+val vulcanVersion = "1.11.1"
 
 val munitVersion = "0.7.29"
 
