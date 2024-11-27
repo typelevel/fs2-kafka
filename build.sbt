@@ -6,7 +6,7 @@ val confluentVersion = "7.7.1"
 
 val fs2Version = "3.11.0"
 
-val kafkaVersion = "3.8.1"
+val kafkaVersion = "3.9.0"
 
 val testcontainersScalaVersion = "0.41.4"
 
