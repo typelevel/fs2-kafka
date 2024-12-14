@@ -145,7 +145,7 @@ private[kafka] object LogEntry {
 
     override def level: LogLevel = Debug
 
-    override def message: String = s"Committed pending commits [$pendingCommit]."
+    override def message: String = s"Committed pending commit [$pendingCommit]."
 
   }
 

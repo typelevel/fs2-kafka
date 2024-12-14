@@ -93,7 +93,7 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
   private[this] def commit(request: Request.Commit[F]): F[Unit] =
     ref.flatModify { state =>
       val commitF = commitAsync(request.offsets, request.callback)
-      if (state.rebalancing) {
+      if (state.rebalancing || state.pendingCommits.nonEmpty) {
         val newState =
           state.withPendingCommit(commitF >> logging.log(CommittedPendingCommit(request)))
         (newState, logging.log(StoredPendingCommit(request, newState)))
