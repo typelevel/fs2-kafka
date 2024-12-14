@@ -364,8 +364,12 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
     it("should be able to work with offsets") {
       withTopic { topic =>
         createCustomTopic(topic)
+
+        // Produce records in two chunks to improve chances that records get
+        // assigned different timestamps.
         val produced = (0 until 100).map(n => s"key-$n" -> s"value->$n")
-        publishToKafka(topic, produced)
+        publishToKafka(topic, produced.take(10))
+        publishToKafka(topic, produced.drop(10))
 
         val topicPartition  = new TopicPartition(topic, 0)
         val topicPartitions = Set(topicPartition)
