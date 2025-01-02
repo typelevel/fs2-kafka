@@ -32,29 +32,32 @@ final class KafkaMultiSeekSpec extends BaseKafkaSpec {
   type Consumer = KafkaConsumer[IO, String, String]
 
   type ConsumerStream = Stream[IO, CommittableConsumerRecord[IO, String, String]]
-  val topic       = "topic-example"
-  val partitions  = 2
-  val replication = 1
+  val topic               = "topic-example"
+  val partitions          = 3
+  val replication         = 1
+  val recordsPerPartition = 10
 
   val records =
     for {
       partition <- (0 until partitions).toList
-      recordX   <- (0 until 10).toList
+      recordX   <- (0 until recordsPerPartition).toList
       key        = s"key-p-$partition-r-$recordX"
       value      = s"value-p-$partition-r-$recordX"
     } yield ProducerRecord(topic, key, value).withPartition(partition)
 
+  val delay   = 5.seconds
+  val waitEnd = 10.seconds
+  val seekTo  = recordsPerPartition - 1
+
   describe("seeking to an offset") {
     it("should correctly reset the first fetched offset") {
       val consumerSettings = ConsumerSettings[IO, String, String]
+
       val producerSettings = Map[String, String](
         ProducerConfig.BOOTSTRAP_SERVERS_CONFIG -> container.bootstrapServers,
         ProducerConfig.MAX_BLOCK_MS_CONFIG      -> 10000.toString,
         ProducerConfig.RETRY_BACKOFF_MS_CONFIG  -> 1000.toString
       )
-      val delay   = 5.seconds
-      val waitEnd = 10.seconds
-
       (for {
         _ <- Stream.eval(createTopic(topic, partitions, 1))
         _ <- Stream.eval(pushData(records))
@@ -79,8 +82,8 @@ final class KafkaMultiSeekSpec extends BaseKafkaSpec {
                      )
                    )
                    .withBootstrapServers(container.bootstrapServers)
-      consumer <- KafkaConsumer.stream(settings)
-      _        <- Stream.eval(consumer.subscribe(NonEmptyList.one(topic)))
+      consumer      <- KafkaConsumer.stream(settings)
+      _             <- Stream.eval(consumer.subscribe(NonEmptyList.one(topic)))
       assignments <- consumer
                        .assignmentStream
                        .switchMap { assignments =>
@@ -95,10 +98,9 @@ final class KafkaMultiSeekSpec extends BaseKafkaSpec {
                            _ <-
                              Stream.eval(
                                assignments.traverse_ { tp =>
-                                 val seek = 9
                                  IO.println(
-                                   s"[action: seek, to: $seek consumer: $name, partition: $tp]"
-                                 ) *> consumer.seek(tp, seek)
+                                   s"[action: seek, to: $seekTo consumer: $name, partition: $tp]"
+                                 ) *> consumer.seek(tp, seekTo)
                                }
                              )
                            _ <- Stream.eval(
