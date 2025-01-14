@@ -21,7 +21,7 @@ import org.apache.kafka.common.{Metric, MetricName, PartitionInfo}
 
 /**
   * [[KafkaProducer]] represents a producer of Kafka records, with the ability to produce
-  * `ProducerRecord`s using [[produce]].
+  * `ProducerRecord` s using [[produce]].
   */
 abstract class KafkaProducer[F[_], K, V] {
 
@@ -189,8 +189,9 @@ object KafkaProducer {
           .flatMap { produceRecordError =>
             Async[F]
               .race(
-                Async[F]
-                  .fromFutureCancelable(Async[F].delay((produceRecordError.future, Async[F].unit))),
+                Async[F].fromFutureCancelable(
+                  Async[F].delay((produceRecordError.future, Async[F].unit))
+                ),
                 produceRecords(produceRecordError.some)
               )
               .rethrow

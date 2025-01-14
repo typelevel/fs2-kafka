@@ -18,7 +18,7 @@ import fs2.kafka.ConsumerRecord
 trait KafkaConsumeChunk[F[_], K, V] extends KafkaConsume[F, K, V] {
 
   /**
-    * Consume from all assigned partitions concurrently, processing the records in `Chunk`s. For
+    * Consume from all assigned partitions concurrently, processing the records in `Chunk` s. For
     * each `Chunk`, the provided `processor` is called, after that has finished the offsets for all
     * messages in the chunk are committed.<br><br>
     *
@@ -28,7 +28,7 @@ trait KafkaConsumeChunk[F[_], K, V] extends KafkaConsume[F, K, V] {
     * processing logic but also the correct mechanism for committing offsets. This can be tricky to
     * do in a correct and efficient way.<br><br>
     *
-    * Working with `Chunk`s of records has several benefits:<br>
+    * Working with `Chunk` s of records has several benefits:<br>
     *   - As a user, you don't have to care about committing offsets correctly. You can focus on
     *     implementing your business logic<br>
     *   - It's very straightforward to batch several messages from a `Chunk` together, e.g. for
@@ -71,8 +71,8 @@ trait KafkaConsumeChunk[F[_], K, V] extends KafkaConsume[F, K, V] {
   private def consume(processor: Chunk[ConsumerRecord[K, V]] => F[CommitNow])(
     chunk: Chunk[CommittableConsumerRecord[F, K, V]]
   )(implicit F: Monad[F]): F[Unit] = {
-    val (offsets, records) = chunk
-      .mapAccumulate(CommittableOffsetBatch.empty)((offsetBatch, committableRecord) =>
+    val (offsets, records) =
+      chunk.mapAccumulate(CommittableOffsetBatch.empty)((offsetBatch, committableRecord) =>
         (offsetBatch.updated(committableRecord.offset), committableRecord.record)
       )
 

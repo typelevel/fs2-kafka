@@ -112,7 +112,7 @@ sealed abstract class AvroSettings[F[_]] {
 
   /**
     * Creates a new [[AvroSettings]] instance with the specified function for creating
-    * `KafkaAvroDeserializer`s from settings. The arguments are [[schemaRegistryClient]], `isKey`,
+    * `KafkaAvroDeserializer` s from settings. The arguments are [[schemaRegistryClient]], `isKey`,
     * and [[properties]].
     */
   def withCreateAvroDeserializer(
@@ -123,8 +123,8 @@ sealed abstract class AvroSettings[F[_]] {
 
   /**
     * Creates a new [[AvroSettings]] instance with the specified function for creating
-    * `KafkaAvroSerializer`s from settings. The arguments are [[schemaRegistryClient]], `isKey`, and
-    * [[properties]].
+    * `KafkaAvroSerializer` s from settings. The arguments are [[schemaRegistryClient]], `isKey`,
+    * and [[properties]].
     */
   def withCreateAvroSerializer(
     // format: off

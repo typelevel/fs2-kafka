@@ -23,7 +23,7 @@ import org.apache.kafka.common.{Metric, MetricName}
 
 /**
   * Represents a producer of Kafka records specialized for 'read-process-write' streams, with the
-  * ability to atomically produce `ProducerRecord`s and commit corresponding [[CommittableOffset]]s
+  * ability to atomically produce `ProducerRecord` s and commit corresponding [[CommittableOffset]]s
   * using [[produce]].<br><br>
   *
   * Records are wrapped in [[TransactionalProducerRecords]], which is a chunk of
@@ -33,7 +33,7 @@ import org.apache.kafka.common.{Metric, MetricName}
 abstract class TransactionalKafkaProducer[F[_], K, V] {
 
   /**
-    * Produces the `ProducerRecord`s in the specified [[TransactionalProducerRecords]] in four
+    * Produces the `ProducerRecord` s in the specified [[TransactionalProducerRecords]] in four
     * steps: first a transaction is initialized, then the records are placed in the buffer of the
     * producer, then the offsets of the records are sent to the transaction, and lastly the
     * transaction is committed. If errors or cancellation occurs, the transaction is aborted. The
@@ -69,7 +69,7 @@ object TransactionalKafkaProducer {
   abstract class WithoutOffsets[F[_], K, V] extends Metrics[F, K, V] {
 
     /**
-      * Produces the `ProducerRecord`s in the specified [[ProducerRecords]] in three steps: first a
+      * Produces the `ProducerRecord` s in the specified [[ProducerRecords]] in three steps: first a
       * transaction is initialized, then the records are placed in the buffer of the producer, and
       * lastly the transaction is committed. If errors or cancellation occurs, the transaction is
       * aborted. The returned effect succeeds if the whole transaction completes successfully.

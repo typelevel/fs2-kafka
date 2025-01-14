@@ -295,7 +295,7 @@ sealed abstract class ConsumerSettings[F[_], K, V] {
   def withCommitTimeout(commitTimeout: FiniteDuration): ConsumerSettings[F, K, V]
 
   /**
-    * How often we should attempt to call `poll` on the Java `KafkaConsumer`.<br><br>
+    * How often we should attempt to call `poll` on the Java `KafkaConsumer`. <br><br>
     *
     * The default value is 50 milliseconds.
     */
@@ -307,7 +307,7 @@ sealed abstract class ConsumerSettings[F[_], K, V] {
   def withPollInterval(pollInterval: FiniteDuration): ConsumerSettings[F, K, V]
 
   /**
-    * How long we should allow the `poll` call to block for in the Java `KafkaConsumer`.<br><br>
+    * How long we should allow the `poll` call to block for in the Java `KafkaConsumer`. <br><br>
     *
     * The default value is 50 milliseconds.
     */

@@ -17,7 +17,7 @@ import org.apache.kafka.common.{KafkaException, TopicPartition}
 /**
   * [[CommitRecoveryException]] indicates that offset commit recovery was attempted `attempts` times
   * for `offsets`, but that it wasn't able to complete successfully. The last encountered exception
-  * is provided as `lastException`.<br><br>
+  * is provided as `lastException`. <br><br>
   *
   * Use [[CommitRecoveryException#apply]] to create a new instance.
   */

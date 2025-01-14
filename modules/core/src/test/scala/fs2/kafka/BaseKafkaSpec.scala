@@ -75,8 +75,8 @@ abstract class BaseKafkaSpec extends BaseAsyncSpec with ForAllTestContainer {
     partitions: Int = 1,
     replicationFactor: Int = 1
   ): Try[Unit] = {
-    val newTopic = new NewTopic(topic, partitions, replicationFactor.toShort)
-      .configs(topicConfig.asJava)
+    val newTopic =
+      new NewTopic(topic, partitions, replicationFactor.toShort).configs(topicConfig.asJava)
 
     withAdminClient { adminClient =>
       adminClient.createTopics(Seq(newTopic).asJava).all.get(2, TimeUnit.SECONDS)

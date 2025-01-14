@@ -22,7 +22,7 @@ trait KafkaAssignment[F[_]] {
   def assignment: F[SortedSet[TopicPartition]]
 
   /**
-    * `Stream` where the elements are the set of `TopicPartition`s currently assigned to this
+    * `Stream` where the elements are the set of `TopicPartition` s currently assigned to this
     * consumer. The stream emits whenever a rebalance changes partition assignments.
     */
   def assignmentStream: Stream[F, SortedSet[TopicPartition]]
@@ -35,7 +35,7 @@ trait KafkaAssignment[F[_]] {
     * Manual topic assignment through this method does not use the consumer's group management
     * functionality. As such, there will be no rebalance operation triggered when group membership
     * or cluster and topic metadata change. Note that it is not possible to use both manual
-    * partition assignment with `assign` and group assignment with `subscribe`.<br><br>
+    * partition assignment with `assign` and group assignment with `subscribe`. <br><br>
     *
     * If auto-commit is enabled, an async commit (based on the old assignment) will be triggered
     * before the new assignment replaces the old one.<br><br>
@@ -55,7 +55,7 @@ trait KafkaAssignment[F[_]] {
     * Manual topic assignment through this method does not use the consumer's group management
     * functionality. As such, there will be no rebalance operation triggered when group membership
     * or cluster and topic metadata change. Note that it is not possible to use both manual
-    * partition assignment with `assign` and group assignment with `subscribe`.<br><br>
+    * partition assignment with `assign` and group assignment with `subscribe`. <br><br>
     *
     * If auto-commit is enabled, an async commit (based on the old assignment) will be triggered
     * before the new assignment replaces the old one.<br><br>

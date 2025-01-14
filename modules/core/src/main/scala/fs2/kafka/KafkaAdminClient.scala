@@ -112,7 +112,7 @@ sealed abstract class KafkaAdminClient[F[_]] {
 
   /**
     * Describes the consumer groups with the specified group ids, returning a `Map` with group ids
-    * as keys, and `ConsumerGroupDescription`s as values.
+    * as keys, and `ConsumerGroupDescription` s as values.
     */
   def describeConsumerGroups[G[_]](groupIds: G[String])(implicit
     G: Foldable[G]
@@ -120,7 +120,7 @@ sealed abstract class KafkaAdminClient[F[_]] {
 
   /**
     * Describes the topics with the specified topic names, returning a `Map` with topic names as
-    * keys, and `TopicDescription`s as values.
+    * keys, and `TopicDescription` s as values.
     */
   def describeTopics[G[_]](topics: G[String])(implicit
     G: Foldable[G]
@@ -157,7 +157,7 @@ sealed abstract class KafkaAdminClient[F[_]] {
     * listConsumerGroups.groupIds
     * }}}
     *
-    * or `ConsumerGroupListing`s using the following.
+    * or `ConsumerGroupListing` s using the following.
     *
     * {{{
     * listConsumerGroups.listings
@@ -179,13 +179,13 @@ sealed abstract class KafkaAdminClient[F[_]] {
     * listTopics.names
     * }}}
     *
-    * or `TopicListing`s using:
+    * or `TopicListing` s using:
     *
     * {{{
     * listTopics.listings
     * }}}
     *
-    * or a `Map` of topic names to `TopicListing`s using the following.
+    * or a `Map` of topic names to `TopicListing` s using the following.
     *
     * {{{
     * listTopics.namesToListings
@@ -409,7 +409,7 @@ object KafkaAdminClient {
     def groupIds: F[List[String]]
 
     /**
-      * List the available consumer groups as `ConsumerGroupListing`s.
+      * List the available consumer groups as `ConsumerGroupListing` s.
       */
     def listings: F[List[ConsumerGroupListing]]
 
@@ -439,12 +439,12 @@ object KafkaAdminClient {
     def names: F[Set[String]]
 
     /**
-      * Lists topics as `TopicListing`s. Includes internal topics.
+      * Lists topics as `TopicListing` s. Includes internal topics.
       */
     def listings: F[List[TopicListing]]
 
     /**
-      * Lists topics as a `Map` from topic names to `TopicListing`s. Includes internal topics.
+      * Lists topics as a `Map` from topic names to `TopicListing` s. Includes internal topics.
       */
     def namesToListings: F[Map[String, TopicListing]]
 
@@ -480,12 +480,12 @@ object KafkaAdminClient {
     def names: F[Set[String]]
 
     /**
-      * Lists topics as `TopicListing`s.
+      * Lists topics as `TopicListing` s.
       */
     def listings: F[List[TopicListing]]
 
     /**
-      * Lists topics as a `Map` from topic names to `TopicListing`s.
+      * Lists topics as a `Map` from topic names to `TopicListing` s.
       */
     def namesToListings: F[Map[String, TopicListing]]
 

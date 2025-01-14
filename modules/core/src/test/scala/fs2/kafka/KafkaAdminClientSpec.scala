@@ -95,8 +95,10 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
                 }
               partition0    = new TopicPartition(topic, 0)
               updatedOffset = new OffsetAndMetadata(0)
-              _ <- adminClient
-                     .alterConsumerGroupOffsets(consumerGroupId, Map(partition0 -> updatedOffset))
+              _ <- adminClient.alterConsumerGroupOffsets(
+                     consumerGroupId,
+                     Map(partition0 -> updatedOffset)
+                   )
               _ <- adminClient
                      .listConsumerGroupOffsets(consumerGroupId)
                      .partitionsToOffsetAndMetadata
@@ -170,8 +172,9 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
               describedConfigs <- adminClient.describeConfigs(List(cr))
               _ <- IO(
                      assert(
-                       describedConfigs(cr)
-                         .exists(actual => actual.name == ce.name && actual.value == ce.value)
+                       describedConfigs(cr).exists(actual =>
+                         actual.name == ce.name && actual.value == ce.value
+                       )
                      )
                    )
             } yield ()

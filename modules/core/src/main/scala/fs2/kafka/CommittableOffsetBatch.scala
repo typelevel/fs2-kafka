@@ -56,7 +56,7 @@ sealed abstract class CommittableOffsetBatch[F[_]] {
   /**
     * The consumer group IDs for the [[offsets]] in the batch. For the batch to be valid and for
     * [[commit]] to succeed, there should be exactly one ID in the set and the flag
-    * [[consumerGroupIdsMissing]] should be `false`.<br><br>
+    * [[consumerGroupIdsMissing]] should be `false`. <br><br>
     *
     * There might be more than one consumer group ID in the set if offsets from multiple consumers,
     * with different group IDs, have accidentally been mixed. The set might also be empty if no
@@ -159,7 +159,7 @@ object CommittableOffsetBatch {
     fromFoldableMap(offsets)(identity)
 
   /**
-    * Creates a [[CommittableOffsetBatch]] from a `Foldable` containing `A`s, by applying `f` to
+    * Creates a [[CommittableOffsetBatch]] from a `Foldable` containing `A` s, by applying `f` to
     * each `A` to get the [[CommittableOffset]]. Guaranteed to be equivalent to the following, but
     * implemented more efficiently.
     *

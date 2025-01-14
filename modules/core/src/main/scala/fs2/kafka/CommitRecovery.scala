@@ -52,8 +52,8 @@ object CommitRecovery {
 
   /**
     * The default [[CommitRecovery]] used in [[ConsumerSettings]] unless a different one has been
-    * specified. The default recovery strategy only retries `RetriableCommitFailedException`s and
-    * `RebalanceInProgressException`s. These exceptions are retried with a jittered exponential
+    * specified. The default recovery strategy only retries `RetriableCommitFailedException` s and
+    * `RebalanceInProgressException` s. These exceptions are retried with a jittered exponential
     * backoff, where the time in milliseconds before retrying is calculated using:
     *
     * {{{

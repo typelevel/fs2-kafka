@@ -48,7 +48,7 @@ import org.apache.kafka.common.{Metric, MetricName, PartitionInfo, TopicPartitio
   *     streams with records for a particular `TopicPartition`. <br> For the streams, records are
   *     wrapped in [[CommittableConsumerRecord]]s which provide [[CommittableOffset]]s with the
   *     ability to commit record offsets to Kafka. For performance reasons, offsets are usually
-  *     committed in batches using [[CommittableOffsetBatch]]. Provided `Pipe`s, like
+  *     committed in batches using [[CommittableOffsetBatch]]. Provided `Pipe` s, like
   *     [[commitBatchWithin]] are available for batch committing offsets. If you are not committing
   *     offsets to Kafka, you can simply discard the [[CommittableOffset]], and only make use of the
   *     record.<br><br>
@@ -342,8 +342,8 @@ object KafkaConsumer {
               for {
                 partitionsMapQueue <- Stream.eval(Queue.unbounded[F, Option[PartitionsMap]])
                 streamId           <- Stream.eval(streamIdRef.modify(n => (n + 1, n)))
-                assignmentRef <- Stream
-                                   .eval(Ref[F].of(Map.empty[TopicPartition, Deferred[F, Unit]]))
+                assignmentRef <-
+                  Stream.eval(Ref[F].of(Map.empty[TopicPartition, Deferred[F, Unit]]))
                 _ <- Stream.eval(
                        initialEnqueue(
                          streamId,
@@ -816,7 +816,7 @@ object KafkaConsumer {
       self.flatMap(_.partitionedRecords)
 
     /**
-      * Consume from all assigned partitions concurrently, processing the messages in `Chunk`s. See
+      * Consume from all assigned partitions concurrently, processing the messages in `Chunk` s. See
       * [[KafkaConsumeChunk#consumeChunk]]
       */
     def consumeChunk(processor: Chunk[ConsumerRecord[K, V]] => F[CommitNow])(implicit

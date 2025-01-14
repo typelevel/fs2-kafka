@@ -66,7 +66,9 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
             .records
             .map(committable => committable.record.key -> committable.record.value)
             .interruptAfter(10.seconds) // wait some time to catch potentially duplicated records
-            .compile.toVector.unsafeRunSync()
+            .compile
+            .toVector
+            .unsafeRunSync()
 
         consumed should contain theSameElementsAs produced
       }
@@ -1197,7 +1199,10 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
                        .traverse(record => ref.getAndUpdate(_ :+ (record.key -> record.value)))
                        .as(CommitNow)
                    )
-                 ).interruptAfter(10.seconds).compile.drain
+                 )
+                 .interruptAfter(10.seconds)
+                 .compile
+                 .drain
           res <- ref.get
         } yield res
 

@@ -17,7 +17,7 @@ trait KafkaConsumerLifecycle[F[_]] {
 
   /**
     * Wait for consumer to shut down. Note that `awaitTermination` is guaranteed to complete after
-    * consumer shutdown, even when the consumer is cancelled with `terminate`.<br><br>
+    * consumer shutdown, even when the consumer is cancelled with `terminate`. <br><br>
     *
     * This method will not initiate shutdown. To initiate shutdown and wait for it to complete, you
     * can use `terminate >> awaitTermination`.

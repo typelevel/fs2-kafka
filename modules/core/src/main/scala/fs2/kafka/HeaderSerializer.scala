@@ -109,7 +109,7 @@ object HeaderSerializer {
     HeaderSerializer.instance(_.getBytes(charset))
 
   /**
-    * Creates a new [[HeaderSerializer]] which serializes `UUID` values as `String`s with the
+    * Creates a new [[HeaderSerializer]] which serializes `UUID` values as `String` s with the
     * specified `Charset`. Note that the default `UUID` serializer uses `UTF-8.`
     */
   def uuid(charset: Charset): HeaderSerializer[UUID] =
@@ -143,32 +143,37 @@ object HeaderSerializer {
 
   implicit val double: HeaderSerializer[Double] =
     HeaderSerializer.delegate {
-      (new org.apache.kafka.common.serialization.DoubleSerializer)
-        .asInstanceOf[org.apache.kafka.common.serialization.Serializer[Double]]
+      (new org.apache.kafka.common.serialization.DoubleSerializer).asInstanceOf[
+        org.apache.kafka.common.serialization.Serializer[Double]
+      ]
     }
 
   implicit val float: HeaderSerializer[Float] =
     HeaderSerializer.delegate {
-      (new org.apache.kafka.common.serialization.FloatSerializer)
-        .asInstanceOf[org.apache.kafka.common.serialization.Serializer[Float]]
+      (new org.apache.kafka.common.serialization.FloatSerializer).asInstanceOf[
+        org.apache.kafka.common.serialization.Serializer[Float]
+      ]
     }
 
   implicit val int: HeaderSerializer[Int] =
     HeaderSerializer.delegate {
-      (new org.apache.kafka.common.serialization.IntegerSerializer)
-        .asInstanceOf[org.apache.kafka.common.serialization.Serializer[Int]]
+      (new org.apache.kafka.common.serialization.IntegerSerializer).asInstanceOf[
+        org.apache.kafka.common.serialization.Serializer[Int]
+      ]
     }
 
   implicit val long: HeaderSerializer[Long] =
     HeaderSerializer.delegate {
-      (new org.apache.kafka.common.serialization.LongSerializer)
-        .asInstanceOf[org.apache.kafka.common.serialization.Serializer[Long]]
+      (new org.apache.kafka.common.serialization.LongSerializer).asInstanceOf[
+        org.apache.kafka.common.serialization.Serializer[Long]
+      ]
     }
 
   implicit val short: HeaderSerializer[Short] =
     HeaderSerializer.delegate {
-      (new org.apache.kafka.common.serialization.ShortSerializer)
-        .asInstanceOf[org.apache.kafka.common.serialization.Serializer[Short]]
+      (new org.apache.kafka.common.serialization.ShortSerializer).asInstanceOf[
+        org.apache.kafka.common.serialization.Serializer[Short]
+      ]
     }
 
   implicit val string: HeaderSerializer[String] =

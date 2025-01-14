@@ -30,8 +30,9 @@ object Main extends IOApp.Simple {
     def processRecords(
       producer: KafkaProducer[IO, String, String]
     )(records: Chunk[ConsumerRecord[String, String]]): IO[CommitNow] = {
-      val producerRecords = records
-        .map(consumerRecord => ProducerRecord("topic", consumerRecord.key, consumerRecord.value))
+      val producerRecords = records.map(consumerRecord =>
+        ProducerRecord("topic", consumerRecord.key, consumerRecord.value)
+      )
       producer.produce(producerRecords).flatten.as(CommitNow)
     }
 

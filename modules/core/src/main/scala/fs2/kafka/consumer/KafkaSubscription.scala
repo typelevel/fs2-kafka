@@ -16,7 +16,7 @@ trait KafkaSubscription[F[_]] {
   /**
     * Subscribes the consumer to the specified topics. Note that you have to use one of the
     * `subscribe` functions to subscribe to one or more topics before using any of the provided
-    * `Stream`s, or a [[NotSubscribedException]] will be raised in the `Stream`s.
+    * `Stream` s, or a [[NotSubscribedException]] will be raised in the `Stream` s.
     */
   def subscribeTo(firstTopic: String, remainingTopics: String*): F[Unit] =
     subscribe(NonEmptyList.of(firstTopic, remainingTopics*))
@@ -24,7 +24,7 @@ trait KafkaSubscription[F[_]] {
   /**
     * Subscribes the consumer to the specified topics. Note that you have to use one of the
     * `subscribe` functions to subscribe to one or more topics before using any of the provided
-    * `Stream`s, or a [[NotSubscribedException]] will be raised in the `Stream`s.
+    * `Stream` s, or a [[NotSubscribedException]] will be raised in the `Stream` s.
     *
     * @param topics
     *   the topics to which the consumer should subscribe
@@ -33,8 +33,8 @@ trait KafkaSubscription[F[_]] {
 
   /**
     * Subscribes the consumer to the topics matching the specified `Regex`. Note that you have to
-    * use one of the `subscribe` functions before you can use any of the provided `Stream`s, or a
-    * [[NotSubscribedException]] will be raised in the `Stream`s.
+    * use one of the `subscribe` functions before you can use any of the provided `Stream` s, or a
+    * [[NotSubscribedException]] will be raised in the `Stream` s.
     *
     * @param regex
     *   the regex to which matching topics should be subscribed

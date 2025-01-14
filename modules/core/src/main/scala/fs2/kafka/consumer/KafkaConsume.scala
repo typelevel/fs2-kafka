@@ -38,8 +38,8 @@ trait KafkaConsume[F[_], K, V] {
     partitionedStream
 
   /**
-    * `Stream` where the elements themselves are `Stream`s which continually request records for a
-    * single partition. These `Stream`s will have to be processed in parallel, using `parJoin` or
+    * `Stream` where the elements themselves are `Stream` s which continually request records for a
+    * single partition. These `Stream` s will have to be processed in parallel, using `parJoin` or
     * `parJoinUnbounded`. Note that when using `parJoin(n)` and `n` is smaller than the number of
     * currently assigned partitions, then there will be assigned partitions which won't be
     * processed. For that reason, prefer `parJoinUnbounded` and the actual limit will be the number
@@ -56,7 +56,7 @@ trait KafkaConsume[F[_], K, V] {
 
   /**
     * `Stream` where each element contains a `Map` with all newly assigned partitions. Keys of this
-    * `Map` are `TopicPartition`s, and values are record streams for the particular
+    * `Map` are `TopicPartition` s, and values are record streams for the particular
     * `TopicPartition`. These streams will be closed only when a partition is revoked.<br><br>
     *
     * With the default assignor, all previous partitions are revoked at once, and a new set of
