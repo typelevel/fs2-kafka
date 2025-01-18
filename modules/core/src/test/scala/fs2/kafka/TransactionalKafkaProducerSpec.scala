@@ -428,8 +428,9 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
                 callback: Callback
               ): Future[RecordMetadata] = {
                 val key = new String(record.key(), StandardCharsets.UTF_8)
-                val futureResult = CompletableFuture
-                  .completedFuture(new RecordMetadata(new TopicPartition(topic, 0), 0, 0, 0, 0, 0))
+                val futureResult = CompletableFuture.completedFuture(
+                  new RecordMetadata(new TopicPartition(topic, 0), 0, 0, 0, 0, 0)
+                )
 
                 key match {
                   case `key0` => futureResult

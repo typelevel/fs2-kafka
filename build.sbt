@@ -273,26 +273,34 @@ ThisBuild / mimaBinaryIssueFilters ++= {
     ProblemFilters.exclude[Problem]("fs2.kafka.internal.*"),
     ProblemFilters.exclude[MissingClassProblem]("kafka.utils.VerifiableProperties"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.kafka.AdminClientSettings.apply"),
-    ProblemFilters
-      .exclude[DirectMissingMethodProblem]("fs2.kafka.TransactionalProducerRecords.apply"),
-    ProblemFilters
-      .exclude[DirectMissingMethodProblem]("fs2.kafka.vulcan.AvroSettings.createAvroSerializer"),
+    ProblemFilters.exclude[DirectMissingMethodProblem](
+      "fs2.kafka.TransactionalProducerRecords.apply"
+    ),
+    ProblemFilters.exclude[DirectMissingMethodProblem](
+      "fs2.kafka.vulcan.AvroSettings.createAvroSerializer"
+    ),
     ProblemFilters.exclude[DirectMissingMethodProblem](
       "fs2.kafka.vulcan.AvroSettings.withCreateAvroSerializer"
     ),
-    ProblemFilters
-      .exclude[InheritedNewAbstractMethodProblem]("fs2.kafka.KafkaConsumer.offsetsForTimes"),
+    ProblemFilters.exclude[InheritedNewAbstractMethodProblem](
+      "fs2.kafka.KafkaConsumer.offsetsForTimes"
+    ),
     ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("fs2.kafka.KafkaConsumer.listTopics"),
-    ProblemFilters
-      .exclude[ReversedMissingMethodProblem]("fs2.kafka.ProducerSettings.failFastProduce"),
-    ProblemFilters
-      .exclude[ReversedMissingMethodProblem]("fs2.kafka.ProducerSettings.withFailFastProduce"),
-    ProblemFilters
-      .exclude[DirectMissingMethodProblem]("fs2.kafka.ProducerSettings#ProducerSettingsImpl.copy"),
-    ProblemFilters
-      .exclude[DirectMissingMethodProblem]("fs2.kafka.ProducerSettings#ProducerSettingsImpl.this"),
-    ProblemFilters
-      .exclude[DirectMissingMethodProblem]("fs2.kafka.ProducerSettings#ProducerSettingsImpl.apply"),
+    ProblemFilters.exclude[ReversedMissingMethodProblem](
+      "fs2.kafka.ProducerSettings.failFastProduce"
+    ),
+    ProblemFilters.exclude[ReversedMissingMethodProblem](
+      "fs2.kafka.ProducerSettings.withFailFastProduce"
+    ),
+    ProblemFilters.exclude[DirectMissingMethodProblem](
+      "fs2.kafka.ProducerSettings#ProducerSettingsImpl.copy"
+    ),
+    ProblemFilters.exclude[DirectMissingMethodProblem](
+      "fs2.kafka.ProducerSettings#ProducerSettingsImpl.this"
+    ),
+    ProblemFilters.exclude[DirectMissingMethodProblem](
+      "fs2.kafka.ProducerSettings#ProducerSettingsImpl.apply"
+    ),
     ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.kafka.KafkaProducer.produceRecord")
   )
 }
