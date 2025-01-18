@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2024 OVO Energy Limited
+ * Copyright 2018-2025 OVO Energy Limited
  *
  * SPDX-License-Identifier: Apache-2.0
  */
