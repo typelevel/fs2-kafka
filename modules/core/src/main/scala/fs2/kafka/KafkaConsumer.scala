@@ -342,8 +342,8 @@ object KafkaConsumer {
               for {
                 partitionsMapQueue <- Stream.eval(Queue.unbounded[F, Option[PartitionsMap]])
                 streamId           <- Stream.eval(streamIdRef.modify(n => (n + 1, n)))
-                assignmentRef <- Stream
-                                   .eval(Ref[F].of(Map.empty[TopicPartition, Deferred[F, Unit]]))
+                assignmentRef <-
+                  Stream.eval(Ref[F].of(Map.empty[TopicPartition, Deferred[F, Unit]]))
                 _ <- Stream.eval(
                        initialEnqueue(
                          streamId,

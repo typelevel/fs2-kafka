@@ -205,40 +205,45 @@ object HeaderDeserializer {
   implicit val double: HeaderDeserializer.Attempt[Double] =
     HeaderDeserializer
       .delegate {
-        (new org.apache.kafka.common.serialization.DoubleDeserializer)
-          .asInstanceOf[org.apache.kafka.common.serialization.Deserializer[Double]]
+        (new org.apache.kafka.common.serialization.DoubleDeserializer).asInstanceOf[
+          org.apache.kafka.common.serialization.Deserializer[Double]
+        ]
       }
       .attempt
 
   implicit val float: HeaderDeserializer.Attempt[Float] =
     HeaderDeserializer
       .delegate {
-        (new org.apache.kafka.common.serialization.FloatDeserializer)
-          .asInstanceOf[org.apache.kafka.common.serialization.Deserializer[Float]]
+        (new org.apache.kafka.common.serialization.FloatDeserializer).asInstanceOf[
+          org.apache.kafka.common.serialization.Deserializer[Float]
+        ]
       }
       .attempt
 
   implicit val int: HeaderDeserializer.Attempt[Int] =
     HeaderDeserializer
       .delegate {
-        (new org.apache.kafka.common.serialization.IntegerDeserializer)
-          .asInstanceOf[org.apache.kafka.common.serialization.Deserializer[Int]]
+        (new org.apache.kafka.common.serialization.IntegerDeserializer).asInstanceOf[
+          org.apache.kafka.common.serialization.Deserializer[Int]
+        ]
       }
       .attempt
 
   implicit val long: HeaderDeserializer.Attempt[Long] =
     HeaderDeserializer
       .delegate {
-        (new org.apache.kafka.common.serialization.LongDeserializer)
-          .asInstanceOf[org.apache.kafka.common.serialization.Deserializer[Long]]
+        (new org.apache.kafka.common.serialization.LongDeserializer).asInstanceOf[
+          org.apache.kafka.common.serialization.Deserializer[Long]
+        ]
       }
       .attempt
 
   implicit val short: HeaderDeserializer.Attempt[Short] =
     HeaderDeserializer
       .delegate {
-        (new org.apache.kafka.common.serialization.ShortDeserializer)
-          .asInstanceOf[org.apache.kafka.common.serialization.Deserializer[Short]]
+        (new org.apache.kafka.common.serialization.ShortDeserializer).asInstanceOf[
+          org.apache.kafka.common.serialization.Deserializer[Short]
+        ]
       }
       .attempt
 

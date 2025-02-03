@@ -282,40 +282,45 @@ object GenericDeserializer {
   implicit def double[F[_]](implicit F: Sync[F]): Deserializer[F, Double] =
     Deserializer
       .delegate[F, Double] {
-        (new org.apache.kafka.common.serialization.DoubleDeserializer)
-          .asInstanceOf[org.apache.kafka.common.serialization.Deserializer[Double]]
+        (new org.apache.kafka.common.serialization.DoubleDeserializer).asInstanceOf[
+          org.apache.kafka.common.serialization.Deserializer[Double]
+        ]
       }
       .suspend
 
   implicit def float[F[_]](implicit F: Sync[F]): Deserializer[F, Float] =
     Deserializer
       .delegate[F, Float] {
-        (new org.apache.kafka.common.serialization.FloatDeserializer)
-          .asInstanceOf[org.apache.kafka.common.serialization.Deserializer[Float]]
+        (new org.apache.kafka.common.serialization.FloatDeserializer).asInstanceOf[
+          org.apache.kafka.common.serialization.Deserializer[Float]
+        ]
       }
       .suspend
 
   implicit def int[F[_]](implicit F: Sync[F]): Deserializer[F, Int] =
     Deserializer
       .delegate[F, Int] {
-        (new org.apache.kafka.common.serialization.IntegerDeserializer)
-          .asInstanceOf[org.apache.kafka.common.serialization.Deserializer[Int]]
+        (new org.apache.kafka.common.serialization.IntegerDeserializer).asInstanceOf[
+          org.apache.kafka.common.serialization.Deserializer[Int]
+        ]
       }
       .suspend
 
   implicit def long[F[_]](implicit F: Sync[F]): Deserializer[F, Long] =
     Deserializer
       .delegate[F, Long] {
-        (new org.apache.kafka.common.serialization.LongDeserializer)
-          .asInstanceOf[org.apache.kafka.common.serialization.Deserializer[Long]]
+        (new org.apache.kafka.common.serialization.LongDeserializer).asInstanceOf[
+          org.apache.kafka.common.serialization.Deserializer[Long]
+        ]
       }
       .suspend
 
   implicit def short[F[_]](implicit F: Sync[F]): Deserializer[F, Short] =
     Deserializer
       .delegate[F, Short] {
-        (new org.apache.kafka.common.serialization.ShortDeserializer)
-          .asInstanceOf[org.apache.kafka.common.serialization.Deserializer[Short]]
+        (new org.apache.kafka.common.serialization.ShortDeserializer).asInstanceOf[
+          org.apache.kafka.common.serialization.Deserializer[Short]
+        ]
       }
       .suspend
 

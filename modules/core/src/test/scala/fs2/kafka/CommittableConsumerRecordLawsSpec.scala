@@ -19,14 +19,22 @@ class CommittableConsumerRecordLawsSpec extends BaseCatsSpec {
 
   checkAll(
     "CommittableConsumerRecord.traverseLaws",
-    TraverseTests[CommittableConsumerRecord[IO, Int, *]]
-      .traverse[Int, Int, Int, Set[Int], Option, Option]
+    TraverseTests[CommittableConsumerRecord[IO, Int, *]].traverse[Int, Int, Int, Set[
+      Int
+    ], Option, Option]
   )
 
   checkAll(
     "CommittableConsumerRecord.bitraverseLaws",
-    BitraverseTests[CommittableConsumerRecord[IO, *, *]]
-      .bitraverse[Option, Int, Int, Int, String, String, String]
+    BitraverseTests[CommittableConsumerRecord[IO, *, *]].bitraverse[
+      Option,
+      Int,
+      Int,
+      Int,
+      String,
+      String,
+      String
+    ]
   )
 
 }
