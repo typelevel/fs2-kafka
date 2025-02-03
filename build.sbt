@@ -16,7 +16,7 @@ val logbackVersion = "1.3.14"
 
 val vulcanVersion = "1.11.1"
 
-val munitVersion = "0.7.29"
+val munitVersion = "1.1.0"
 
 val scala212 = "2.12.20"
 
