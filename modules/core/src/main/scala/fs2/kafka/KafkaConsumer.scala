@@ -185,7 +185,7 @@ object KafkaConsumer {
                     def storeFetch: F[Unit] =
                       actor
                         .ref
-                        .modify { state =>
+                        .flatModify { state =>
                           val (newState, oldFetches) =
                             state.withFetch(partition, streamId, callback)
                           newState ->
@@ -195,7 +195,6 @@ object KafkaConsumer {
                                   logging.log(RevokedPreviousFetch(partition, streamId))
                               })
                         }
-                        .flatten
 
                     def completeRevoked: F[Unit] =
                       callback((Chunk.empty, FetchCompletedReason.TopicPartitionRevoked))
@@ -268,25 +267,32 @@ object KafkaConsumer {
         ): OnRebalance[F] =
           OnRebalance(
             onRevoked = revoked => {
-              for {
-                finishers <- assignmentRef.modify(_.partition(entry => !revoked.contains(entry._1)))
-                _         <- finishers.toVector.traverse { case (_, finisher) => finisher.complete(()) }
-              } yield ()
+              assignmentRef.flatModify { assignment =>
+                val (newAssignment, finishers) =
+                  assignment.partition(entry => !revoked.contains(entry._1))
+
+                (
+                  newAssignment,
+                  finishers.toVector.traverse_ { case (_, finisher) => finisher.complete(()) }
+                )
+              }
             },
             onAssigned = assignedPartitions => {
               for {
-                assignment <- assignedPartitions
-                                .toVector
-                                .traverse { partition =>
-                                  Deferred[F, Unit].map(partition -> _)
-                                }
-                                .map(_.toMap)
-                _ <- assignmentRef.update(_ ++ assignment)
-                _ <- enqueueAssignment(
-                       streamId = streamId,
-                       assigned = assignment,
-                       partitionsMapQueue = partitionsMapQueue
-                     )
+                newAssignment <- assignedPartitions
+                                   .toVector
+                                   .traverse { partition =>
+                                     Deferred[F, Unit].map(partition -> _)
+                                   }
+                                   .map(_.toMap)
+                _ <- assignmentRef.flatModify { assignment =>
+                       (assignment ++ newAssignment) ->
+                         enqueueAssignment(
+                           streamId = streamId,
+                           assigned = newAssignment,
+                           partitionsMapQueue = partitionsMapQueue
+                         )
+                     }
               } yield ()
             }
           )
@@ -407,9 +413,9 @@ object KafkaConsumer {
             .fold(actor.ref.updateAndGet(_.asStreaming)) { on =>
               actor
                 .ref
-                .updateAndGet(_.withOnRebalance(on).asStreaming)
-                .flatTap { newState =>
-                  logging.log(LogEntry.StoredOnRebalance(on, newState))
+                .flatModify { state =>
+                  val newState = state.withOnRebalance(on).asStreaming
+                  newState -> logging.log(LogEntry.StoredOnRebalance(on, newState)).as(newState)
                 }
             }
             .ensure(NotSubscribedException())(_.subscribed) >>
@@ -429,10 +435,16 @@ object KafkaConsumer {
           OnRebalance(
             onAssigned = assigned =>
               initialAssignmentDone >>
-                assignmentRef.updateAndGet(_ ++ assigned).flatMap(updateQueue.offer),
+                assignmentRef.flatModify { oldAssignment =>
+                  val newAssignment = oldAssignment ++ assigned
+                  newAssignment -> updateQueue.offer(newAssignment)
+                },
             onRevoked = revoked =>
               initialAssignmentDone >>
-                assignmentRef.updateAndGet(_ -- revoked).flatMap(updateQueue.offer)
+                assignmentRef.flatModify { oldAssignment =>
+                  val newAssignment = oldAssignment -- revoked
+                  newAssignment -> updateQueue.offer(newAssignment)
+                }
           )
 
         Stream
@@ -514,15 +526,17 @@ object KafkaConsumer {
 
       override def subscribe[G[_]](topics: G[String])(implicit G: Reducible[G]): F[Unit] =
         withPermit {
-          withConsumer.blocking {
-            _.subscribe(
-              topics.toList.asJava,
-              actor.consumerRebalanceListener
-            )
-          } >> actor
-            .ref
-            .updateAndGet(_.asSubscribed)
-            .log(LogEntry.SubscribedTopics(topics.toNonEmptyList, _))
+          F.uncancelable { _ =>
+            withConsumer.blocking {
+              _.subscribe(
+                topics.toList.asJava,
+                actor.consumerRebalanceListener
+              )
+            } >> actor
+              .ref
+              .updateAndGet(_.asSubscribed)
+              .log(LogEntry.SubscribedTopics(topics.toNonEmptyList, _))
+          }
         }
 
       private def withPermit[A](fa: F[A]): F[A] =
@@ -535,21 +549,27 @@ object KafkaConsumer {
 
       override def subscribe(regex: Regex): F[Unit] =
         withPermit {
-          withConsumer.blocking {
-            _.subscribe(
-              regex.pattern,
-              actor.consumerRebalanceListener
-            )
-          } >>
-            actor.ref.updateAndGet(_.asSubscribed).log(LogEntry.SubscribedPattern(regex.pattern, _))
+          F.uncancelable { _ =>
+            withConsumer.blocking {
+              _.subscribe(
+                regex.pattern,
+                actor.consumerRebalanceListener
+              )
+            } >> actor
+              .ref
+              .updateAndGet(_.asSubscribed)
+              .log(LogEntry.SubscribedPattern(regex.pattern, _))
+          }
         }
 
       override def unsubscribe: F[Unit] =
         withPermit {
-          withConsumer.blocking(_.unsubscribe()) >> actor
-            .ref
-            .updateAndGet(_.asUnsubscribed)
-            .log(LogEntry.Unsubscribed(_))
+          F.uncancelable { _ =>
+            withConsumer.blocking(_.unsubscribe()) >> actor
+              .ref
+              .updateAndGet(_.asUnsubscribed)
+              .log(LogEntry.Unsubscribed(_))
+          }
         }
 
       override def stopConsuming: F[Unit] =
@@ -557,14 +577,16 @@ object KafkaConsumer {
 
       override def assign(partitions: NonEmptySet[TopicPartition]): F[Unit] =
         withPermit {
-          withConsumer.blocking {
-            _.assign(
-              partitions.toList.asJava
-            )
-          } >> actor
-            .ref
-            .updateAndGet(_.asSubscribed)
-            .log(LogEntry.ManuallyAssignedPartitions(partitions, _))
+          F.uncancelable { _ =>
+            withConsumer.blocking {
+              _.assign(
+                partitions.toList.asJava
+              )
+            } >> actor
+              .ref
+              .updateAndGet(_.asSubscribed)
+              .log(LogEntry.ManuallyAssignedPartitions(partitions, _))
+          }
         }
 
       override def assign(topic: String): F[Unit] =

@@ -58,8 +58,6 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
   jitter: Jitter[F]
 ) {
 
-  import logging.*
-
   private[this] type ConsumerRecords =
     Map[TopicPartition, NonEmptyVector[CommittableConsumerRecord[F, K, V]]]
 
@@ -91,17 +89,13 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
       .handleErrorWith(e => F.delay(callback(Left(e))))
 
   private[this] def commit(request: Request.Commit[F]): F[Unit] =
-    ref
-      .modify { state =>
-        if (state.rebalancing) {
-          val newState = state.withPendingCommit(request)
-          (newState, Some(StoredPendingCommit(request, newState)))
-        } else (state, None)
-      }
-      .flatMap {
-        case Some(log) => logging.log(log)
-        case None      => commitAsync(request.offsets, request.callback)
-      }
+    ref.flatModify { state =>
+      if (state.rebalancing) {
+        val newState = state.withPendingCommit(request)
+        (newState, logging.log(StoredPendingCommit(request, newState)))
+      } else
+        (state, commitAsync(request.offsets, request.callback))
+    }
 
   private[this] def manualCommitSync(request: Request.ManualCommitSync[F]): F[Unit] = {
     val commit =
@@ -142,11 +136,14 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
 
   private[this] def assigned(assigned: SortedSet[TopicPartition]): F[Unit] =
     ref
-      .updateAndGet(_.withRebalancing(false))
-      .flatMap { state =>
-        log(AssignedPartitions(assigned, state)) >>
-          state.onRebalances.foldLeft(F.unit)(_ >> _.onAssigned(assigned))
+      .flatModify { state =>
+        val newState = state.withRebalancing(false)
+        (
+          newState,
+          logging.log(AssignedPartitions(assigned, state)).as(newState.onRebalances)
+        )
       }
+      .flatMap(_.traverse_(_.onAssigned(assigned)))
 
   private[this] def revoked(revoked: SortedSet[TopicPartition]): F[Unit] = {
     def withState[A] = StateT.apply[Id, State[F, K, V], A](_)
@@ -198,7 +195,7 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
     }
 
     ref
-      .modify { state =>
+      .flatModify { state =>
         val withRebalancing = state.withRebalancing(true)
 
         val fetches = withRebalancing.fetches.keySetStrict
@@ -214,24 +211,14 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
           completeWithRecords    <- completeWithRecords(withRecords)
           completeWithoutRecords <- completeWithoutRecords(withoutRecords)
           removeRevokedRecords   <- removeRevokedRecords(revokedNonFetches)
-        } yield RevokedResult(
-          logRevoked = logging.log(RevokedPartitions(revoked, withRebalancing)),
-          completeWithRecords = completeWithRecords,
-          completeWithoutRecords = completeWithoutRecords,
-          removeRevokedRecords = removeRevokedRecords,
-          onRebalances = withRebalancing.onRebalances
-        )).run(withRebalancing)
+        } yield for {
+          _ <- logging.log(RevokedPartitions(revoked, withRebalancing))
+          _ <- completeWithRecords
+          _ <- completeWithoutRecords
+          _ <- removeRevokedRecords
+        } yield withRebalancing.onRebalances).run(withRebalancing)
       }
-      .flatMap { res =>
-        val onRevoked =
-          res.onRebalances.foldLeft(F.unit)(_ >> _.onRevoked(revoked))
-
-        res.logRevoked >>
-          res.completeWithRecords >>
-          res.completeWithoutRecords >>
-          res.removeRevokedRecords >>
-          onRevoked
-      }
+      .flatMap(_.traverse_(_.onRevoked(revoked)))
   }
 
   private[this] val offsetCommit: Map[TopicPartition, OffsetAndMetadata] => F[Unit] =
@@ -415,13 +402,18 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
           }) >> result.pendingCommits.traverse_(_.commit)
         }
     }
+
     ref
       .get
       .flatMap { state =>
-        if (state.subscribed && state.streaming) {
-          val initialRebalancing = state.rebalancing
-          pollConsumer(state).flatMap(handlePoll(_, initialRebalancing))
-        } else F.unit
+        F.uncancelable { poll =>
+            val initialRebalancing = state.rebalancing
+            for {
+              records <- poll(pollConsumer(state))
+              _       <- handlePoll(records, initialRebalancing)
+            } yield ()
+          }
+          .whenA(state.subscribed && state.streaming)
       }
   }
 
@@ -433,14 +425,6 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
       case request @ Request.ManualCommitSync(_, _)  => manualCommitSync(request)
       case Request.WithPermit(fa, cb)                => fa.attempt >>= cb
     }
-
-  private[this] case class RevokedResult(
-    logRevoked: F[Unit],
-    completeWithRecords: F[Unit],
-    completeWithoutRecords: F[Unit],
-    removeRevokedRecords: F[Unit],
-    onRebalances: Chain[OnRebalance[F]]
-  )
 
   sealed private[this] trait HandlePollResult {
     def pendingCommits: Option[HandlePollResult.PendingCommits]
