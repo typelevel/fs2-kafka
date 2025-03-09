@@ -103,8 +103,9 @@ resolvers += <span class="hljs-string">"confluent"</span> at <span class="hljs-s
 
 <span class="hljs-keyword">val</span> avroSettings =
   <span class="hljs-type">AvroSettings</span> {
-    <span class="hljs-type">SchemaRegistryClientSettings</span>[<span class="hljs-type">IO</span>](<span class="hljs-string">"http://localhost:8081"</span>)
-      .withAuth(<span class="hljs-type">Auth</span>.<span class="hljs-type">Basic</span>(<span class="hljs-string">"username"</span>, <span class="hljs-string">"password"</span>))
+    <span class="hljs-type">SchemaRegistryClientSettings</span>[<span class="hljs-type">IO</span>](<span class="hljs-string">"http://localhost:8081"</span>).withAuth(
+      <span class="hljs-type">Auth</span>.<span class="hljs-type">Basic</span>(<span class="hljs-string">"username"</span>, <span class="hljs-string">"password"</span>)
+    )
   }
 </code></pre>
 <p>We can then create a <code>Serializer</code> and <code>Deserializer</code> instance for <code>Person</code>.</p>

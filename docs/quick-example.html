@@ -80,8 +80,9 @@
     <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">processRecords</span></span>(
       producer: <span class="hljs-type">KafkaProducer</span>[<span class="hljs-type">IO</span>, <span class="hljs-type">String</span>, <span class="hljs-type">String</span>]
     )(records: <span class="hljs-type">Chunk</span>[<span class="hljs-type">ConsumerRecord</span>[<span class="hljs-type">String</span>, <span class="hljs-type">String</span>]]): <span class="hljs-type">IO</span>[<span class="hljs-type">CommitNow</span>] = {
-      <span class="hljs-keyword">val</span> producerRecords = records
-        .map(consumerRecord =&gt; <span class="hljs-type">ProducerRecord</span>(<span class="hljs-string">"topic"</span>, consumerRecord.key, consumerRecord.value))
+      <span class="hljs-keyword">val</span> producerRecords = records.map(consumerRecord =&gt;
+        <span class="hljs-type">ProducerRecord</span>(<span class="hljs-string">"topic"</span>, consumerRecord.key, consumerRecord.value)
+      )
       producer.produce(producerRecords).flatten.as(<span class="hljs-type">CommitNow</span>)
     }
 
