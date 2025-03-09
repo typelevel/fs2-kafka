@@ -83,8 +83,8 @@ object TransactionalProducerSettings {
   ): TransactionalProducerSettings[F, K, V] =
     TransactionalProducerSettingsImpl(
       transactionalId = transactionalId,
-      producerSettings = producerSettings
-        .withProperty(ProducerConfig.TRANSACTIONAL_ID_CONFIG, transactionalId)
+      producerSettings =
+        producerSettings.withProperty(ProducerConfig.TRANSACTIONAL_ID_CONFIG, transactionalId)
     )
 
   implicit def transactionalProducerSettingsShow[F[_], K, V]

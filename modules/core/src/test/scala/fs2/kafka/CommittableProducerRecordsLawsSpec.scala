@@ -19,14 +19,22 @@ class CommittableProducerRecordsLawsSpec extends BaseCatsSpec {
 
   checkAll(
     "CommittableProducerRecord.traverseLaws",
-    TraverseTests[CommittableProducerRecords[IO, Int, *]]
-      .traverse[Int, Int, Int, Set[Int], Option, Option]
+    TraverseTests[CommittableProducerRecords[IO, Int, *]].traverse[Int, Int, Int, Set[
+      Int
+    ], Option, Option]
   )
 
   checkAll(
     "CommittableProducerRecord.bitraverseLaws",
-    BitraverseTests[CommittableProducerRecords[IO, *, *]]
-      .bitraverse[Option, Int, Int, Int, String, String, String]
+    BitraverseTests[CommittableProducerRecords[IO, *, *]].bitraverse[
+      Option,
+      Int,
+      Int,
+      Int,
+      String,
+      String,
+      String
+    ]
   )
 
 }
