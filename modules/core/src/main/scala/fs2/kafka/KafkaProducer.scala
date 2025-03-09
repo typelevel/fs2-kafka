@@ -219,7 +219,7 @@ object KafkaProducer {
                   if (exception == null) { promise.success((record, metadata)) }
                   else {
                     promise.failure(exception)
-                    produceRecordError.foreach(_.failure(exception))
+                    produceRecordError.foreach(_.tryFailure(exception))
                   }
                 }
               )
