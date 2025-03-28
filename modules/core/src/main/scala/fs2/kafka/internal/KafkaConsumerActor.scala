@@ -450,30 +450,27 @@ private[kafka] object KafkaConsumerActor {
       */
     def resetSpilloverAfterPoll(
       spillover: Map[TopicPartition, Chunk[CommittableConsumerRecord[F, K, V]]]
-    ): State[F, K, V] =
-      if (spillover.isEmpty)
-        this
-      else {
-        require(spillover.forall(kv => partitionState.contains(kv._1)))
+    ): State[F, K, V] = {
+      require(spillover.forall(kv => partitionState.contains(kv._1)))
 
-        val newPartitionState: PartitionStateMap[F, K, V] = partitionState.map {
-          case (partition, partitionState) =>
-            (
-              partition,
-              spillover
-                .get(partition)
-                .map(spillover => partitionState.copy(spillover = spillover))
-                .getOrElse(
-                  if (partitionState.spillover.isEmpty)
-                    partitionState
-                  else
-                    partitionState.copy(spillover = Chunk.empty)
-                )
-            )
-        }
-
-        copy(partitionState = newPartitionState)
+      val newPartitionState: PartitionStateMap[F, K, V] = partitionState.map {
+        case (partition, partitionState) =>
+          (
+            partition,
+            spillover
+              .get(partition)
+              .map(spillover => partitionState.copy(spillover = spillover))
+              .getOrElse(
+                if (partitionState.spillover.isEmpty)
+                  partitionState
+                else
+                  partitionState.copy(spillover = Chunk.empty)
+              )
+          )
       }
+
+      copy(partitionState = newPartitionState)
+    }
 
     /**
       * Resets pending commits after a poll operation.
