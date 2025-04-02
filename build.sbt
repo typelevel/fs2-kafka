@@ -24,7 +24,7 @@ val scala213 = "2.13.16"
 
 val scala3 = "3.3.5"
 
-ThisBuild / tlBaseVersion := "3.6"
+ThisBuild / tlBaseVersion := "3.7"
 
 ThisBuild / tlCiReleaseBranches := Seq("series/3.x")
 
