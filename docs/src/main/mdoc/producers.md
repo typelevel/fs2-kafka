@@ -127,10 +127,6 @@ ProducerSettings(
 
 ### Default Settings
 
-The following Java Kafka producer properties are overridden by default.
-
-- `max.retries` is set to `0`, to avoid the risk of records being produced out-of-order. If we don't need to produce records in-order, then this can be set to some positive integer value. An alternative is to enable retries and use `withMaxInFlightRequestsPerConnection(1)` or `withEnableIdempotence(true)`. The blog post [Does Kafka really guarantee the order of messages?](https://blog.softwaremill.com/does-kafka-really-guarantee-the-order-of-messages-3ca849fd19d2) provides more detail on this topic.
-
 The following settings are specific to the library.
 
 - `withCloseTimeout` controls the timeout when waiting for producer shutdown. Default is 60 seconds.
