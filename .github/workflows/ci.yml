@@ -144,10 +144,11 @@ jobs:
       - env:
           PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+          SONATYPE_CREDENTIAL_HOST: ${{ secrets.SONATYPE_CREDENTIAL_HOST }}
           GIT_DEPLOY_KEY: ${{ secrets.GIT_DEPLOY_KEY }}
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
-        run: sbt tlRelease docs/docusaurusPublishGhpages
+        run: sbt tlCiRelease docs/docusaurusPublishGhpages
 
   dependency-submission:
     name: Submit Dependencies
