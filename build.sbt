@@ -26,9 +26,9 @@ val scala3 = "3.3.5"
 
 ThisBuild / tlBaseVersion := "3.7"
 
-ThisBuild / tlCiReleaseBranches := Seq("series/3.x")
+ThisBuild / tlUntaggedAreSnapshots := false
 
-ThisBuild / sonatypeCredentialHost := xerial.sbt.Sonatype.sonatypeCentralHost
+ThisBuild / tlCiReleaseBranches := Seq("series/3.x")
 
 lazy val `fs2-kafka` = project
   .in(file("."))
