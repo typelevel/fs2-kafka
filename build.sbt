@@ -26,8 +26,6 @@ val scala3 = "3.3.5"
 
 ThisBuild / tlBaseVersion := "3.8"
 
-ThisBuild / tlUntaggedAreSnapshots := false
-
 ThisBuild / tlCiReleaseBranches := Seq("series/3.x")
 
 lazy val `fs2-kafka` = project
