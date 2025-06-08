@@ -228,12 +228,11 @@ ThisBuild / githubWorkflowPublish := Seq(
   WorkflowStep.Sbt(
     List("tlCiRelease", "docs/docusaurusPublishGhpages"),
     env = Map(
-      "GIT_DEPLOY_KEY"           -> "${{ secrets.GIT_DEPLOY_KEY }}",
-      "PGP_PASSPHRASE"           -> "${{ secrets.PGP_PASSPHRASE }}",
-      "PGP_SECRET"               -> "${{ secrets.PGP_SECRET }}",
-      "SONATYPE_PASSWORD"        -> "${{ secrets.SONATYPE_PASSWORD }}",
-      "SONATYPE_USERNAME"        -> "${{ secrets.SONATYPE_USERNAME }}",
-      "SONATYPE_CREDENTIAL_HOST" -> "${{ secrets.SONATYPE_CREDENTIAL_HOST }}"
+      "GIT_DEPLOY_KEY"    -> "${{ secrets.GIT_DEPLOY_KEY }}",
+      "PGP_PASSPHRASE"    -> "${{ secrets.PGP_PASSPHRASE }}",
+      "PGP_SECRET"        -> "${{ secrets.PGP_SECRET }}",
+      "SONATYPE_PASSWORD" -> "${{ secrets.SONATYPE_PASSWORD }}",
+      "SONATYPE_USERNAME" -> "${{ secrets.SONATYPE_USERNAME }}"
     )
   )
 )
