@@ -241,7 +241,7 @@ object AvroSettings {
         schemaRegistryClient.flatMap { schemaRegistryClient =>
           F.delay {
             val serializer = schema match {
-              case None => new KafkaAvroSerializer(schemaRegistryClient)
+              case None         => new KafkaAvroSerializer(schemaRegistryClient)
               case Some(schema) =>
                 new KafkaAvroSerializer(schemaRegistryClient) {
 

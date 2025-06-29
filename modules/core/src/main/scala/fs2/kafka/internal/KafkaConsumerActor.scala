@@ -279,7 +279,7 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
       .get
       .flatMap { state =>
         (partitions -- state.partitionState.keys).toList match {
-          case Nil => F.pure(state.partitionState)
+          case Nil     => F.pure(state.partitionState)
           case missing =>
             missing
               .traverse { partition =>
@@ -302,7 +302,7 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
     ensurePartitionStateFor(Set(partition)).flatMap { partitionState =>
       partitionState.get(partition) match {
         case Some(ps) => F.pure((ps.queue, ps.closeSignal.get))
-        case None =>
+        case None     =>
           F.raiseError(new IllegalStateException(s"PartitionState not added for $partition"))
       }
     }

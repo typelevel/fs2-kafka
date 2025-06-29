@@ -191,7 +191,7 @@ abstract class BaseKafkaSpec extends BaseAsyncSpec with ForAllTestContainer {
     val consumerProperties = defaultConsumerProperties ++ customProperties
 
     var timeoutNanoTime = System.nanoTime + timeout.toNanos
-    val consumer = new KConsumer[K, V](
+    val consumer        = new KConsumer[K, V](
       consumerProperties.asJava,
       keyDeserializer,
       valueDeserializer

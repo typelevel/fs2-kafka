@@ -213,7 +213,7 @@ object KafkaConsumer {
               for {
                 partitionsMapQueue <- Stream.eval(Queue.unbounded[F, Option[PartitionsMap]])
                 _                  <- Stream.eval(initialEnqueue(partitionsMapQueue))
-                out <- Stream
+                out                <- Stream
                          .fromQueueNoneTerminated(partitionsMapQueue)
                          .interruptWhen(awaitTermination.attempt)
                          .concurrently(
@@ -557,7 +557,7 @@ object KafkaConsumer {
       dispatcher            <- Dispatcher.sequential[F]
       stopConsumingDeferred <- Resource.eval(Deferred[F, Unit])
       withConsumer          <- WithConsumer(mk, settings)
-      actor = {
+      actor                  = {
         implicit val jitter0: Jitter[F]         = jitter
         implicit val logging0: Logging[F]       = logging
         implicit val dispatcher0: Dispatcher[F] = dispatcher
