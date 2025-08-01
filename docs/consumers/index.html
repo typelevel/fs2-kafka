@@ -489,4 +489,40 @@ It means that streams will be completed when all fetched messages will be proces
 </ol>
 <p>You may notice, that actual graceful shutdown implementation requires a decent amount of low-level handwork. <code>stopConsuming</code> is just a building block for making your own graceful shutdown, not a ready-made solution for all needs. This design is intentional, because different applications may need different graceful shutdown logic. For example, what if your application has multiple consumers? Or some other components in your application may also need to participate in a graceful shutdown somehow? Because of that graceful shutdown with <code>stopConsuming</code> considered as a low level and advanced feature.</p>
 <p>Also note, that even if you implement a graceful shutdown your application may fall with an error. And in this case, a graceful shutdown will not be invoked. It means that your application should be ready to an <em>at least once</em> semantic even when a graceful shutdown is implemented. Or, if you need an <em>exactly once</em> semantic, consider using <a href="/fs2-kafka/docs/transactions">transactions</a>.</p>
-</span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="/fs2-kafka/docs/quick-example"><span class="arrow-prev">← </span><span>Quick Example</span></a><a class="docs-next button" href="/fs2-kafka/docs/producers"><span>Producers</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#deserializers">Deserializers</a><ul class="toc-headings"><li><a href="#custom-deserializers">Custom Deserializers</a></li><li><a href="#java-interoperability">Java Interoperability</a></li></ul></li><li><a href="#settings">Settings</a><ul class="toc-headings"><li><a href="#default-settings">Default Settings</a></li></ul></li><li><a href="#consumer-creation">Consumer Creation</a></li><li><a href="#topic-subscription">Topic Subscription</a></li><li><a href="#record-streaming">Record Streaming</a></li><li><a href="#offset-commits">Offset Commits</a><ul class="toc-headings"><li><a href="#working-on-chunk">Working on <code>Chunk</code></a></li><li><a href="#committing-manually">Committing manually</a></li></ul></li><li><a href="#graceful-shutdown">Graceful shutdown</a></li></ul></nav></div><footer class="nav-footer" id="footer"><hr class="separator"/><section class="copyright">Copyright © 2018-2025 OVO Energy Limited.<br/>Icon by <a href="https://www.flaticon.com/authors/franco-averta" rel="noopener">Franco Averta</a>. <a href="https://creativecommons.org/licenses/by/3.0" rel="noopener">CC BY 3.0</a>.</section></footer></div></body></html>
+<h3><a class="anchor" aria-hidden="true" id="graceful-partition-revoke"></a><a href="#graceful-partition-revoke" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Graceful partition revoke</h3>
+<p>In addition to graceful shutdown of the whole consumer there is an option to configure your consumer to wait for the streams
+to finish processing partition before &quot;releasing&quot; it. Behavior can be enabled via the following settings:</p>
+<pre><code class="hljs css language-scala"><span class="hljs-class"><span class="hljs-keyword">object</span> <span class="hljs-title">WithGracefulPartitionRevoke</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">IOApp</span>.<span class="hljs-title">Simple</span> </span>{
+  <span class="hljs-keyword">val</span> run: <span class="hljs-type">IO</span>[<span class="hljs-type">Unit</span>] = {
+    <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">processRecord</span></span>(record: <span class="hljs-type">CommittableConsumerRecord</span>[<span class="hljs-type">IO</span>, <span class="hljs-type">String</span>, <span class="hljs-type">String</span>]): <span class="hljs-type">IO</span>[<span class="hljs-type">Unit</span>] =
+      <span class="hljs-type">IO</span>(println(<span class="hljs-string">s"Processing record: <span class="hljs-subst">$record</span>"</span>))
+
+    <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">run</span></span>(consumer: <span class="hljs-type">KafkaConsumer</span>[<span class="hljs-type">IO</span>, <span class="hljs-type">String</span>, <span class="hljs-type">String</span>]): <span class="hljs-type">IO</span>[<span class="hljs-type">Unit</span>] = {
+      consumer.subscribeTo(<span class="hljs-string">"topic"</span>) &gt;&gt; consumer
+        .stream
+        .evalMap { msg =&gt;
+          processRecord(msg).as(msg.offset)
+        }
+        .through(commitBatchWithin(<span class="hljs-number">100</span>, <span class="hljs-number">15.</span>seconds))
+        .compile
+        .drain
+    }
+
+    <span class="hljs-keyword">val</span> consumerSettings =
+      <span class="hljs-type">ConsumerSettings</span>[<span class="hljs-type">IO</span>, <span class="hljs-type">String</span>, <span class="hljs-type">String</span>]
+        .withRebalanceRevokeMode(<span class="hljs-type">RebalanceRevokeMode</span>.<span class="hljs-type">Graceful</span>)
+        .withSessionTimeout(<span class="hljs-number">2.</span>seconds)
+
+    <span class="hljs-type">KafkaConsumer</span>
+      .resource(consumerSettings)
+      .use { consumer =&gt;
+        run(consumer)
+      }
+  }
+}
+</code></pre>
+<p>Please note that this setting does not guarantee that all the commits will be performed before partition is revoked and
+that <code>session.timeout.ms</code> setting is set to lower value. Be aware that awaiting too long for partition processor
+to finish will cause processing of the whole topic to be suspended.</p>
+<p>Awaiting for commits to complete might be implemented in the future.</p>
+</span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="/fs2-kafka/docs/quick-example"><span class="arrow-prev">← </span><span>Quick Example</span></a><a class="docs-next button" href="/fs2-kafka/docs/producers"><span>Producers</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#deserializers">Deserializers</a><ul class="toc-headings"><li><a href="#custom-deserializers">Custom Deserializers</a></li><li><a href="#java-interoperability">Java Interoperability</a></li></ul></li><li><a href="#settings">Settings</a><ul class="toc-headings"><li><a href="#default-settings">Default Settings</a></li></ul></li><li><a href="#consumer-creation">Consumer Creation</a></li><li><a href="#topic-subscription">Topic Subscription</a></li><li><a href="#record-streaming">Record Streaming</a></li><li><a href="#offset-commits">Offset Commits</a><ul class="toc-headings"><li><a href="#working-on-chunk">Working on <code>Chunk</code></a></li><li><a href="#committing-manually">Committing manually</a></li></ul></li><li><a href="#graceful-shutdown">Graceful shutdown</a><ul class="toc-headings"><li><a href="#graceful-partition-revoke">Graceful partition revoke</a></li></ul></li></ul></nav></div><footer class="nav-footer" id="footer"><hr class="separator"/><section class="copyright">Copyright © 2018-2025 OVO Energy Limited.<br/>Icon by <a href="https://www.flaticon.com/authors/franco-averta" rel="noopener">Franco Averta</a>. <a href="https://creativecommons.org/licenses/by/3.0" rel="noopener">CC BY 3.0</a>.</section></footer></div></body></html>
