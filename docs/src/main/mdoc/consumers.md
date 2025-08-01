@@ -551,9 +551,9 @@ Also note, that even if you implement a graceful shutdown your application may f
 
 In addition to graceful shutdown of the whole consumer there is an option to configure your consumer to wait for the streams
 to finish processing partition before "releasing" it. Behavior can be enabled via the following settings:
+
 ```scala mdoc:silent
 object WithGracefulPartitionRevoke extends IOApp.Simple {
-
   val run: IO[Unit] = {
     def processRecord(record: CommittableConsumerRecord[IO, String, String]): IO[Unit] =
       IO(println(s"Processing record: $record"))
@@ -568,23 +568,22 @@ object WithGracefulPartitionRevoke extends IOApp.Simple {
         .compile
         .drain
     }
-    
-    val consumerSettings = ConsumerSettings[IO, String, String] =
+
+    val consumerSettings =
       ConsumerSettings[IO, String, String]
         .withRebalanceRevokeMode(RebalanceRevokeMode.Graceful)
         .withSessionTimeout(2.seconds)
 
     KafkaConsumer
       .resource(consumerSettings)
-      .use { consumer => 
+      .use { consumer =>
         run(consumer)
       }
   }
-
 }
 ```
 
-Please note that this setting does not guarantee that all the commits will be performed before partition is revoked and 
+Please note that this setting does not guarantee that all the commits will be performed before partition is revoked and
 that `session.timeout.ms` setting is set to lower value. Be aware that awaiting too long for partition processor
 to finish will cause processing of the whole topic to be suspended.
 
