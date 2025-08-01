@@ -547,6 +547,48 @@ You may notice, that actual graceful shutdown implementation requires a decent a
 
 Also note, that even if you implement a graceful shutdown your application may fall with an error. And in this case, a graceful shutdown will not be invoked. It means that your application should be ready to an _at least once_ semantic even when a graceful shutdown is implemented. Or, if you need an _exactly once_ semantic, consider using [transactions](transactions.md).
 
+### Graceful partition revoke
+
+In addition to graceful shutdown of the whole consumer there is an option to configure your consumer to wait for the streams
+to finish processing partition before "releasing" it. Behavior can be enabled via the following settings:
+
+```scala mdoc:silent
+object WithGracefulPartitionRevoke extends IOApp.Simple {
+  val run: IO[Unit] = {
+    def processRecord(record: CommittableConsumerRecord[IO, String, String]): IO[Unit] =
+      IO(println(s"Processing record: $record"))
+
+    def run(consumer: KafkaConsumer[IO, String, String]): IO[Unit] = {
+      consumer.subscribeTo("topic") >> consumer
+        .stream
+        .evalMap { msg =>
+          processRecord(msg).as(msg.offset)
+        }
+        .through(commitBatchWithin(100, 15.seconds))
+        .compile
+        .drain
+    }
+
+    val consumerSettings =
+      ConsumerSettings[IO, String, String]
+        .withRebalanceRevokeMode(RebalanceRevokeMode.Graceful)
+        .withSessionTimeout(2.seconds)
+
+    KafkaConsumer
+      .resource(consumerSettings)
+      .use { consumer =>
+        run(consumer)
+      }
+  }
+}
+```
+
+Please note that this setting does not guarantee that all the commits will be performed before partition is revoked and
+that `session.timeout.ms` setting is set to lower value. Be aware that awaiting too long for partition processor
+to finish will cause processing of the whole topic to be suspended.
+
+Awaiting for commits to complete might be implemented in the future.
+
 [commitrecovery-default]: @API_BASE_URL@/CommitRecovery$.html#Default:fs2.kafka.CommitRecovery
 [committableconsumerrecord]: @API_BASE_URL@/CommittableConsumerRecord.html
 [committableoffset]: @API_BASE_URL@/CommittableOffset.html
