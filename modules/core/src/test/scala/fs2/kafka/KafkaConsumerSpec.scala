@@ -8,6 +8,7 @@ package fs2.kafka
 
 import scala.collection.immutable.SortedSet
 import scala.concurrent.duration.*
+
 import cats.data.NonEmptySet
 import cats.effect.{Fiber, IO, Ref}
 import cats.effect.std.{Queue, Semaphore}
@@ -17,7 +18,12 @@ import fs2.concurrent.SignallingRef
 import fs2.kafka.consumer.KafkaConsumeChunk.CommitNow
 import fs2.kafka.internal.converters.collection.*
 import fs2.Stream
-import org.apache.kafka.clients.consumer.{ConsumerConfig, CooperativeStickyAssignor, NoOffsetForPartitionException}
+
+import org.apache.kafka.clients.consumer.{
+  ConsumerConfig,
+  CooperativeStickyAssignor,
+  NoOffsetForPartitionException
+}
 import org.apache.kafka.common.errors.TimeoutException
 import org.apache.kafka.common.TopicPartition
 import org.scalatest.Assertion
@@ -1254,16 +1260,15 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
           longOperation          <- Semaphore[IO](0)
           processingUniqueness   <- Ref.of[IO, Map[String, Semaphore[IO]]](Map.empty)
           semaphoreForKey = (key: String) =>
-            processingUniqueness
-              .modify { map =>
-                map.get(key) match {
-                  case Some(sem) => (map, sem)
-                  case None =>
-                    val sem = Semaphore[IO](1).unsafeRunSync()
-                    (map.updated(key, sem), sem)
-                }
-              }
-          _                      <- produceRange(0, 10)
+                              processingUniqueness.modify { map =>
+                                map.get(key) match {
+                                  case Some(sem) => (map, sem)
+                                  case None =>
+                                    val sem = Semaphore[IO](1).unsafeRunSync()
+                                    (map.updated(key, sem), sem)
+                                }
+                              }
+          _ <- produceRange(0, 10)
           concurrentProcessingDetected <-
             KafkaConsumer
               .stream(settings)
@@ -1271,15 +1276,21 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
               .flatMap(
                 _.stream
                   .evalMap { r =>
-                    semaphoreForKey(r.record.key).flatMap(_.permit.use {_ =>
-                      if (r.record.key == "key-4") {
-                        secondStreamSubscribed.release *> longOperation.acquire *> r.offset.commit.as(
-                          RecordedMessage("1", r.record.key, r.record.value)
-                        )
-                      } else {
-                        r.offset.commit
-                      }
-                    })
+                    semaphoreForKey(r.record.key).flatMap(
+                      _.permit
+                        .use { _ =>
+                          if (r.record.key == "key-4") {
+                            secondStreamSubscribed.release *> longOperation.acquire *> r
+                              .offset
+                              .commit
+                              .as(
+                                RecordedMessage("1", r.record.key, r.record.value)
+                              )
+                          } else {
+                            r.offset.commit
+                          }
+                        }
+                    )
                   }
                   .interruptAfter(5.seconds)
               )

@@ -300,12 +300,24 @@ ThisBuild / mimaBinaryIssueFilters ++= {
       "fs2.kafka.ProducerSettings#ProducerSettingsImpl.apply"
     ),
     ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.kafka.KafkaProducer.produceRecord"),
-    ProblemFilters.exclude[ReversedMissingMethodProblem]("fs2.kafka.ConsumerSettings.sessionTimeout"),
-    ProblemFilters.exclude[ReversedMissingMethodProblem]("fs2.kafka.ConsumerSettings.rebalanceRevokeMode"),
-    ProblemFilters.exclude[ReversedMissingMethodProblem]("fs2.kafka.ConsumerSettings.withRebalanceRevokeMode"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.kafka.ConsumerSettings#ConsumerSettingsImpl.copy"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.kafka.ConsumerSettings#ConsumerSettingsImpl.this"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.kafka.ConsumerSettings#ConsumerSettingsImpl.apply")
+    ProblemFilters.exclude[ReversedMissingMethodProblem](
+      "fs2.kafka.ConsumerSettings.sessionTimeout"
+    ),
+    ProblemFilters.exclude[ReversedMissingMethodProblem](
+      "fs2.kafka.ConsumerSettings.rebalanceRevokeMode"
+    ),
+    ProblemFilters.exclude[ReversedMissingMethodProblem](
+      "fs2.kafka.ConsumerSettings.withRebalanceRevokeMode"
+    ),
+    ProblemFilters.exclude[DirectMissingMethodProblem](
+      "fs2.kafka.ConsumerSettings#ConsumerSettingsImpl.copy"
+    ),
+    ProblemFilters.exclude[DirectMissingMethodProblem](
+      "fs2.kafka.ConsumerSettings#ConsumerSettingsImpl.this"
+    ),
+    ProblemFilters.exclude[DirectMissingMethodProblem](
+      "fs2.kafka.ConsumerSettings#ConsumerSettingsImpl.apply"
+    )
   )
 }
 
