@@ -16,7 +16,7 @@ import cats.syntax.all.*
 import fs2.concurrent.SignallingRef
 import fs2.kafka.consumer.KafkaConsumeChunk.CommitNow
 import fs2.kafka.internal.converters.collection.*
-import fs2.{Chunk, Stream}
+import fs2.Stream
 import org.apache.kafka.clients.consumer.{ConsumerConfig, CooperativeStickyAssignor, NoOffsetForPartitionException}
 import org.apache.kafka.common.errors.TimeoutException
 import org.apache.kafka.common.TopicPartition
