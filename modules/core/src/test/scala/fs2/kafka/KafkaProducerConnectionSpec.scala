@@ -27,7 +27,7 @@ final class KafkaProducerConnectionSpec extends BaseKafkaSpec with TypeCheckedTr
           producer1          <- Stream.resource(producerConnection.withSerializersFrom(settings))
           serializer2         = Serializer.string[IO].contramap[Int](_.toString)
           producer2           = producerConnection.withSerializers(serializer2, serializer2)
-          result1 <- Stream.eval(
+          result1            <- Stream.eval(
                        producer1.produce(ProducerRecords.one(producerRecordString)).flatten
                      )
           result2 <- Stream.eval(producer2.produce(ProducerRecords.one(producerRecordInt)).flatten)

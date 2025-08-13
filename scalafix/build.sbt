@@ -30,7 +30,7 @@ lazy val output = project.settings(
 
 lazy val tests = project
   .settings(
-    skip in publish := true,
+    skip in publish     := true,
     libraryDependencies += "ch.epfl.scala" % "scalafix-testkit" % V
       .scalafixVersion   % Test cross CrossVersion.full,
     compile.in(Compile) :=
