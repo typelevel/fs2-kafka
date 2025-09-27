@@ -82,7 +82,7 @@ trait SchemaSuite extends FunSuite {
           private def registrySchema(subject: String): IO[Schema] =
             for {
               metadata <- IO.delay(client.getLatestSchemaMetadata(subject))
-              schema <- IO.delay(
+              schema   <- IO.delay(
                           client.getSchemaById(metadata.getId).asInstanceOf[AvroSchema]
                         )
             } yield schema.rawSchema()
