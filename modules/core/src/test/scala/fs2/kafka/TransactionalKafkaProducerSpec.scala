@@ -82,7 +82,7 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
                         producerSettings[IO].withRetries(Int.MaxValue)
                       )
                     )
-        _ <- Stream.eval(IO(producer.toString should startWith("TransactionalKafkaProducer$")))
+        _                      <- Stream.eval(IO(producer.toString should startWith("TransactionalKafkaProducer$")))
         (records, passthrough) <-
           Stream
             .chunk(Chunk.from(toProduce))
@@ -156,7 +156,7 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
   it("should be able to commit offset without producing records in a transaction") {
     withTopic { topic =>
       createCustomTopic(topic, partitions = 3)
-      val commitState = new AtomicBoolean(false)
+      val commitState                 = new AtomicBoolean(false)
       implicit val mk: MkProducer[IO] = new MkProducer[IO] {
 
         def apply[G[_]](settings: ProducerSettings[G, ?, ?]): IO[KafkaByteProducer] =
@@ -427,7 +427,7 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
                 record: org.apache.kafka.clients.producer.ProducerRecord[Array[Byte], Array[Byte]],
                 callback: Callback
               ): Future[RecordMetadata] = {
-                val key = new String(record.key(), StandardCharsets.UTF_8)
+                val key          = new String(record.key(), StandardCharsets.UTF_8)
                 val futureResult = CompletableFuture.completedFuture(
                   new RecordMetadata(new TopicPartition(topic, 0), 0, 0, 0, 0, 0)
                 )
