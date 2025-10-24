@@ -138,7 +138,7 @@
     <span class="hljs-keyword">for</span> {
       consumerGroupIds &lt;- client.listConsumerGroups.groupIds
       _                &lt;- client.describeConsumerGroups(consumerGroupIds)
-      _ &lt;- consumerGroupIds.parTraverse { groupId =&gt;
+      _                &lt;- consumerGroupIds.parTraverse { groupId =&gt;
              client.listConsumerGroupOffsets(groupId).partitionsToOffsetAndMetadata
            }
     } <span class="hljs-keyword">yield</span> ()
