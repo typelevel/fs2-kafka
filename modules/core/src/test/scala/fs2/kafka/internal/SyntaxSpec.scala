@@ -14,7 +14,6 @@ import cats.effect.unsafe.implicits.global
 import cats.effect.IO
 import fs2.kafka.*
 import fs2.kafka.internal.syntax.*
-import fs2.kafka.BaseSpec
 
 import org.apache.kafka.common.header.internals.RecordHeaders
 import org.apache.kafka.common.internals.KafkaFutureImpl
