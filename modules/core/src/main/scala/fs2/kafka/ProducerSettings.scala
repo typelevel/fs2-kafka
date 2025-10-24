@@ -332,9 +332,7 @@ object ProducerSettings {
       keySerializer = keySerializer,
       valueSerializer = valueSerializer,
       customBlockingContext = None,
-      properties = Map(
-        ProducerConfig.RETRIES_CONFIG -> "0"
-      ),
+      properties = Map.empty,
       closeTimeout = 60.seconds,
       failFastProduce = false
     )

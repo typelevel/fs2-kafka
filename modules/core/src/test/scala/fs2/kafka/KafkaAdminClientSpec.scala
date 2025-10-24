@@ -41,7 +41,7 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
           .use { adminClient =>
             for {
               consumerGroupIds <- adminClient.listConsumerGroups.groupIds
-              consumerGroupId <- IO(consumerGroupIds match {
+              consumerGroupId  <- IO(consumerGroupIds match {
                                    case List(groupId) => groupId
                                    case _             => fail()
                                  })
@@ -49,7 +49,7 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
               _                       <- IO(assert(consumerGroupListings.size == 1))
               describedConsumerGroups <- adminClient.describeConsumerGroups(consumerGroupIds)
               _                       <- IO(assert(describedConsumerGroups.size == 1))
-              _ <- IO {
+              _                       <- IO {
                      adminClient.listConsumerGroups.toString should
                        startWith("ListConsumerGroups$")
                    }
@@ -64,7 +64,7 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
                            case _             => fail()
                          })
               (_, consumerGroupOffsetsMap) = offsets
-              _ <- IO(
+              _                           <- IO(
                      assert(
                        consumerGroupOffsetsMap
                          .map { case (_, offset) =>
@@ -95,7 +95,7 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
                 }
               partition0    = new TopicPartition(topic, 0)
               updatedOffset = new OffsetAndMetadata(0)
-              _ <- adminClient.alterConsumerGroupOffsets(
+              _            <- adminClient.alterConsumerGroupOffsets(
                      consumerGroupId,
                      Map(partition0 -> updatedOffset)
                    )
@@ -144,7 +144,7 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
               _                 <- IO(assert(!clusterController.isEmpty))
               clusterId         <- adminClient.describeCluster.clusterId
               _                 <- IO(assert(clusterId.nonEmpty))
-              _ <- IO {
+              _                 <- IO {
                      adminClient.describeCluster.toString should startWith("DescribeCluster$")
                    }
             } yield ()
@@ -161,8 +161,8 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
           .resource[IO](adminClientSettings)
           .use { adminClient =>
             for {
-              cr <- IO.pure(new ConfigResource(ConfigResource.Type.TOPIC, topic))
-              ce  = new ConfigEntry("cleanup.policy", "delete")
+              cr             <- IO.pure(new ConfigResource(ConfigResource.Type.TOPIC, topic))
+              ce              = new ConfigEntry("cleanup.policy", "delete")
               alteredConfigs <- adminClient
                                   .alterConfigs {
                                     Map(cr -> List(new AlterConfigOp(ce, AlterConfigOp.OpType.SET)))
@@ -170,7 +170,7 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
                                   .attempt
               _                <- IO(assert(alteredConfigs.isRight))
               describedConfigs <- adminClient.describeConfigs(List(cr))
-              _ <- IO(
+              _                <- IO(
                      assert(
                        describedConfigs(cr).exists(actual =>
                          actual.name == ce.name && actual.value == ce.value
@@ -203,35 +203,35 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
               _                            <- IO(assert(topicListingsInternal.size == topicCount + 1))
               topicNamesToListingsInternal <- adminClient.listTopics.includeInternal.namesToListings
               _                            <- IO(assert(topicNamesToListingsInternal.size == topicCount + 1))
-              _ <- IO {
+              _                            <- IO {
                      adminClient.listTopics.toString should startWith("ListTopics$")
                    }
               _ <- IO {
                      adminClient.listTopics.includeInternal.toString should
                        startWith("ListTopicsIncludeInternal$")
                    }
-              describedTopics <- adminClient.describeTopics(topicNames.toList)
-              _               <- IO(assert(describedTopics.size == topicCount))
-              newTopic         = new NewTopic("new-test-topic", 1, 1.toShort)
-              preCreateNames  <- adminClient.listTopics.names
-              _               <- IO(assert(!preCreateNames.contains(newTopic.name)))
-              _               <- adminClient.createTopic(newTopic)
-              postCreateNames <- adminClient.listTopics.names
-              createAgain     <- adminClient.createTopics(List(newTopic)).attempt
-              _               <- IO(assert(createAgain.isLeft))
-              _               <- IO(assert(postCreateNames.contains(newTopic.name)))
+              describedTopics  <- adminClient.describeTopics(topicNames.toList)
+              _                <- IO(assert(describedTopics.size == topicCount))
+              newTopic          = new NewTopic("new-test-topic", 1, 1.toShort)
+              preCreateNames   <- adminClient.listTopics.names
+              _                <- IO(assert(!preCreateNames.contains(newTopic.name)))
+              _                <- adminClient.createTopic(newTopic)
+              postCreateNames  <- adminClient.listTopics.names
+              createAgain      <- adminClient.createTopics(List(newTopic)).attempt
+              _                <- IO(assert(createAgain.isLeft))
+              _                <- IO(assert(postCreateNames.contains(newTopic.name)))
               createPartitions <-
                 adminClient.createPartitions(Map(topic -> NewPartitions.increaseTo(4))).attempt
               _               <- IO(assert(createPartitions.isRight))
               describedTopics <- adminClient.describeTopics(topic :: Nil)
               _               <- IO(assert(describedTopics.size == 1))
-              _ <- IO(
+              _               <- IO(
                      assert(describedTopics.headOption.exists(_._2.partitions.size == 4))
                    )
               deleteTopics    <- adminClient.deleteTopics(List(topic)).attempt
               _               <- IO(assert(deleteTopics.isRight))
               describedTopics <- adminClient.describeTopics(topic :: Nil).attempt
-              _ <- IO(
+              _               <- IO(
                      assert(
                        describedTopics.leftMap(_.getMessage()) == Left(
                          "This server does not host this topic-partition."
@@ -241,7 +241,7 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
               deleteTopic    <- adminClient.deleteTopic(newTopic.name()).attempt
               _              <- IO(assert(deleteTopic.isRight))
               describedTopic <- adminClient.describeTopics(newTopic.name() :: Nil).attempt
-              _ <- IO(
+              _              <- IO(
                      assert(
                        describedTopic.leftMap(_.getMessage()) == Left(
                          "This server does not host this topic-partition."
