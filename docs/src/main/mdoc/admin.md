@@ -117,7 +117,7 @@ def consumerGroupOperations[F[_]: Async: cats.Parallel]: F[Unit] =
     for {
       consumerGroupIds <- client.listConsumerGroups.groupIds
       _                <- client.describeConsumerGroups(consumerGroupIds)
-      _ <- consumerGroupIds.parTraverse { groupId =>
+      _                <- consumerGroupIds.parTraverse { groupId =>
              client.listConsumerGroupOffsets(groupId).partitionsToOffsetAndMetadata
            }
     } yield ()
