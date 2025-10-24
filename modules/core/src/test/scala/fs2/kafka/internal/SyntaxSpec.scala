@@ -59,9 +59,9 @@ final class SyntaxSpec extends BaseSpec {
     it("should cancel future when fiber is cancelled") {
       val test =
         for {
-          latch             <- CountDownLatch[IO](1)
-          isFutureStarted   <- IO(new AtomicBoolean)
-          isFutureCancelled <- IO(new AtomicBoolean)
+          latch                          <- CountDownLatch[IO](1)
+          isFutureStarted                <- IO(new AtomicBoolean)
+          isFutureCancelled              <- IO(new AtomicBoolean)
           futureIO: IO[KafkaFuture[Unit]] = IO {
                                               isFutureStarted.set(true)
                                               // We need to return the original future after calling `whenComplete`, because the future returned by

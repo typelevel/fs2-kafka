@@ -200,7 +200,7 @@ trait BaseGenerators {
     }
 
   val genTimestamp: Gen[Timestamp] = for {
-    long <- Gen.choose(1L, Long.MaxValue)
+    long      <- Gen.choose(1L, Long.MaxValue)
     timestamp <- Gen.oneOf(
                    Seq(
                      Timestamp.createTime(long),

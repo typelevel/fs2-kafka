@@ -251,9 +251,9 @@ object KafkaConsumer {
             case None =>
               for {
                 partitionsMapQueue <- Stream.eval(Queue.unbounded[F, Option[PartitionsMap]])
-                assignmentRef <-
+                assignmentRef      <-
                   Stream.eval(Ref[F].of(Map.empty[TopicPartition, AssignmentSignals[F]]))
-                _ <- Stream.eval(initialEnqueue(assignmentRef, partitionsMapQueue))
+                _   <- Stream.eval(initialEnqueue(assignmentRef, partitionsMapQueue))
                 out <- Stream
                          .fromQueueNoneTerminated(partitionsMapQueue)
                          .interruptWhen(awaitTermination.attempt)
@@ -598,7 +598,7 @@ object KafkaConsumer {
       dispatcher            <- Dispatcher.sequential[F]
       stopConsumingDeferred <- Resource.eval(Deferred[F, Unit])
       withConsumer          <- WithConsumer(mk, settings)
-      actor = {
+      actor                  = {
         implicit val jitter0: Jitter[F]         = jitter
         implicit val logging0: Logging[F]       = logging
         implicit val dispatcher0: Dispatcher[F] = dispatcher

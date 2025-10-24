@@ -1,12 +1,12 @@
-val catsEffectVersion = "3.6.1"
+val catsEffectVersion = "3.6.3"
 
 val catsVersion = "2.6.1"
 
-val confluentVersion = "7.9.0"
+val confluentVersion = "7.9.4"
 
-val fs2Version = "3.12.0"
+val fs2Version = "3.12.2"
 
-val kafkaVersion = "3.9.0"
+val kafkaVersion = "3.9.1"
 
 val testcontainersScalaVersion = "0.43.0"
 
@@ -107,7 +107,7 @@ lazy val docs = project
   .enablePlugins(BuildInfoPlugin, DocusaurusPlugin, MdocPlugin, ScalaUnidocPlugin)
 
 lazy val dependencySettings = Seq(
-  resolvers += "confluent".at("https://packages.confluent.io/maven/"),
+  resolvers            += "confluent".at("https://packages.confluent.io/maven/"),
   libraryDependencies ++= Seq(
     "com.dimafeng"  %% "testcontainers-scala-scalatest" % testcontainersScalaVersion,
     "com.dimafeng"  %% "testcontainers-scala-kafka"     % testcontainersScalaVersion,
@@ -121,7 +121,7 @@ lazy val dependencySettings = Seq(
     else
       Seq(
         compilerPlugin(
-          ("org.typelevel" %% "kind-projector" % "0.13.3").cross(CrossVersion.full)
+          ("org.typelevel" %% "kind-projector" % "0.13.4").cross(CrossVersion.full)
         )
       )
   },
@@ -146,9 +146,9 @@ lazy val mdocSettings = Seq(
   scalacOptions                             --= Seq("-Xfatal-warnings", "-Ywarn-unused"),
   crossScalaVersions                         := Seq(scala213),
   ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(core, vulcan),
-  ScalaUnidoc / unidoc / target := (LocalRootProject / baseDirectory)
+  ScalaUnidoc / unidoc / target              := (LocalRootProject / baseDirectory)
     .value / "website" / "static" / "api",
-  cleanFiles += (ScalaUnidoc / unidoc / target).value,
+  cleanFiles           += (ScalaUnidoc / unidoc / target).value,
   docusaurusCreateSite := docusaurusCreateSite
     .dependsOn(Compile / unidoc)
     .dependsOn(ThisBuild / updateSiteVariables)
@@ -171,7 +171,7 @@ lazy val mdocSettings = Seq(
 lazy val buildInfoSettings = Seq(
   buildInfoPackage := "fs2.kafka.build",
   buildInfoObject  := "info",
-  buildInfoKeys := Seq[BuildInfoKey](
+  buildInfoKeys    := Seq[BuildInfoKey](
     scalaVersion,
     scalacOptions,
     sourceDirectory,
@@ -244,7 +244,7 @@ lazy val publishSettings =
     homepage               := Some(url("https://fd4s.github.io/fs2-kafka")),
     licenses               := List("Apache-2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0.txt")),
     startYear              := Some(2018),
-    headerLicense := Some(
+    headerLicense          := Some(
       de.heikoseeberger
         .sbtheader
         .License
@@ -255,7 +255,7 @@ lazy val publishSettings =
         )
     ),
     headerSources / excludeFilter := HiddenFileFilter,
-    developers := List(
+    developers                    := List(
       tlGitHubDev("vlovgr", "Viktor Lövgren")
         .withEmail("github@vlovgr.se")
         .withUrl(url("https://vlovgr.se")),
@@ -341,7 +341,7 @@ lazy val scalaSettings = Seq(
   Compile / compile / scalacOptions ++= {
     if (tlIsScala3.value) Seq.empty else Seq("-Xsource:3")
   },
-  Test / console / scalacOptions := (Compile / console / scalacOptions).value,
+  Test / console / scalacOptions        := (Compile / console / scalacOptions).value,
   Compile / unmanagedSourceDirectories ++=
     Seq(
       baseDirectory.value / "src" / "main" / {
@@ -379,9 +379,9 @@ ThisBuild / updateSiteVariables := {
 
   val variables =
     Map[String, String](
-      "organization"   -> (LocalRootProject / organization).value,
-      "coreModuleName" -> (core / moduleName).value,
-      "latestVersion"  -> latestVersion.value,
+      "organization"         -> (LocalRootProject / organization).value,
+      "coreModuleName"       -> (core / moduleName).value,
+      "latestVersion"        -> latestVersion.value,
       "scalaPublishVersions" -> {
         val minorVersions = (core / crossScalaVersions).value.map(minorVersion)
         if (minorVersions.size <= 2) minorVersions.mkString(" and ")
