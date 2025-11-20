@@ -366,7 +366,11 @@ def minorVersion(version: String): String = {
 }
 
 val latestVersion = settingKey[String]("Latest stable released version")
-ThisBuild / latestVersion := "3.0.1"
+ThisBuild / latestVersion := tlLatestVersion
+  .value
+  .getOrElse(
+    throw new IllegalStateException("No tagged version found")
+  )
 
 val updateSiteVariables = taskKey[Unit]("Update site variables")
 ThisBuild / updateSiteVariables := {
