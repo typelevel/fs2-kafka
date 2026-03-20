@@ -411,7 +411,7 @@ object KafkaAdminClient {
     /**
       * List the available consumer groups as `ConsumerGroupListing`s.
       */
-    def listings: F[List[ConsumerGroupListing]]
+    def listings: F[List[GroupListing]]
 
   }
 
@@ -421,10 +421,10 @@ object KafkaAdminClient {
     new ListConsumerGroups[F] {
 
       override def groupIds: F[List[String]] =
-        withAdminClient(_.listConsumerGroups.all).map(_.mapToList(_.groupId))
+        withAdminClient(_.listGroups().all).map(_.mapToList(_.groupId))
 
-      override def listings: F[List[ConsumerGroupListing]] =
-        withAdminClient(_.listConsumerGroups.all).map(_.toList)
+      override def listings: F[List[GroupListing]] =
+        withAdminClient(_.listGroups().all).map(_.toList)
 
       override def toString: String =
         "ListConsumerGroups$" + System.identityHashCode(this)

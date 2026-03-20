@@ -110,9 +110,7 @@ object TransactionalKafkaProducer {
         ): F[Chunk[(ProducerRecord[K, V], RecordMetadata)]] =
           if (records.isEmpty) F.pure(Chunk.empty)
           else {
-            val batch =
-              CommittableOffsetBatch.fromFoldableMap(records)(_.offset)
-
+            val batch           = CommittableOffsetBatch.fromFoldableMap(records)(_.offset)
             val consumerGroupId =
               if (batch.consumerGroupIdsMissing || batch.consumerGroupIds.size != 1)
                 F.raiseError(ConsumerGroupException(batch.consumerGroupIds))
