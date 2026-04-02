@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2024 OVO Energy Limited
+ * Copyright 2018 OVO Energy Limited
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -19,14 +19,22 @@ class CommittableProducerRecordsLawsSpec extends BaseCatsSpec {
 
   checkAll(
     "CommittableProducerRecord.traverseLaws",
-    TraverseTests[CommittableProducerRecords[IO, Int, *]]
-      .traverse[Int, Int, Int, Set[Int], Option, Option]
+    TraverseTests[CommittableProducerRecords[IO, Int, *]].traverse[Int, Int, Int, Set[
+      Int
+    ], Option, Option]
   )
 
   checkAll(
     "CommittableProducerRecord.bitraverseLaws",
-    BitraverseTests[CommittableProducerRecords[IO, *, *]]
-      .bitraverse[Option, Int, Int, Int, String, String, String]
+    BitraverseTests[CommittableProducerRecords[IO, *, *]].bitraverse[
+      Option,
+      Int,
+      Int,
+      Int,
+      String,
+      String,
+      String
+    ]
   )
 
 }

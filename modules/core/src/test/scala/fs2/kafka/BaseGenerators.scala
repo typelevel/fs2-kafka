@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2024 OVO Energy Limited
+ * Copyright 2018 OVO Energy Limited
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -89,8 +89,9 @@ trait BaseGenerators {
   def genCommittableOffsetBatch[F[_]](implicit
     F: ApplicativeError[F, Throwable]
   ): Gen[CommittableOffsetBatch[F]] =
-    arbitrary[Map[TopicPartition, OffsetAndMetadata]]
-      .map(CommittableOffsetBatch[F](_, Set.empty, consumerGroupIdsMissing = false, _ => F.unit))
+    arbitrary[Map[TopicPartition, OffsetAndMetadata]].map(
+      CommittableOffsetBatch[F](_, Set.empty, consumerGroupIdsMissing = false, _ => F.unit)
+    )
 
   implicit def arbCommittableOffsetBatch[F[_]](implicit
     F: ApplicativeError[F, Throwable]
@@ -199,7 +200,7 @@ trait BaseGenerators {
     }
 
   val genTimestamp: Gen[Timestamp] = for {
-    long <- Gen.choose(1L, Long.MaxValue)
+    long      <- Gen.choose(1L, Long.MaxValue)
     timestamp <- Gen.oneOf(
                    Seq(
                      Timestamp.createTime(long),

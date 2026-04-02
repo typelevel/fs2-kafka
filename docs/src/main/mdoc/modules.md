@@ -45,8 +45,9 @@ import fs2.kafka.vulcan.{Auth, AvroSettings, SchemaRegistryClientSettings}
 
 val avroSettings =
   AvroSettings {
-    SchemaRegistryClientSettings[IO]("http://localhost:8081")
-      .withAuth(Auth.Basic("username", "password"))
+    SchemaRegistryClientSettings[IO]("http://localhost:8081").withAuth(
+      Auth.Basic("username", "password")
+    )
   }
 ```
 

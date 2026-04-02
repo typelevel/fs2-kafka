@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2024 OVO Energy Limited
+ * Copyright 2018 OVO Energy Limited
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -30,7 +30,7 @@ object MkConsumer {
   implicit def mkConsumerForSync[F[_]](implicit F: Sync[F]): MkConsumer[F] =
     new MkConsumer[F] {
 
-      def apply[G[_]](settings: ConsumerSettings[G, ?, ?]): F[KafkaByteConsumer] = F.delay {
+      def apply[G[_]](settings: ConsumerSettings[G, ?, ?]): F[KafkaByteConsumer] = F.blocking {
         val byteArrayDeserializer = new ByteArrayDeserializer
         new org.apache.kafka.clients.consumer.KafkaConsumer(
           (settings.properties: Map[String, AnyRef]).asJava,

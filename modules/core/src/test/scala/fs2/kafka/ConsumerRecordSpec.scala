@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2024 OVO Energy Limited
+ * Copyright 2018 OVO Energy Limited
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -148,8 +148,9 @@ final class ConsumerRecordSpec extends BaseSpec {
   describe("ConsumerRecord#toString") {
     it("should include headers when present") {
       val record =
-        ConsumerRecord("topic", 0, 1, "key", "value")
-          .withHeaders(Headers(Header("key", Array[Byte]())))
+        ConsumerRecord("topic", 0, 1, "key", "value").withHeaders(
+          Headers(Header("key", Array[Byte]()))
+        )
 
       val expected =
         "ConsumerRecord(topic = topic, partition = 0, offset = 1, key = key, value = value, headers = Headers(key -> []))"

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2024 OVO Energy Limited
+ * Copyright 2018 OVO Energy Limited
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -65,21 +65,18 @@ final class HeadersSpec extends BaseSpec {
     val empty = Headers.empty.asJava
 
     it("add(header) throws IllegalStateException") {
-      a[IllegalStateException] should be thrownBy {
+      a[IllegalStateException] should be thrownBy
         empty.add(Header("key", Array[Byte]()))
-      }
     }
 
     it("add(key, value) throws IllegalStateException") {
-      a[IllegalStateException] should be thrownBy {
+      a[IllegalStateException] should be thrownBy
         empty.add("key", Array())
-      }
     }
 
     it("remove throws IllegalStateException") {
-      a[IllegalStateException] should be thrownBy {
+      a[IllegalStateException] should be thrownBy
         empty.remove("key")
-      }
     }
 
     it("lastHeader returns null") {
@@ -89,9 +86,8 @@ final class HeadersSpec extends BaseSpec {
     it("headers returns empty iterable") {
       assert(!empty.headers("key").iterator.hasNext)
 
-      a[NoSuchElementException] should be thrownBy {
+      a[NoSuchElementException] should be thrownBy
         empty.headers("key").iterator.next()
-      }
     }
 
     it("toArray returns empty array") {
@@ -99,9 +95,8 @@ final class HeadersSpec extends BaseSpec {
     }
 
     it("iterator.next throws NoSuchElementException") {
-      a[NoSuchElementException] should be thrownBy {
+      a[NoSuchElementException] should be thrownBy
         empty.iterator.next()
-      }
     }
 
     it("iterator.hasNext returns false") {
@@ -114,21 +109,18 @@ final class HeadersSpec extends BaseSpec {
     val headers = Headers(header).asJava
 
     it("add(header) throws IllegalStateException") {
-      a[IllegalStateException] should be thrownBy {
+      a[IllegalStateException] should be thrownBy
         headers.add(Header("key", Array[Byte]()))
-      }
     }
 
     it("add(key, value) throws IllegalStateException") {
-      a[IllegalStateException] should be thrownBy {
+      a[IllegalStateException] should be thrownBy
         headers.add("key", Array())
-      }
     }
 
     it("remove throws IllegalStateException") {
-      a[IllegalStateException] should be thrownBy {
+      a[IllegalStateException] should be thrownBy
         headers.remove("key")
-      }
     }
 
     it("lastHeader returns last header") {

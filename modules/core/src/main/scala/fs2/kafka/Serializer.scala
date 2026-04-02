@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2024 OVO Energy Limited
+ * Copyright 2018 OVO Energy Limited
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -216,32 +216,37 @@ object GenericSerializer {
 
   implicit def double[F[_]](implicit F: Sync[F]): Serializer[F, Double] =
     Serializer.delegate {
-      (new org.apache.kafka.common.serialization.DoubleSerializer)
-        .asInstanceOf[org.apache.kafka.common.serialization.Serializer[Double]]
+      (new org.apache.kafka.common.serialization.DoubleSerializer).asInstanceOf[
+        org.apache.kafka.common.serialization.Serializer[Double]
+      ]
     }
 
   implicit def float[F[_]](implicit F: Sync[F]): Serializer[F, Float] =
     Serializer.delegate {
-      (new org.apache.kafka.common.serialization.FloatSerializer)
-        .asInstanceOf[org.apache.kafka.common.serialization.Serializer[Float]]
+      (new org.apache.kafka.common.serialization.FloatSerializer).asInstanceOf[
+        org.apache.kafka.common.serialization.Serializer[Float]
+      ]
     }
 
   implicit def int[F[_]](implicit F: Sync[F]): Serializer[F, Int] =
     Serializer.delegate {
-      (new org.apache.kafka.common.serialization.IntegerSerializer)
-        .asInstanceOf[org.apache.kafka.common.serialization.Serializer[Int]]
+      (new org.apache.kafka.common.serialization.IntegerSerializer).asInstanceOf[
+        org.apache.kafka.common.serialization.Serializer[Int]
+      ]
     }
 
   implicit def long[F[_]](implicit F: Sync[F]): Serializer[F, Long] =
     Serializer.delegate {
-      (new org.apache.kafka.common.serialization.LongSerializer)
-        .asInstanceOf[org.apache.kafka.common.serialization.Serializer[Long]]
+      (new org.apache.kafka.common.serialization.LongSerializer).asInstanceOf[
+        org.apache.kafka.common.serialization.Serializer[Long]
+      ]
     }
 
   implicit def short[F[_]](implicit F: Sync[F]): Serializer[F, Short] =
     Serializer.delegate {
-      (new org.apache.kafka.common.serialization.ShortSerializer)
-        .asInstanceOf[org.apache.kafka.common.serialization.Serializer[Short]]
+      (new org.apache.kafka.common.serialization.ShortSerializer).asInstanceOf[
+        org.apache.kafka.common.serialization.Serializer[Short]
+      ]
     }
 
   implicit def string[F[_]](implicit F: Sync[F]): Serializer[F, String] =

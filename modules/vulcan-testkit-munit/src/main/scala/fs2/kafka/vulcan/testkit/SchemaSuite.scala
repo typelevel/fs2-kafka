@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2024 OVO Energy Limited
+ * Copyright 2018 OVO Energy Limited
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -51,9 +51,8 @@ trait SchemaSuite extends FunSuite {
       .map { case (incompatibility, i) =>
         s"""${i + 1}) ${incompatibility.getType} - ${incompatibility.getMessage}
            |At ${incompatibility.getLocation}
-           |Reader schema fragment: ${incompatibility.getReaderFragment.toString(true)}
-           |Writer schema fragment: ${incompatibility.getWriterFragment.toString(true)}"""
-          .stripMargin
+           |Reader schema fragment: ${incompatibility.getReaderFragment.toString}
+           |Writer schema fragment: ${incompatibility.getWriterFragment.toString}""".stripMargin
       }
       .mkString("\n-----\n")
 
@@ -82,7 +81,7 @@ trait SchemaSuite extends FunSuite {
           private def registrySchema(subject: String): IO[Schema] =
             for {
               metadata <- IO.delay(client.getLatestSchemaMetadata(subject))
-              schema <- IO.delay(
+              schema   <- IO.delay(
                           client.getSchemaById(metadata.getId).asInstanceOf[AvroSchema]
                         )
             } yield schema.rawSchema()

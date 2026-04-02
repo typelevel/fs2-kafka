@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2024 OVO Energy Limited
+ * Copyright 2018 OVO Energy Limited
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -71,8 +71,8 @@ trait KafkaConsumeChunk[F[_], K, V] extends KafkaConsume[F, K, V] {
   private def consume(processor: Chunk[ConsumerRecord[K, V]] => F[CommitNow])(
     chunk: Chunk[CommittableConsumerRecord[F, K, V]]
   )(implicit F: Monad[F]): F[Unit] = {
-    val (offsets, records) = chunk
-      .mapAccumulate(CommittableOffsetBatch.empty)((offsetBatch, committableRecord) =>
+    val (offsets, records) =
+      chunk.mapAccumulate(CommittableOffsetBatch.empty)((offsetBatch, committableRecord) =>
         (offsetBatch.updated(committableRecord.offset), committableRecord.record)
       )
 

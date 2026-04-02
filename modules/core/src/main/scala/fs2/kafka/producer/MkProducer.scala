@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2024 OVO Energy Limited
+ * Copyright 2018 OVO Energy Limited
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -17,8 +17,8 @@ import org.apache.kafka.common.serialization.ByteArraySerializer
   * the fs2-kafka `KafkaProducer`. This is needed in order to instantiate
   * [[fs2.kafka.KafkaProducer]] and [[fs2.kafka.TransactionalKafkaProducer]].<br><br>
   *
-  * By default, the instance provided by [[MkProducer.mkProducerForSync]] will be used. However this
-  * behaviour can be overridden, e.g. for testing purposes, by placing an alternative implicit
+  * By default, the instance provided by [[MkProducer.mkProducerForSync]] will be used. However,
+  * this behaviour can be overridden, e.g. for testing purposes, by placing an alternative implicit
   * instance in lexical scope.
   */
 trait MkProducer[F[_]] {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2024 OVO Energy Limited
+ * Copyright 2018 OVO Energy Limited
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -129,11 +129,6 @@ package kafka {
   }
 
   object TransactionalProducerRecords {
-
-    @deprecated("this is now an identity operation", "3.0.0-M5")
-    def apply[F[_], K, V](
-      chunk: Chunk[CommittableProducerRecords[F, K, V]]
-    ): Chunk[CommittableProducerRecords[F, K, V]] = chunk
 
     /**
       * Creates a new [[TransactionalProducerRecords]] for producing exactly one

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2024 OVO Energy Limited
+ * Copyright 2018 OVO Energy Limited
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -14,7 +14,6 @@ import cats.effect.unsafe.implicits.global
 import cats.effect.IO
 import fs2.kafka.*
 import fs2.kafka.internal.syntax.*
-import fs2.kafka.BaseSpec
 
 import org.apache.kafka.common.header.internals.RecordHeaders
 import org.apache.kafka.common.internals.KafkaFutureImpl
@@ -59,9 +58,9 @@ final class SyntaxSpec extends BaseSpec {
     it("should cancel future when fiber is cancelled") {
       val test =
         for {
-          latch             <- CountDownLatch[IO](1)
-          isFutureStarted   <- IO(new AtomicBoolean)
-          isFutureCancelled <- IO(new AtomicBoolean)
+          latch                          <- CountDownLatch[IO](1)
+          isFutureStarted                <- IO(new AtomicBoolean)
+          isFutureCancelled              <- IO(new AtomicBoolean)
           futureIO: IO[KafkaFuture[Unit]] = IO {
                                               isFutureStarted.set(true)
                                               // We need to return the original future after calling `whenComplete`, because the future returned by

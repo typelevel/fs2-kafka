@@ -417,41 +417,43 @@ object WithGracefulShutdownExampleCE2 extends IOApp.Simple {
     for {
       stoppedDeferred            <- Deferred[IO, Either[Throwable, Unit]] // [1]
       gracefulShutdownStartedRef <- Ref[IO].of(false)                     // [2]
-      _ <- KafkaConsumer
+      _                          <- KafkaConsumer
              .resource(consumerSettings)
              .allocated
-             .bracketCase { case (consumer, _) => // [3]
-               run(consumer)
-                 .attempt
-                 .flatMap { result: Either[Throwable, Unit] => // [4]
-                   gracefulShutdownStartedRef
-                     .get
-                     .flatMap {
-                       case true  => stoppedDeferred.complete(result) // [5]
-                       case false => IO.pure(result).rethrow          // [6]
-                     }
-                 }
-                 .uncancelable // [7]
-             } { case ((consumer, closeConsumer), exitCase) => // [8]
-               (exitCase match {
-                 case Outcome.Errored(e) => handleError(e) // [9]
-                 case _ =>
-                   for {
-                     _ <- gracefulShutdownStartedRef.set(true) // [10]
-                     _ <- consumer.stopConsuming               // [11]
-                     stopResult <-
-                       stoppedDeferred
-                         .get // [12]
-                         .timeoutTo(
-                           10.seconds,
-                           IO.pure(Left(new RuntimeException("Graceful shutdown timed out")))
-                         ) // [13]
-                     _ <- stopResult match { // [14]
-                            case Right(()) => IO.unit
-                            case Left(e)   => handleError(e)
-                          }
-                   } yield ()
-               }).guarantee(closeConsumer) // [15]
+             .bracketCase {
+               case (consumer, _) => // [3]
+                 run(consumer)
+                   .attempt
+                   .flatMap { result: Either[Throwable, Unit] => // [4]
+                     gracefulShutdownStartedRef
+                       .get
+                       .flatMap {
+                         case true  => stoppedDeferred.complete(result) // [5]
+                         case false => IO.pure(result).rethrow          // [6]
+                       }
+                   }
+                   .uncancelable // [7]
+             } {
+               case ((consumer, closeConsumer), exitCase) => // [8]
+                 (exitCase match {
+                   case Outcome.Errored(e) => handleError(e) // [9]
+                   case _                  =>
+                     for {
+                       _          <- gracefulShutdownStartedRef.set(true) // [10]
+                       _          <- consumer.stopConsuming               // [11]
+                       stopResult <-
+                         stoppedDeferred
+                           .get // [12]
+                           .timeoutTo(
+                             10.seconds,
+                             IO.pure(Left(new RuntimeException("Graceful shutdown timed out")))
+                           ) // [13]
+                       _ <- stopResult match { // [14]
+                              case Right(()) => IO.unit
+                              case Left(e)   => handleError(e)
+                            }
+                     } yield ()
+                 }).guarantee(closeConsumer) // [15]
              }
     } yield ()
   }
@@ -500,11 +502,11 @@ object WithGracefulShutdownExampleCE3 extends IOApp.Simple {
       .use { consumer =>          // [1]
         IO.uncancelable { poll => // [2]
           for {
-            runFiber <- run(consumer).start // [3]
-            _ <- poll(runFiber.join).onCancel { // [4]
+            runFiber <- run(consumer).start            // [3]
+            _        <- poll(runFiber.join).onCancel { // [4]
                    for {
-                     _ <- IO(println("Starting graceful shutdown"))
-                     _ <- consumer.stopConsuming // [5]
+                     _               <- IO(println("Starting graceful shutdown"))
+                     _               <- consumer.stopConsuming // [5]
                      shutdownOutcome <-
                        runFiber
                          .join
@@ -546,6 +548,50 @@ object WithGracefulShutdownExampleCE3 extends IOApp.Simple {
 You may notice, that actual graceful shutdown implementation requires a decent amount of low-level handwork. `stopConsuming` is just a building block for making your own graceful shutdown, not a ready-made solution for all needs. This design is intentional, because different applications may need different graceful shutdown logic. For example, what if your application has multiple consumers? Or some other components in your application may also need to participate in a graceful shutdown somehow? Because of that graceful shutdown with `stopConsuming` considered as a low level and advanced feature.
 
 Also note, that even if you implement a graceful shutdown your application may fall with an error. And in this case, a graceful shutdown will not be invoked. It means that your application should be ready to an _at least once_ semantic even when a graceful shutdown is implemented. Or, if you need an _exactly once_ semantic, consider using [transactions](transactions.md).
+
+### Graceful partition revoke
+
+In addition to graceful shutdown of the whole consumer there is an option to configure your consumer to wait for the streams
+to finish processing partition before "releasing" it. Behavior can be enabled via the following settings:
+
+```scala mdoc:silent
+object WithGracefulPartitionRevoke extends IOApp.Simple {
+
+  val run: IO[Unit] = {
+    def processRecord(record: CommittableConsumerRecord[IO, String, String]): IO[Unit] =
+      IO(println(s"Processing record: $record"))
+
+    def run(consumer: KafkaConsumer[IO, String, String]): IO[Unit] = {
+      consumer.subscribeTo("topic") >> consumer
+        .stream
+        .evalMap { msg =>
+          processRecord(msg).as(msg.offset)
+        }
+        .through(commitBatchWithin(100, 15.seconds))
+        .compile
+        .drain
+    }
+
+    val consumerSettings =
+      ConsumerSettings[IO, String, String]
+        .withRebalanceRevokeMode(RebalanceRevokeMode.Graceful)
+        .withSessionTimeout(2.seconds)
+
+    KafkaConsumer
+      .resource(consumerSettings)
+      .use { consumer =>
+        run(consumer)
+      }
+  }
+
+}
+```
+
+Please note that this setting does not guarantee that all the commits will be performed before partition is revoked and
+that `session.timeout.ms` setting is set to lower value. Be aware that awaiting too long for partition processor
+to finish will cause processing of the whole topic to be suspended.
+
+Awaiting for commits to complete might be implemented in the future.
 
 [commitrecovery-default]: @API_BASE_URL@/CommitRecovery$.html#Default:fs2.kafka.CommitRecovery
 [committableconsumerrecord]: @API_BASE_URL@/CommittableConsumerRecord.html

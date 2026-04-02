@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2024 OVO Energy Limited
+ * Copyright 2018 OVO Energy Limited
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -43,7 +43,7 @@ final class CommittableOffsetSpec extends BaseSpec {
 
       assert {
         val offsetAndMetadata = new OffsetAndMetadata(0L, "metadata")
-        val offset =
+        val offset            =
           CommittableOffset[IO](partition, offsetAndMetadata, Some("the-group"), _ => IO.unit)
 
         offset.toString == "CommittableOffset(topic-0 -> (0, metadata), the-group)" &&
@@ -60,7 +60,7 @@ final class CommittableOffsetSpec extends BaseSpec {
 
       assert {
         val offsetAndMetadata = new OffsetAndMetadata(0L)
-        val offset =
+        val offset            =
           CommittableOffset[IO](partition, offsetAndMetadata, Some("the-group"), _ => IO.unit)
 
         offset.toString == "CommittableOffset(topic-0 -> 0, the-group)" &&

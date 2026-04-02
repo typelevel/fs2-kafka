@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2024 OVO Energy Limited
+ * Copyright 2018 OVO Energy Limited
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -10,10 +10,9 @@ import scala.collection.immutable.SortedSet
 import scala.concurrent.duration.*
 
 import cats.data.NonEmptySet
-import cats.effect.{Fiber, IO}
-import cats.effect.std.Queue
+import cats.effect.{Fiber, IO, Ref}
+import cats.effect.std.{Queue, Semaphore}
 import cats.effect.unsafe.implicits.global
-import cats.effect.Ref
 import cats.syntax.all.*
 import fs2.concurrent.SignallingRef
 import fs2.kafka.consumer.KafkaConsumeChunk.CommitNow
@@ -66,13 +65,21 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
             .records
             .map(committable => committable.record.key -> committable.record.value)
             .interruptAfter(10.seconds) // wait some time to catch potentially duplicated records
-            .compile.toVector.unsafeRunSync()
+            .compile
+            .toVector
+            .unsafeRunSync()
 
         consumed should contain theSameElementsAs produced
       }
     }
 
-    it("should consume all records at least once with subscribing for several consumers") {
+    def testMultipleConsumersCorrectConsumption(
+      customizeSettings: ConsumerSettings[IO, String, String] => ConsumerSettings[
+        IO,
+        String,
+        String
+      ]
+    ) = {
       withTopic { topic =>
         createCustomTopic(topic, partitions = 3)
         val produced = (0 until 5).map(n => s"key-$n" -> s"value->$n")
@@ -80,7 +87,7 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
 
         val consumed =
           KafkaConsumer
-            .stream(consumerSettings[IO].withGroupId("test"))
+            .stream(customizeSettings(consumerSettings[IO].withGroupId("test")))
             .subscribeTo(topic)
             .evalMap(IO.sleep(3.seconds).as(_)) // sleep a bit to trigger potential race condition with _.stream
             .records
@@ -100,6 +107,16 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
         // duplication is currently possible.
         res.distinct should contain theSameElementsAs produced
       }
+    }
+
+    it("should consume all records at least once with subscribing for several consumers") {
+      testMultipleConsumersCorrectConsumption(identity)
+    }
+
+    it("should consume all records at least once with subscribing for several consumers in graceful mode") {
+      testMultipleConsumersCorrectConsumption(
+        _.withRebalanceRevokeMode(RebalanceRevokeMode.Graceful)
+      )
     }
 
     it("should consume records with assign by partitions") {
@@ -364,8 +381,12 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
     it("should be able to work with offsets") {
       withTopic { topic =>
         createCustomTopic(topic)
+
+        // Produce records in two chunks to improve chances that records get
+        // assigned different timestamps.
         val produced = (0 until 100).map(n => s"key-$n" -> s"value->$n")
-        publishToKafka(topic, produced)
+        publishToKafka(topic, produced.take(10))
+        publishToKafka(topic, produced.drop(10))
 
         val topicPartition  = new TopicPartition(topic, 0)
         val topicPartitions = Set(topicPartition)
@@ -393,7 +414,7 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
             for {
               end        <- consumer.endOffsets(topicPartitions)
               endTimeout <- consumer.endOffsets(topicPartitions, timeout)
-              _ <- IO(
+              _          <- IO(
                      assert(end == endTimeout && end == Map(topicPartition -> produced.size.toLong))
                    )
             } yield ()
@@ -402,17 +423,17 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
             for {
               earliest        <- consumer.offsetsForTimes(Map(topicPartition -> 0L))
               earliestTimeout <- consumer.offsetsForTimes(Map(topicPartition -> 0L), timeout)
-              _ <-
+              _               <-
                 IO(
                   assert(earliest == earliestTimeout && earliest(topicPartition).get.offset() == 0L)
                 )
               earliestTimestampPlus1 = earliest(topicPartition).get.timestamp() + 1L
-              afterEarliest <-
+              afterEarliest         <-
                 consumer.offsetsForTimes(Map(topicPartition -> earliestTimestampPlus1))
               afterEarliestTimeout <-
                 consumer.offsetsForTimes(Map(topicPartition -> earliestTimestampPlus1), timeout)
               topicPartitionAfterEarliest = afterEarliest(topicPartition).get
-              _ <- IO(
+              _                          <- IO(
                      assert(
                        afterEarliest == afterEarliestTimeout && topicPartitionAfterEarliest
                          .offset() > 0L && topicPartitionAfterEarliest
@@ -567,7 +588,7 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
           fiber2     <- startConsumer(queue, stopSignal)
           _          <- IO.sleep(5.seconds)
           _          <- IO(publishToKafka(topic, produced2))
-          _ <- Stream
+          _          <- Stream
                  .fromQueueUnterminated(queue)
                  .evalMap { committable =>
                    ref.modify { counts =>
@@ -662,7 +683,7 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
           fiber2     <- startConsumer(queue, stopSignal)
           _          <- IO.sleep(5.seconds)
           _          <- IO(publishToKafka(topic, produced2))
-          _ <- Stream
+          _          <- Stream
                  .fromQueueUnterminated(queue)
                  .evalMap { committable =>
                    ref.modify { counts =>
@@ -704,7 +725,7 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
           stopSignal       <- SignallingRef[IO, Boolean](false)
           closedStreamsRef <- Ref[IO].of(Vector.empty[Int])
           assignmentNumRef <- Ref[IO].of(1)
-          _ <- stream
+          _                <- stream
                  .flatMap(_.partitionsMapStream)
                  .filter(_.nonEmpty)
                  .evalMap { assignment =>
@@ -817,7 +838,7 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
         val consumer =
           for {
             queue <- Stream.eval(Queue.unbounded[IO, Option[SortedSet[TopicPartition]]])
-            _ <- KafkaConsumer
+            _     <- KafkaConsumer
                    .stream(consumerSettings[IO])
                    .subscribeTo(topic)
                    .evalMap { consumer =>
@@ -832,12 +853,12 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
           } yield queue
 
         (for {
-          queue1 <- consumer
-          _      <- Stream.eval(IO.sleep(5.seconds))
-          queue2 <- consumer
-          _      <- Stream.eval(IO.sleep(5.seconds))
-          _      <- Stream.eval(queue1.offer(None))
-          _      <- Stream.eval(queue2.offer(None))
+          queue1           <- consumer
+          _                <- Stream.eval(IO.sleep(5.seconds))
+          queue2           <- consumer
+          _                <- Stream.eval(IO.sleep(5.seconds))
+          _                <- Stream.eval(queue1.offer(None))
+          _                <- Stream.eval(queue2.offer(None))
           consumer1Updates <- Stream.eval(
                                 Stream.fromQueueNoneTerminated(queue1).compile.toList
                               )
@@ -869,7 +890,7 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
         val consumer =
           for {
             queue <- Stream.eval(Queue.unbounded[IO, Option[SortedSet[TopicPartition]]])
-            _ <- KafkaConsumer
+            _     <- KafkaConsumer
                    .stream(
                      consumerSettings[IO].withProperties(
                        ConsumerConfig.PARTITION_ASSIGNMENT_STRATEGY_CONFIG -> classOf[
@@ -890,12 +911,12 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
           } yield queue
 
         (for {
-          queue1 <- consumer
-          _      <- Stream.eval(IO.sleep(5.seconds))
-          queue2 <- consumer
-          _      <- Stream.eval(IO.sleep(5.seconds))
-          _      <- Stream.eval(queue1.offer(None))
-          _      <- Stream.eval(queue2.offer(None))
+          queue1           <- consumer
+          _                <- Stream.eval(IO.sleep(5.seconds))
+          queue2           <- consumer
+          _                <- Stream.eval(IO.sleep(5.seconds))
+          _                <- Stream.eval(queue1.offer(None))
+          _                <- Stream.eval(queue2.offer(None))
           consumer1Updates <- Stream.eval(
                                 Stream.fromQueueNoneTerminated(queue1).compile.toList
                               )
@@ -927,63 +948,16 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
           consumer <- KafkaConsumer.stream(consumerSettings[IO]).subscribeTo(topic)
           _        <- Stream.eval(IO.sleep(5.seconds)).concurrently(consumer.records)
           queue    <- Stream.eval(Queue.unbounded[IO, Option[SortedSet[TopicPartition]]])
-          _ <- Stream.eval(
+          _        <- Stream.eval(
                  consumer.assignmentStream.evalTap(as => queue.offer(Some(as))).compile.drain.start
                )
           _       <- Stream.eval(IO.sleep(5.seconds))
           _       <- Stream.eval(queue.offer(None))
           updates <- Stream.eval(Stream.fromQueueNoneTerminated(queue).compile.toList)
-          _ <- Stream.eval(IO(assert {
+          _       <- Stream.eval(IO(assert {
                  updates.length == 1 && updates.head.size == 3
                }))
         } yield ()).compile.drain.unsafeRunSync()
-      }
-    }
-  }
-
-  describe("KafkaConsumer#unsubscribe") {
-    it("should correctly unsubscribe") {
-      withTopic { topic =>
-        createCustomTopic(topic, partitions = 3)
-        val produced = (0 until 1).map(n => s"key-$n" -> s"value->$n")
-        publishToKafka(topic, produced)
-
-        val cons = KafkaConsumer.stream(consumerSettings[IO].withGroupId("test")).subscribeTo(topic)
-
-        val topicStream = (for {
-          cntRef       <- Stream.eval(Ref.of[IO, Int](0))
-          unsubscribed <- Stream.eval(Ref.of[IO, Boolean](false))
-          partitions   <- Stream.eval(Ref.of[IO, Set[TopicPartition]](Set.empty[TopicPartition]))
-
-          consumer1 <- cons
-          consumer2 <- cons
-
-          _ <- Stream(
-                 consumer1.records.evalTap(_ => cntRef.update(_ + 1)),
-                 consumer2
-                   .records
-                   .concurrently(
-                     consumer2
-                       .assignmentStream
-                       .evalTap(assignedTopicPartitions => partitions.set(assignedTopicPartitions))
-                   )
-               ).parJoinUnbounded
-
-          cntValue          <- Stream.eval(cntRef.get)
-          unsubscribedValue <- Stream.eval(unsubscribed.get)
-          _ <- Stream.eval(
-                 if (cntValue >= 3 && !unsubscribedValue)          // wait for some processed elements from first consumer
-                   unsubscribed.set(true) >> consumer1.unsubscribe // unsubscribe
-                 else IO.unit
-               )
-          _ <- Stream.eval(IO(publishToKafka(topic, produced))) // publish some elements to topic
-
-          partitionsValue <- Stream.eval(partitions.get)
-        } yield partitionsValue).interruptAfter(10.seconds)
-
-        val res = topicStream.compile.toVector.unsafeRunSync()
-
-        res.last.size shouldBe 3 // in last message should be all partitions
       }
     }
   }
@@ -1002,7 +976,7 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
 
         val run = for {
           consumedRef <- Ref[IO].of(Vector.empty[(String, String)])
-          _ <- KafkaConsumer
+          _           <- KafkaConsumer
                  .resource(settings)
                  .use { consumer =>
                    for {
@@ -1160,7 +1134,7 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
               _                  <- IO(createCustomTopic(topic, partitions = 2))
               topicsAfter        <- consumer.listTopics
               topicsAfterTimeout <- consumer.listTopics(timeout)
-              _ <-
+              _                  <-
                 IO(
                   assert(
                     topicsAfter.keySet == topicsAfterTimeout.keySet && topicsAfter(topic).size == 2
@@ -1183,7 +1157,7 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
 
         val consumed = for {
           ref <- Ref.of[IO, Vector[(String, String)]](Vector.empty)
-          _ <- KafkaConsumer
+          _   <- KafkaConsumer
                  .stream(consumerSettings[IO])
                  .evalTap(_.assign(topic))
                  .evalMap(IO.sleep(3.seconds).as(_)) // sleep a bit to trigger potential race condition with _.stream
@@ -1193,7 +1167,10 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
                        .traverse(record => ref.getAndUpdate(_ :+ (record.key -> record.value)))
                        .as(CommitNow)
                    )
-                 ).interruptAfter(10.seconds).compile.drain
+                 )
+                 .interruptAfter(10.seconds)
+                 .compile
+                 .drain
           res <- ref.get
         } yield res
 
@@ -1208,6 +1185,95 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
         }.map { case (k, v) => k -> v.offset() }.toMap
 
         actuallyCommitted shouldBe Map(topicPartition -> 5L)
+      }
+    }
+  }
+
+  describe("KafkaConsumer#stream") {
+    it("should wait for previous generation of streams to finish before starting consuming messages with RebalanceRevokeMode#Graceful") {
+      withTopic { topic =>
+        case class RecordedMessage(consumer: String, key: String, value: String)
+        createCustomTopic(topic, partitions = 2) // minimal amount of partitions for two consumers
+        def recordRange(from: Int, _until: Int) =
+          (from until _until).map(n => s"key-$n" -> s"value-$n")
+
+        def produceRange(from: Int, until: Int): IO[Unit] = IO {
+          val produced = recordRange(from, until)
+          publishToKafka(topic, produced)
+        }
+
+        val settings = consumerSettings[IO]
+          .withGroupId("rebalance-test-group")
+          .withRebalanceRevokeMode(RebalanceRevokeMode.Graceful)
+          .withAutoOffsetReset(AutoOffsetReset.EarliestOffsetReset)
+          .withSessionTimeout(7.seconds)
+
+        val consumed = for {
+          secondStreamSubscribed <- Semaphore[IO](0)
+          longOperation          <- Semaphore[IO](0)
+          processingUniqueness   <- Ref.of[IO, Map[String, Semaphore[IO]]](Map.empty)
+          semaphoreForKey         = (key: String) =>
+                              processingUniqueness.modify { map =>
+                                map.get(key) match {
+                                  case Some(sem) => (map, sem)
+                                  case None      =>
+                                    val sem = Semaphore[IO](1).unsafeRunSync()
+                                    (map.updated(key, sem), sem)
+                                }
+                              }
+          _                            <- produceRange(0, 10)
+          concurrentProcessingDetected <-
+            KafkaConsumer
+              .stream(settings)
+              .evalTap(_.subscribeTo(topic))
+              .flatMap(
+                _.stream
+                  .evalMap { r =>
+                    semaphoreForKey(r.record.key).flatMap(
+                      _.permit
+                        .use { _ =>
+                          if (r.record.key == "key-4") {
+                            secondStreamSubscribed.release *> longOperation.acquire *> r
+                              .offset
+                              .commit
+                              .as(
+                                RecordedMessage("1", r.record.key, r.record.value)
+                              )
+                          } else {
+                            r.offset.commit
+                          }
+                        }
+                    )
+                  }
+                  .interruptAfter(5.seconds)
+              )
+              .compile
+              .drain
+              .both {
+                KafkaConsumer
+                  .stream(settings)
+                  .evalTap(_ => secondStreamSubscribed.acquire)
+                  .evalTap(_.subscribeTo(topic))
+                  .evalTap(_ => longOperation.release)
+                  .flatMap(c =>
+                    // infinite stream
+                    c.stream
+                      .evalMap { record =>
+                        semaphoreForKey(record.record.key).flatMap(_.tryAcquire)
+                      }
+                      .collectFirst { case false => true }
+                  )
+                  .compile
+                  .lastOrError
+                  .timeoutTo(5.seconds, IO.pure(false))
+              }
+              .map(_._2)
+        } yield concurrentProcessingDetected
+
+        val concurrentProcessingDetected = consumed.unsafeRunSync()
+
+        // no single key should be processed concurrently
+        concurrentProcessingDetected shouldBe false
       }
     }
   }

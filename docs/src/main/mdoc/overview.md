@@ -33,7 +33,7 @@ resolvers += "confluent" at "https://packages.confluent.io/maven/"
 libraryDependencies += "@ORGANIZATION@" %% "@VULCAN_MODULE_NAME@" % "@LATEST_VERSION@"
 ```
 
-In order to test vulcan codecs against a [schema registry](https://docs.confluent.io/platform/current/schema-registry/index.html) using 
+In order to test vulcan codecs against a [schema registry](https://docs.confluent.io/platform/current/schema-registry/index.html) using
 [munit](https://scalameta.org/munit/), add the following line to your `build.sbt` file.
 
 ```scala
@@ -56,7 +56,7 @@ Please note binary-compatibility is not guaranteed between milestone releases.
 To use the latest snapshot release, add the following lines to your `build.sbt` file.
 
 ```scala
-resolvers += Resolver.sonatypeRepo("snapshots")
+resolvers += Resolver.sonatypeCentralSnapshots
 
 libraryDependencies += "@ORGANIZATION@" %% "@CORE_MODULE_NAME@" % "@LATEST_SNAPSHOT_VERSION@"
 ```

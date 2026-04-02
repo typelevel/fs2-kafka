@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2024 OVO Energy Limited
+ * Copyright 2018 OVO Energy Limited
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -8,6 +8,7 @@ package fs2.kafka
 
 import scala.concurrent.duration.*
 import scala.concurrent.ExecutionContext
+import scala.util.Try
 
 import cats.effect.Resource
 import cats.Show
@@ -150,6 +151,17 @@ sealed abstract class ConsumerSettings[F[_], K, V] {
     * }}}
     */
   def withMaxPollInterval(maxPollInterval: FiniteDuration): ConsumerSettings[F, K, V]
+
+  /**
+    * Returns value for property:
+    *
+    * {{{
+    * ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG
+    * }}}
+    *
+    * Returns a value as a [[FiniteDuration]] for convenience
+    */
+  def sessionTimeout: FiniteDuration
 
   /**
     * Returns a new [[ConsumerSettings]] instance with the specified session timeout. This is
@@ -373,6 +385,17 @@ sealed abstract class ConsumerSettings[F[_], K, V] {
     */
   def withCredentials(credentialsStore: KafkaCredentialStore): ConsumerSettings[F, K, V]
 
+  /**
+    * One of two possible modes of operation for [[KafkaConsumer.partitionsMapStream]]. See
+    * [[RebalanceRevokeMode]] for detailed explanation of differences between them.
+    */
+  def rebalanceRevokeMode: RebalanceRevokeMode
+
+  /**
+    * Creates a new [[ConsumerSettings]] with the specified [[rebalanceRevokeMode]].
+    */
+  def withRebalanceRevokeMode(rebalanceRevokeMode: RebalanceRevokeMode): ConsumerSettings[F, K, V]
+
 }
 
 object ConsumerSettings {
@@ -388,7 +411,8 @@ object ConsumerSettings {
     override val pollTimeout: FiniteDuration,
     override val commitRecovery: CommitRecovery,
     override val recordMetadata: ConsumerRecord[K, V] => String,
-    override val maxPrefetchBatches: Int
+    override val maxPrefetchBatches: Int,
+    override val rebalanceRevokeMode: RebalanceRevokeMode
   ) extends ConsumerSettings[F, K, V] {
 
     override def withCustomBlockingContext(ec: ExecutionContext): ConsumerSettings[F, K, V] =
@@ -421,6 +445,14 @@ object ConsumerSettings {
 
     override def withMaxPollInterval(maxPollInterval: FiniteDuration): ConsumerSettings[F, K, V] =
       withProperty(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, maxPollInterval.toMillis.toString)
+
+    // need to use Try, to avoid separate implementation for scala 2.12
+    override def sessionTimeout: FiniteDuration =
+      properties
+        .get(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG)
+        .flatMap(str => Try(str.toLong).toOption)
+        .map(_.millis)
+        .getOrElse(45000.millis)
 
     override def withSessionTimeout(sessionTimeout: FiniteDuration): ConsumerSettings[F, K, V] =
       withProperty(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, sessionTimeout.toMillis.toString)
@@ -509,6 +541,11 @@ object ConsumerSettings {
     ): ConsumerSettings[F, K, V] =
       withProperties(credentialsStore.properties)
 
+    override def withRebalanceRevokeMode(
+      rebalanceRevokeMode: RebalanceRevokeMode
+    ): ConsumerSettings[F, K, V] =
+      copy(rebalanceRevokeMode = rebalanceRevokeMode)
+
     override def toString: String =
       s"ConsumerSettings(closeTimeout = $closeTimeout, commitTimeout = $commitTimeout, pollInterval = $pollInterval, pollTimeout = $pollTimeout, commitRecovery = $commitRecovery)"
 
@@ -542,7 +579,8 @@ object ConsumerSettings {
       pollTimeout = 50.millis,
       commitRecovery = CommitRecovery.Default,
       recordMetadata = _ => OffsetFetchResponse.NO_METADATA,
-      maxPrefetchBatches = 2
+      maxPrefetchBatches = 2,
+      rebalanceRevokeMode = RebalanceRevokeMode.Eager
     )
 
   def apply[F[_], K, V](

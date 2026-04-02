@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2024 OVO Energy Limited
+ * Copyright 2018 OVO Energy Limited
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -409,9 +409,9 @@ object KafkaAdminClient {
     def groupIds: F[List[String]]
 
     /**
-      * List the available consumer groups as `ConsumerGroupListing`s.
+      * List the available consumer groups as `GroupListing`s.
       */
-    def listings: F[List[ConsumerGroupListing]]
+    def listings: F[List[GroupListing]]
 
   }
 
@@ -421,10 +421,10 @@ object KafkaAdminClient {
     new ListConsumerGroups[F] {
 
       override def groupIds: F[List[String]] =
-        withAdminClient(_.listConsumerGroups.all).map(_.mapToList(_.groupId))
+        withAdminClient(_.listGroups().all).map(_.mapToList(_.groupId))
 
-      override def listings: F[List[ConsumerGroupListing]] =
-        withAdminClient(_.listConsumerGroups.all).map(_.toList)
+      override def listings: F[List[GroupListing]] =
+        withAdminClient(_.listGroups().all).map(_.toList)
 
       override def toString: String =
         "ListConsumerGroups$" + System.identityHashCode(this)

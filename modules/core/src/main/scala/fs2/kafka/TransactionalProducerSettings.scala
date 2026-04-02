@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2024 OVO Energy Limited
+ * Copyright 2018 OVO Energy Limited
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -83,8 +83,8 @@ object TransactionalProducerSettings {
   ): TransactionalProducerSettings[F, K, V] =
     TransactionalProducerSettingsImpl(
       transactionalId = transactionalId,
-      producerSettings = producerSettings
-        .withProperty(ProducerConfig.TRANSACTIONAL_ID_CONFIG, transactionalId)
+      producerSettings =
+        producerSettings.withProperty(ProducerConfig.TRANSACTIONAL_ID_CONFIG, transactionalId)
     )
 
   implicit def transactionalProducerSettingsShow[F[_], K, V]

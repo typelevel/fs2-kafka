@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2024 OVO Energy Limited
+ * Copyright 2018 OVO Energy Limited
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -131,7 +131,8 @@ object KafkaProducerConnection {
             withProducer,
             keySerializer,
             valueSerializer,
-            records
+            records,
+            settings.failFastProduce
           )
 
         override def metrics: G[Map[MetricName, Metric]] =

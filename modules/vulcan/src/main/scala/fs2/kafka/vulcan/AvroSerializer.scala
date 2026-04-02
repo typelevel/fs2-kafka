@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2024 OVO Energy Limited
+ * Copyright 2018 OVO Energy Limited
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -26,7 +26,7 @@ final class AvroSerializer[A] private[vulcan] (
     F: Sync[F]
   ): Resource[F, Serializer[F, A]] =
     codec.schema match {
-      case Left(e) => Resource.pure(Serializer.fail(e.throwable))
+      case Left(e)             => Resource.pure(Serializer.fail(e.throwable))
       case Right(writerSchema) =>
         Resource
           .make(settings.createAvroSerializer(isKey, Some(writerSchema))) { case (ser, _) =>

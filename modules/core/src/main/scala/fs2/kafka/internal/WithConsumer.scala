@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2024 OVO Energy Limited
+ * Copyright 2018 OVO Energy Limited
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -11,6 +11,8 @@ import cats.syntax.all.*
 import fs2.kafka.{ConsumerSettings, KafkaByteConsumer}
 import fs2.kafka.consumer.MkConsumer
 import fs2.kafka.internal.syntax.*
+
+import org.apache.kafka.clients.consumer.CloseOptions
 
 sealed abstract private[kafka] class WithConsumer[F[_]] {
   def blocking[A](f: KafkaByteConsumer => A): F[A]
@@ -37,7 +39,7 @@ private[kafka] object WithConsumer {
 
           }
         }
-      }(_.blocking(_.close(settings.closeTimeout.toJava)))
+      }(_.blocking(_.close(CloseOptions.timeout(settings.closeTimeout.toJava))))
     }
   }
 

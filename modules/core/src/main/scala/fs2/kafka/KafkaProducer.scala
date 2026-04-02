@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2024 OVO Energy Limited
+ * Copyright 2018 OVO Energy Limited
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -172,19 +172,39 @@ object KafkaProducer {
     withProducer: WithProducer[F],
     keySerializer: KeySerializer[F, K],
     valueSerializer: ValueSerializer[F, V],
-    records: ProducerRecords[K, V]
+    records: ProducerRecords[K, V],
+    failFastProduce: Boolean
   ): F[F[ProducerResult[K, V]]] =
     withProducer { (producer, blocking) =>
-      records
-        .traverse(produceRecord(keySerializer, valueSerializer, producer, blocking))
-        .map(_.sequence)
+      def produceRecords(produceRecordError: Option[Promise[Throwable]]) =
+        records
+          .traverse(
+            produceRecord(keySerializer, valueSerializer, producer, blocking, produceRecordError)
+          )
+          .map(_.sequence)
+
+      if (failFastProduce)
+        Async[F]
+          .delay(Promise[Throwable]())
+          .flatMap { produceRecordError =>
+            Async[F]
+              .race(
+                Async[F].fromFutureCancelable(
+                  Async[F].delay((produceRecordError.future, Async[F].unit))
+                ),
+                produceRecords(produceRecordError.some)
+              )
+              .rethrow
+          }
+      else produceRecords(None)
     }
 
   private[kafka] def produceRecord[F[_], K, V](
     keySerializer: KeySerializer[F, K],
     valueSerializer: ValueSerializer[F, V],
     producer: KafkaByteProducer,
-    blocking: Blocking[F]
+    blocking: Blocking[F],
+    produceRecordError: Option[Promise[Throwable]]
   )(implicit
     F: Async[F]
   ): ProducerRecord[K, V] => F[F[(ProducerRecord[K, V], RecordMetadata)]] =
@@ -196,9 +216,11 @@ object KafkaProducer {
               producer.send(
                 javaRecord,
                 { (metadata, exception) =>
-                  if (exception == null)
-                    promise.success((record, metadata))
-                  else promise.failure(exception)
+                  if (exception == null) { promise.success((record, metadata)) }
+                  else {
+                    promise.failure(exception)
+                    produceRecordError.foreach(_.tryFailure(exception))
+                  }
                 }
               )
             }.map(javaFuture =>

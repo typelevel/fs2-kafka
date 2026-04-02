@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2024 OVO Energy Limited
+ * Copyright 2018 OVO Energy Limited
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -168,8 +168,16 @@ final class ProducerSettingsSpec extends BaseSpec {
         )
       }
     }
+
+    it("should provide failFastProduce default value") {
+      assert(settings.failFastProduce == false)
+    }
+
+    it("should be able to set failFastProduce") {
+      assert(settings.withFailFastProduce(true).failFastProduce == true)
+    }
   }
 
-  val settings = ProducerSettings[IO, String, String]
+  private val settings = ProducerSettings[IO, String, String]
 
 }

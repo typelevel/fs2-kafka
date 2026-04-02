@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2024 OVO Energy Limited
+ * Copyright 2018 OVO Energy Limited
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -10,6 +10,9 @@ import cats.effect.unsafe.implicits.global
 import cats.effect.IO
 import cats.syntax.all.*
 import fs2.{Chunk, Stream}
+
+import org.apache.kafka.clients.producer.ProducerConfig
+import org.apache.kafka.common.errors.TimeoutException
 
 final class KafkaProducerSpec extends BaseKafkaSpec {
 
@@ -35,8 +38,8 @@ final class KafkaProducerSpec extends BaseKafkaSpec {
 
       val produced =
         (for {
-          producer <- KafkaProducer.stream(producerSettings[IO])
-          _        <- Stream.eval(IO(producer.toString should startWith("KafkaProducer$")))
+          producer               <- KafkaProducer.stream(producerSettings[IO])
+          _                      <- Stream.eval(IO(producer.toString should startWith("KafkaProducer$")))
           (records, passthrough) <-
             Stream.chunk(
               Chunk
@@ -66,7 +69,7 @@ final class KafkaProducerSpec extends BaseKafkaSpec {
 
       (for {
         producer <- KafkaProducer[IO].stream(producerSettings[IO])
-        records <- Stream.chunk(
+        records  <- Stream.chunk(
                      Chunk
                        .from(toProduce)
                        .map { case (key, value) =>
@@ -91,7 +94,7 @@ final class KafkaProducerSpec extends BaseKafkaSpec {
       val produced =
         (for {
           producer <- KafkaProducer.stream(producerSettings[IO])
-          records = ProducerRecords(toProduce.map { case (key, value) =>
+          records   = ProducerRecords(toProduce.map { case (key, value) =>
                       ProducerRecord(topic, key, value)
                     })
           result <- Stream.eval(producer.produce(records).flatten)
@@ -137,7 +140,7 @@ final class KafkaProducerSpec extends BaseKafkaSpec {
       val result =
         (for {
           producer <- KafkaProducer.stream(producerSettings[IO])
-          result <- Stream.eval {
+          result   <- Stream.eval {
                       producer.produce(ProducerRecords(Nil)).flatten.tupleLeft(passthrough)
                     }
         } yield result).compile.lastOrError.unsafeRunSync()
@@ -155,7 +158,7 @@ final class KafkaProducerSpec extends BaseKafkaSpec {
         (for {
           producer <- KafkaProducer.stream(producerSettings[IO])
           _        <- Stream.eval(IO(producer.toString should startWith("KafkaProducer$")))
-          batched <-
+          batched  <-
             Stream.eval(producer.produceOne_(ProducerRecord(topic, toProduce._1, toProduce._2)))
           _ <- Stream.eval(batched)
         } yield ()).compile.toVector.unsafeRunSync()
@@ -197,7 +200,7 @@ final class KafkaProducerSpec extends BaseKafkaSpec {
         (for {
           producer <- KafkaProducer.stream(producerSettings[IO])
           _        <- Stream.eval(IO(producer.toString should startWith("KafkaProducer$")))
-          batched <- Stream.eval(
+          batched  <- Stream.eval(
                        producer
                          .produceOne(ProducerRecord(topic, toProduce._1, toProduce._2))
                          .map(_.as(passthrough))
@@ -219,7 +222,7 @@ final class KafkaProducerSpec extends BaseKafkaSpec {
         (for {
           producer <- KafkaProducer.stream(producerSettings[IO])
           _        <- Stream.eval(IO(producer.toString should startWith("KafkaProducer$")))
-          batched <- Stream
+          batched  <- Stream
                        .eval(producer.produceOne(topic, toProduce._1, toProduce._2))
                        .map(_.as(passthrough))
           result <- Stream.eval(batched)
@@ -237,7 +240,7 @@ final class KafkaProducerSpec extends BaseKafkaSpec {
       val produced =
         (for {
           producer <- KafkaProducer.stream(producerSettings[IO])
-          records = ProducerRecords(toProduce.map { case (key, value) =>
+          records   = ProducerRecords(toProduce.map { case (key, value) =>
                       ProducerRecord(topic, key, value)
                     })
           result <- Stream.eval(producer.produce(records).flatten)
@@ -256,6 +259,28 @@ final class KafkaProducerSpec extends BaseKafkaSpec {
         consumeNumberKeyedMessagesFrom[String, String](topic, toProduce.size)
 
       consumed should contain theSameElementsAs toProduce
+    }
+  }
+
+  it("should fail fast to produce records with multiple") {
+    withTopic { topic =>
+      val nonExistentTopic = s"non-existent-$topic"
+      val toProduce        = (0 until 1000).map(n => s"key-$n" -> s"value->$n").toList
+      val settings         = producerSettings[IO]
+        .withProperty(ProducerConfig.MAX_BLOCK_MS_CONFIG, "500")
+        .withFailFastProduce(true)
+
+      val error = intercept[TimeoutException] {
+        (for {
+          producer <- KafkaProducer.stream(settings)
+          records   = ProducerRecords(toProduce.map { case (key, value) =>
+                      ProducerRecord(nonExistentTopic, key, value)
+                    })
+          result <- Stream.eval(producer.produce(records).flatten)
+        } yield result).compile.lastOrError.unsafeRunSync()
+      }
+
+      error.getMessage shouldBe s"Topic $nonExistentTopic not present in metadata after 500 ms."
     }
   }
 
