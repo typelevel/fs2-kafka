@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2025 OVO Energy Limited
+ * Copyright 2018 OVO Energy Limited
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -230,13 +230,6 @@ object AdminClientSettings {
       s"AdminClientSettings(closeTimeout = $closeTimeout)"
 
   }
-
-  @deprecated("use the overload that takes an argument for BootstrapServers", "2.0.0")
-  def apply: AdminClientSettings =
-    AdminClientSettingsImpl(
-      properties = Map.empty,
-      closeTimeout = 20.seconds
-    )
 
   def apply(bootstrapServers: String): AdminClientSettings =
     AdminClientSettingsImpl(

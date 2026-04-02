@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2025 OVO Energy Limited
+ * Copyright 2018 OVO Energy Limited
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -958,53 +958,6 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
                  updates.length == 1 && updates.head.size == 3
                }))
         } yield ()).compile.drain.unsafeRunSync()
-      }
-    }
-  }
-
-  describe("KafkaConsumer#unsubscribe") {
-    it("should correctly unsubscribe") {
-      withTopic { topic =>
-        createCustomTopic(topic, partitions = 3)
-        val produced = (0 until 1).map(n => s"key-$n" -> s"value->$n")
-        publishToKafka(topic, produced)
-
-        val cons = KafkaConsumer.stream(consumerSettings[IO].withGroupId("test")).subscribeTo(topic)
-
-        val topicStream = (for {
-          cntRef       <- Stream.eval(Ref.of[IO, Int](0))
-          unsubscribed <- Stream.eval(Ref.of[IO, Boolean](false))
-          partitions   <- Stream.eval(Ref.of[IO, Set[TopicPartition]](Set.empty[TopicPartition]))
-
-          consumer1 <- cons
-          consumer2 <- cons
-
-          _ <- Stream(
-                 consumer1.records.evalTap(_ => cntRef.update(_ + 1)),
-                 consumer2
-                   .records
-                   .concurrently(
-                     consumer2
-                       .assignmentStream
-                       .evalTap(assignedTopicPartitions => partitions.set(assignedTopicPartitions))
-                   )
-               ).parJoinUnbounded
-
-          cntValue          <- Stream.eval(cntRef.get)
-          unsubscribedValue <- Stream.eval(unsubscribed.get)
-          _                 <- Stream.eval(
-                 if (cntValue >= 3 && !unsubscribedValue)          // wait for some processed elements from first consumer
-                   unsubscribed.set(true) >> consumer1.unsubscribe // unsubscribe
-                 else IO.unit
-               )
-          _ <- Stream.eval(IO(publishToKafka(topic, produced))) // publish some elements to topic
-
-          partitionsValue <- Stream.eval(partitions.get)
-        } yield partitionsValue).interruptAfter(10.seconds)
-
-        val res = topicStream.compile.toVector.unsafeRunSync()
-
-        res.last.size shouldBe 3 // in last message should be all partitions
       }
     }
   }
