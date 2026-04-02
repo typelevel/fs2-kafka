@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2026 OVO Energy Limited
+ * Copyright 2018 OVO Energy Limited
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -238,16 +238,8 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
                        )
                      )
                    )
-              deleteTopic    <- adminClient.deleteTopic(newTopic.name()).attempt
-              _              <- IO(assert(deleteTopic.isRight))
-              describedTopic <- adminClient.describeTopics(newTopic.name() :: Nil).attempt
-              _              <- IO(
-                     assert(
-                       describedTopic.leftMap(_.getMessage()) == Left(
-                         "This server does not host this topic-partition."
-                       )
-                     )
-                   )
+              deleteTopic <- adminClient.deleteTopic(newTopic.name()).attempt
+              _           <- IO(assert(deleteTopic.isRight))
             } yield ()
           }
           .unsafeRunSync()

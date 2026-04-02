@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2026 OVO Energy Limited
+ * Copyright 2018 OVO Energy Limited
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -31,7 +31,7 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
 
   describe("creating transactional producers") {
     it("should support defined syntax") {
-      val settings = TransactionalProducerSettings("id", ProducerSettings[IO, String, String])
+      val settings = TransactionalProducerSettings("id", producerSettingsTransactional[IO])
 
       TransactionalKafkaProducer.resource[IO, String, String](settings)
       TransactionalKafkaProducer[IO].resource(settings)
@@ -79,7 +79,7 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
         producer <- TransactionalKafkaProducer.stream(
                       TransactionalProducerSettings(
                         s"id-$topic",
-                        producerSettings[IO].withRetries(Int.MaxValue)
+                        producerSettingsTransactional[IO]
                       )
                     )
         _                      <- Stream.eval(IO(producer.toString should startWith("TransactionalKafkaProducer$")))
@@ -183,7 +183,7 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
         producer <- TransactionalKafkaProducer.stream(
                       TransactionalProducerSettings(
                         s"id-$topic",
-                        producerSettings[IO].withRetries(Int.MaxValue)
+                        producerSettingsTransactional[IO]
                       )
                     )
         offsets = (i: Int) =>
@@ -216,7 +216,7 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
         producer <- TransactionalKafkaProducer.stream(
                       TransactionalProducerSettings(
                         s"id-$topic",
-                        producerSettings[IO].withRetries(Int.MaxValue)
+                        producerSettingsTransactional[IO]
                       )
                     )
         recordsToProduce = toProduce.map { case (key, value) =>
@@ -279,7 +279,7 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
           producer <- TransactionalKafkaProducer.stream(
                         TransactionalProducerSettings(
                           s"id-$topic",
-                          producerSettings[IO].withRetries(Int.MaxValue)
+                          producerSettingsTransactional[IO]
                         )
                       )
           recordsToProduce = toProduce.map { case (key, value) =>
@@ -364,7 +364,7 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
           producer <- TransactionalKafkaProducer.stream(
                         TransactionalProducerSettings(
                           s"id-$topic",
-                          producerSettings[IO].withRetries(Int.MaxValue)
+                          producerSettingsTransactional[IO]
                         )
                       )
           recordsToProduce = toProduce.map { case (key, value) =>
@@ -470,8 +470,7 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
 
       val settings = TransactionalProducerSettings(
         transactionalId = s"fail-fast-$topic",
-        producerSettings = producerSettings[IO]
-          .withRetries(Int.MaxValue)
+        producerSettings = producerSettingsTransactional[IO]
           .withProperty(ProducerConfig.MAX_BLOCK_MS_CONFIG, "10000")
           .withFailFastProduce(true)
       )
@@ -499,7 +498,7 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
           .stream(
             TransactionalProducerSettings(
               transactionalId = s"id-$topic",
-              producerSettings = producerSettings[IO].withRetries(Int.MaxValue)
+              producerSettings = producerSettingsTransactional[IO]
             )
           )
           .evalMap(_.metrics)
@@ -543,7 +542,7 @@ class TransactionalKafkaProducerTimeoutSpec extends BaseKafkaSpec with EitherVal
           producer <- TransactionalKafkaProducer.stream(
                         TransactionalProducerSettings(
                           s"id-$topic",
-                          producerSettings[IO].withRetries(Int.MaxValue)
+                          producerSettingsTransactional[IO]
                         ).withTransactionTimeout(transactionTimeoutInterval - 250.millis)
                       )
           recordsToProduce = toProduce.map { case (key, value) =>

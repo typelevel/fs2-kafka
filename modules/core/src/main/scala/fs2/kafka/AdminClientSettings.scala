@@ -231,13 +231,6 @@ object AdminClientSettings {
 
   }
 
-  @deprecated("use the overload that takes an argument for BootstrapServers", "2.0.0")
-  def apply: AdminClientSettings =
-    AdminClientSettingsImpl(
-      properties = Map.empty,
-      closeTimeout = 20.seconds
-    )
-
   def apply(bootstrapServers: String): AdminClientSettings =
     AdminClientSettingsImpl(
       properties = Map.empty,

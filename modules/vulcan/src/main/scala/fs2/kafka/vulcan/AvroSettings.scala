@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2026 OVO Energy Limited
+ * Copyright 2018 OVO Energy Limited
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -104,12 +104,6 @@ sealed abstract class AvroSettings[F[_]] {
     writerSchema: Option[Schema]
   ): F[(KafkaAvroSerializer, SchemaRegistryClient)]
 
-  @deprecated("use the overload that takes an optional writer schema", "2.5.0-M3")
-  final def createAvroSerializer(
-    isKey: Boolean
-  ): F[(KafkaAvroSerializer, SchemaRegistryClient)] =
-    createAvroSerializer(isKey, writerSchema = None)
-
   /**
     * Creates a new [[AvroSettings]] instance with the specified function for creating
     * `KafkaAvroDeserializer`s from settings. The arguments are [[schemaRegistryClient]], `isKey`,
@@ -131,16 +125,6 @@ sealed abstract class AvroSettings[F[_]] {
     createAvroSerializerWith: (F[SchemaRegistryClient], Boolean, Option[Schema], Map[String, String]) => F[(KafkaAvroSerializer, SchemaRegistryClient)]
     // format: on
   ): AvroSettings[F]
-
-  @deprecated("use the overload that has an `Option[Schema]` argument", "2.5.0-M3")
-  final def withCreateAvroSerializer(
-    // format: off
-    createAvroSerializerWith: (F[SchemaRegistryClient], Boolean, Map[String, String]) => F[(KafkaAvroSerializer, SchemaRegistryClient)]
-    // format: on
-  ): AvroSettings[F] =
-    withCreateAvroSerializer((client, isKey, _, properties) =>
-      createAvroSerializerWith(client, isKey, properties)
-    )
 
   /**
     * Creates a new [[AvroSettings]] instance with the specified function for registering schemas

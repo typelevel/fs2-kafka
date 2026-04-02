@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2026 OVO Energy Limited
+ * Copyright 2018 OVO Energy Limited
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -18,7 +18,7 @@ import scala.util.Try
 import cats.effect.Sync
 import fs2.kafka.internal.converters.collection.*
 
-import com.dimafeng.testcontainers.{ForAllTestContainer, KafkaContainer}
+import com.dimafeng.testcontainers.{ConfluentKafkaContainer, ForAllTestContainer}
 import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.clients.admin.AdminClientConfig
 import org.apache.kafka.clients.admin.NewTopic
@@ -46,23 +46,27 @@ abstract class BaseKafkaSpec extends BaseAsyncSpec with ForAllTestContainer {
 
   override def runTest(testName: String, args: Args) = super.runTest(testName, args)
 
-  private val imageVersion = "7.2.0"
+  private val imageVersion = "8.1.2"
 
   private lazy val imageName = "confluentinc/cp-kafka"
 
-  override val container: KafkaContainer =
-    new KafkaContainer(DockerImageName.parse(s"$imageName:$imageVersion")).configure { container =>
-      container
-        .withEnv("KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR", "1")
-        .withEnv(
-          "KAFKA_TRANSACTION_ABORT_TIMED_OUT_TRANSACTION_CLEANUP_INTERVAL_MS",
-          transactionTimeoutInterval.toMillis.toString
-        )
-        .withEnv("KAFKA_TRANSACTION_STATE_LOG_MIN_ISR", "1")
-        .withEnv("KAFKA_AUTHORIZER_CLASS_NAME", "kafka.security.authorizer.AclAuthorizer")
-        .withEnv("KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND", "true")
+  override val container: ConfluentKafkaContainer =
+    ConfluentKafkaContainer(DockerImageName.parse(s"$imageName:$imageVersion")).configure {
+      container =>
+        container
+          .withEnv("KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR", "1")
+          .withEnv(
+            "KAFKA_TRANSACTION_ABORT_TIMED_OUT_TRANSACTION_CLEANUP_INTERVAL_MS",
+            transactionTimeoutInterval.toMillis.toString
+          )
+          .withEnv("KAFKA_TRANSACTION_STATE_LOG_MIN_ISR", "1")
+          .withEnv(
+            "KAFKA_AUTHORIZER_CLASS_NAME",
+            "org.apache.kafka.metadata.authorizer.StandardAuthorizer"
+          )
+          .withEnv("KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND", "true")
 
-      ()
+        ()
     }
 
   implicit final val stringSerializer: KafkaSerializer[String] = new StringSerializer
@@ -119,6 +123,13 @@ abstract class BaseKafkaSpec extends BaseAsyncSpec with ForAllTestContainer {
 
   final def producerSettings[F[_]](implicit F: Sync[F]): ProducerSettings[F, String, String] =
     ProducerSettings[F, String, String].withProperties(defaultProducerConfig)
+
+  final def producerSettingsTransactional[F[_]](implicit
+    F: Sync[F]
+  ): ProducerSettings[F, String, String] =
+    ProducerSettings[F, String, String]
+      .withProperties(defaultProducerConfig)
+      .withEnableIdempotence(true)
 
   final def withTopic[A](f: String => A): A =
     f(nextTopicName())
@@ -232,9 +243,10 @@ abstract class BaseKafkaSpec extends BaseAsyncSpec with ForAllTestContainer {
 
   private def defaultProducerConfig =
     Map[String, String](
-      ProducerConfig.BOOTSTRAP_SERVERS_CONFIG -> container.bootstrapServers,
-      ProducerConfig.MAX_BLOCK_MS_CONFIG      -> 10000.toString,
-      ProducerConfig.RETRY_BACKOFF_MS_CONFIG  -> 1000.toString
+      ProducerConfig.BOOTSTRAP_SERVERS_CONFIG  -> container.bootstrapServers,
+      ProducerConfig.MAX_BLOCK_MS_CONFIG       -> 10000.toString,
+      ProducerConfig.RETRY_BACKOFF_MS_CONFIG   -> 1000.toString,
+      ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG -> "false"
     )
 
   def publishToKafka[T](

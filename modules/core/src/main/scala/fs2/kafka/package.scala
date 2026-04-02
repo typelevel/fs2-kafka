@@ -130,11 +130,6 @@ package kafka {
 
   object TransactionalProducerRecords {
 
-    @deprecated("this is now an identity operation", "3.0.0-M5")
-    def apply[F[_], K, V](
-      chunk: Chunk[CommittableProducerRecords[F, K, V]]
-    ): Chunk[CommittableProducerRecords[F, K, V]] = chunk
-
     /**
       * Creates a new [[TransactionalProducerRecords]] for producing exactly one
       * [[CommittableProducerRecords]]

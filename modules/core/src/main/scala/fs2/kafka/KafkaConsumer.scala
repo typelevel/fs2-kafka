@@ -13,7 +13,7 @@ import scala.collection.immutable.SortedSet
 import scala.concurrent.duration.FiniteDuration
 import scala.util.matching.Regex
 
-import cats.{Applicative, Foldable, Functor, Reducible}
+import cats.{Applicative, Foldable, Reducible}
 import cats.data.{NonEmptySet, OptionT}
 import cats.effect.*
 import cats.effect.implicits.*
@@ -682,7 +682,7 @@ object KafkaConsumer {
    * Extension methods for operating on a `KafkaConsumer` in a `Stream` context without needing
    * to explicitly use operations such as `flatMap` and `evalTap`
    */
-  implicit final class StreamOps[F[_]: Functor, K, V](self: Stream[F, KafkaConsumer[F, K, V]]) {
+  implicit final class StreamOps[F[_], K, V](self: Stream[F, KafkaConsumer[F, K, V]]) {
 
     /**
       * Subscribes a consumer to the specified topics within the [[Stream]] context. See
