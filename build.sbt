@@ -16,7 +16,6 @@ val scala213 = "2.13.18"
 val scala3   = "3.3.7"
 
 ThisBuild / tlBaseVersion := "4.0"
-ThisBuild / tlJdkRelease  := Some(11)
 
 lazy val root = project
   .in(file("."))
