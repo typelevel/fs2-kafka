@@ -1,29 +1,30 @@
-val catsEffectVersion          = "3.6.3"
-val catsVersion                = "2.6.1"
-val confluentVersion           = "7.9.4"
-val fs2Version                 = "3.12.2"
-val kafkaVersion               = "3.9.1"
-val testcontainersScalaVersion = "0.43.0"
+val avroVersion                = "1.12.1"
+val catsEffectVersion          = "3.7.0"
+val catsVersion                = "2.13.0"
+val confluentVersion           = "8.2.0"
 val disciplineVersion          = "2.3.0"
-val logbackVersion             = "1.3.15"
+val fs2Version                 = "3.13.0"
+val kafkaVersion               = "4.2.0"
+val logbackVersion             = "1.5.32"
+val munitVersion               = "1.2.4"
+val slf4jVersion               = "1.7.36"
+val testcontainersScalaVersion = "0.44.1"
 val vulcanVersion              = "1.12.0"
-val munitVersion               = "0.7.29"
 
-val scala212 = "2.12.20"
-val scala213 = "2.13.17"
-val scala3   = "3.3.6"
+val scala212 = "2.12.21"
+val scala213 = "2.13.18"
+val scala3   = "3.3.7"
 
 ThisBuild / tlBaseVersion := "4.0"
 
-lazy val `fs2-kafka` = project
+lazy val root = project
   .in(file("."))
   .settings(
-    // Prevent spurious "mimaPreviousArtifacts is empty, not analyzing binary compatibility" message for root project
-    mimaReportBinaryIssues := {},
-    scalaSettings,
     noPublishSettings,
-    console        := (core / Compile / console).value,
-    Test / console := (core / Test / console).value
+    scalaSettings,
+    mimaPreviousArtifacts := Set.empty,
+    console               := (core / Compile / console).value,
+    Test / console        := (core / Test / console).value
   )
   .enablePlugins(TypelevelMimaPlugin)
   .aggregate(core, vulcan, `vulcan-testkit-munit`)
@@ -35,9 +36,14 @@ lazy val core = project
     name       := moduleName.value,
     dependencySettings ++ Seq(
       libraryDependencies ++= Seq(
-        "co.fs2"          %% "fs2-core"      % fs2Version,
-        "org.typelevel"   %% "cats-effect"   % catsEffectVersion,
-        "org.apache.kafka" % "kafka-clients" % kafkaVersion
+        "co.fs2"          %% "fs2-core"           % fs2Version,
+        "org.apache.kafka" % "kafka-clients"      % kafkaVersion,
+        "org.slf4j"        % "slf4j-api"          % slf4jVersion,
+        "org.typelevel"   %% "cats-core"          % catsVersion,
+        "org.typelevel"   %% "cats-effect-kernel" % catsEffectVersion,
+        "org.typelevel"   %% "cats-effect-std"    % catsEffectVersion,
+        "org.typelevel"   %% "cats-effect"        % catsEffectVersion,
+        "org.typelevel"   %% "cats-kernel"        % catsVersion
       )
     ),
     publishSettings,
@@ -52,8 +58,14 @@ lazy val vulcan = project
     name       := moduleName.value,
     dependencySettings ++ Seq(
       libraryDependencies ++= Seq(
-        "com.github.fd4s" %% "vulcan"                % vulcanVersion,
-        "io.confluent"     % "kafka-avro-serializer" % confluentVersion
+        "com.github.fd4s" %% "vulcan"                       % vulcanVersion,
+        "io.confluent"     % "kafka-avro-serializer"        % confluentVersion,
+        "io.confluent"     % "kafka-schema-registry-client" % confluentVersion,
+        "io.confluent"     % "kafka-schema-serializer"      % confluentVersion,
+        "org.apache.avro"  % "avro"                         % avroVersion,
+        "org.typelevel"   %% "cats-core"                    % catsVersion,
+        "org.typelevel"   %% "cats-effect-kernel"           % catsEffectVersion,
+        "org.typelevel"   %% "cats-effect"                  % catsEffectVersion
       )
     ),
     publishSettings,
@@ -69,7 +81,12 @@ lazy val `vulcan-testkit-munit` = project
     name       := moduleName.value,
     dependencySettings ++ Seq(
       libraryDependencies ++= Seq(
-        "org.scalameta" %% "munit" % munitVersion
+        "com.github.fd4s" %% "vulcan"                       % vulcanVersion,
+        "io.confluent"     % "kafka-schema-registry-client" % confluentVersion,
+        "org.apache.avro"  % "avro"                         % avroVersion,
+        "org.scalameta"   %% "munit-diff"                   % munitVersion,
+        "org.scalameta"   %% "munit"                        % munitVersion,
+        "org.typelevel"   %% "cats-effect"                  % catsEffectVersion
       )
     ),
     publishSettings,
@@ -241,9 +258,7 @@ lazy val publishSettings =
     ),
     headerSources / excludeFilter := HiddenFileFilter,
     developers                    := List(
-      tlGitHubDev("vlovgr", "Viktor Lövgren")
-        .withEmail("github@vlovgr.se")
-        .withUrl(url("https://vlovgr.se")),
+      tlGitHubDev("vlovgr", "Viktor Rudebeck").withUrl(url("https://vlovgr.se")),
       tlGitHubDev("bplommer", "Ben Plommer"),
       tlGitHubDev("LMNet", "Yuriy Badalyantc").withEmail("lmnet89@gmail.com"),
       tlGitHubDev("aartigao", "Alan Artigao").withEmail("alanartigao@gmail.com")
@@ -253,56 +268,7 @@ lazy val publishSettings =
 ThisBuild / mimaBinaryIssueFilters ++= {
   import com.typesafe.tools.mima.core.*
   Seq(
-    ProblemFilters.exclude[Problem]("fs2.kafka.internal.*"),
-    ProblemFilters.exclude[MissingClassProblem]("kafka.utils.VerifiableProperties"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.kafka.AdminClientSettings.apply"),
-    ProblemFilters.exclude[DirectMissingMethodProblem](
-      "fs2.kafka.TransactionalProducerRecords.apply"
-    ),
-    ProblemFilters.exclude[DirectMissingMethodProblem](
-      "fs2.kafka.vulcan.AvroSettings.createAvroSerializer"
-    ),
-    ProblemFilters.exclude[DirectMissingMethodProblem](
-      "fs2.kafka.vulcan.AvroSettings.withCreateAvroSerializer"
-    ),
-    ProblemFilters.exclude[InheritedNewAbstractMethodProblem](
-      "fs2.kafka.KafkaConsumer.offsetsForTimes"
-    ),
-    ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("fs2.kafka.KafkaConsumer.listTopics"),
-    ProblemFilters.exclude[ReversedMissingMethodProblem](
-      "fs2.kafka.ProducerSettings.failFastProduce"
-    ),
-    ProblemFilters.exclude[ReversedMissingMethodProblem](
-      "fs2.kafka.ProducerSettings.withFailFastProduce"
-    ),
-    ProblemFilters.exclude[DirectMissingMethodProblem](
-      "fs2.kafka.ProducerSettings#ProducerSettingsImpl.copy"
-    ),
-    ProblemFilters.exclude[DirectMissingMethodProblem](
-      "fs2.kafka.ProducerSettings#ProducerSettingsImpl.this"
-    ),
-    ProblemFilters.exclude[DirectMissingMethodProblem](
-      "fs2.kafka.ProducerSettings#ProducerSettingsImpl.apply"
-    ),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.kafka.KafkaProducer.produceRecord"),
-    ProblemFilters.exclude[ReversedMissingMethodProblem](
-      "fs2.kafka.ConsumerSettings.sessionTimeout"
-    ),
-    ProblemFilters.exclude[ReversedMissingMethodProblem](
-      "fs2.kafka.ConsumerSettings.rebalanceRevokeMode"
-    ),
-    ProblemFilters.exclude[ReversedMissingMethodProblem](
-      "fs2.kafka.ConsumerSettings.withRebalanceRevokeMode"
-    ),
-    ProblemFilters.exclude[DirectMissingMethodProblem](
-      "fs2.kafka.ConsumerSettings#ConsumerSettingsImpl.copy"
-    ),
-    ProblemFilters.exclude[DirectMissingMethodProblem](
-      "fs2.kafka.ConsumerSettings#ConsumerSettingsImpl.this"
-    ),
-    ProblemFilters.exclude[DirectMissingMethodProblem](
-      "fs2.kafka.ConsumerSettings#ConsumerSettingsImpl.apply"
-    )
+    ProblemFilters.exclude[Problem]("fs2.kafka.internal.*")
   )
 }
 
