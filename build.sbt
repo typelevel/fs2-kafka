@@ -1,32 +1,19 @@
-val catsEffectVersion = "3.6.3"
-
-val catsVersion = "2.6.1"
-
-val confluentVersion = "7.9.4"
-
-val fs2Version = "3.12.2"
-
-val kafkaVersion = "3.9.1"
-
+val catsEffectVersion          = "3.6.3"
+val catsVersion                = "2.6.1"
+val confluentVersion           = "7.9.4"
+val fs2Version                 = "3.12.2"
+val kafkaVersion               = "3.9.1"
 val testcontainersScalaVersion = "0.43.0"
-
-val disciplineVersion = "2.3.0"
-
-val logbackVersion = "1.3.15"
-
-val vulcanVersion = "1.12.0"
-
-val munitVersion = "0.7.29"
+val disciplineVersion          = "2.3.0"
+val logbackVersion             = "1.3.15"
+val vulcanVersion              = "1.12.0"
+val munitVersion               = "0.7.29"
 
 val scala212 = "2.12.20"
-
 val scala213 = "2.13.17"
+val scala3   = "3.3.6"
 
-val scala3 = "3.3.6"
-
-ThisBuild / tlBaseVersion := "3.9"
-
-ThisBuild / tlCiReleaseBranches := Seq("series/3.x")
+ThisBuild / tlBaseVersion := "4.0"
 
 lazy val `fs2-kafka` = project
   .in(file("."))
@@ -210,8 +197,6 @@ lazy val metadataSettings = Seq(
 val OldGuardJava = JavaSpec.temurin("8")
 val LTSJava      = JavaSpec.temurin("21")
 
-ThisBuild / githubWorkflowTargetBranches := Seq("series/*")
-
 ThisBuild / githubWorkflowBuild := Seq(
   WorkflowStep.Sbt(List("ci")),
   WorkflowStep.Sbt(
@@ -249,7 +234,7 @@ lazy val publishSettings =
         .sbtheader
         .License
         .ALv2(
-          s"${startYear.value.get}-${java.time.Year.now}",
+          s"${startYear.value.get}",
           "OVO Energy Limited",
           HeaderLicenseStyle.SpdxSyntax
         )
