@@ -24,7 +24,7 @@ import org.apache.kafka.common.PartitionInfo
   * [[KafkaProducer]] instances. All [[KafkaProducer]] instances created from an given
   * [[KafkaProducerConnection]] share a single underlying connection.
   */
-sealed abstract class KafkaProducerConnection[F[_]] {
+abstract class KafkaProducerConnection[F[_]] {
 
   def produce[K: KeySerializer[F, *], V: ValueSerializer[F, *]](
     records: ProducerRecords[K, V]
