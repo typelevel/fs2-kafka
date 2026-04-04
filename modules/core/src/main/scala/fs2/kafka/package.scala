@@ -9,6 +9,7 @@ package fs2
 import scala.concurrent.duration.FiniteDuration
 
 import cats.effect.*
+import cats.Parallel
 import cats.Traverse
 
 import org.apache.kafka.clients.producer.RecordMetadata
@@ -82,8 +83,9 @@ package object kafka {
     * happens first. If there are no offsets to commit within a time window, no attempt will be made
     * to commit offsets for that time window.
     */
-  def commitBatchWithin[F[_]](n: Int, d: FiniteDuration)(implicit
-    F: Temporal[F]
+  def commitBatchWithin[F[_]: Parallel: Temporal](
+    n: Int,
+    d: FiniteDuration
   ): Pipe[F, CommittableOffset[F], Unit] =
     _.groupWithin(n, d).evalMap(CommittableOffsetBatch.fromFoldable(_).commit)
 

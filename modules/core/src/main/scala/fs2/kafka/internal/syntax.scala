@@ -129,6 +129,22 @@ private[kafka] object syntax {
     def updatedIfAbsent(k: K, v: => V): Map[K, V] =
       if (map.contains(k)) map else map.updated(k, v)
 
+    /**
+      * Like `updatedWith` for Scala 2.13+ but for Scala 2.12 compatibility.
+      */
+    def updatedUsing(key: K)(f: Option[V] => Option[V]): Map[K, V] = {
+      val prev = map.get(key)
+      f(prev) match {
+        case None if prev.isEmpty         => map
+        case None                         => map - key
+        case Some(next) if eq(prev, next) => map
+        case Some(next)                   => map.updated(key, next)
+      }
+    }
+
+    private[this] def eq(prev: Option[V], next: V): Boolean =
+      prev.exists(_.asInstanceOf[AnyRef] eq next.asInstanceOf[AnyRef])
+
   }
 
   implicit final class MapWrappedValueSyntax[F[_], K, V](

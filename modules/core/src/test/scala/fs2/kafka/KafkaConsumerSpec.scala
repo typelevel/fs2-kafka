@@ -1091,7 +1091,7 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
   describe("KafkaConsumer#commitAsync") {
     it("should commit offsets of messages from the topic to which consumer assigned") {
       commitTest { case (consumer, offsetBatch) =>
-        consumer.commitAsync(offsetBatch.offsets)
+        consumer.commitAsync(offsetBatch.offsets.values.head)
       }
     }
   }
@@ -1099,7 +1099,7 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
   describe("KafkaConsumer#commitSync") {
     it("should commit offsets of messages from the topic to which consumer assigned") {
       commitTest { case (consumer, offsetBatch) =>
-        consumer.commitSync(offsetBatch.offsets)
+        consumer.commitSync(offsetBatch.offsets.values.head)
       }
     }
   }
@@ -1304,7 +1304,7 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
           _                    <- Stream.eval(commit(consumer, consumed))
           committed            <- Stream.eval(consumer.committed(topicPartitions))
           committedWithTimeout <- Stream.eval(consumer.committed(topicPartitions, 10.seconds))
-        } yield List(consumed.offsets, committed, committedWithTimeout)
+        } yield List(consumed.offsets.values.head, committed, committedWithTimeout)
       }.compile.lastOrError.unsafeRunSync()
 
       val actuallyCommitted = withKafkaConsumer(defaultConsumerProperties) { consumer =>

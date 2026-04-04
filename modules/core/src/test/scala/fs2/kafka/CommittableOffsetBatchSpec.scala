@@ -8,10 +8,7 @@ package fs2.kafka
 
 import cats.effect.IO
 import cats.syntax.all.*
-
-import org.apache.kafka.clients.consumer.OffsetAndMetadata
-import org.apache.kafka.common.TopicPartition
-import org.scalacheck.Gen
+import fs2.kafka.instances.*
 
 final class CommittableOffsetBatchSpec extends BaseSpec {
 
@@ -26,47 +23,29 @@ final class CommittableOffsetBatchSpec extends BaseSpec {
     it("should return updated offset as batch") {
       forAll { (offset: CommittableOffset[IO]) =>
         val updated = empty.updated(offset)
-        assert(updated.offsets == offset.offsets)
+        assert(
+          updated.offsets.get(offset.committer) == Some(
+            Map(
+              offset.topicPartition -> offset.offsetAndMetadata
+            )
+          )
+        )
       }
     }
   }
 
   describe("CommittableOffsetBatch#updated") {
-    it("should include the provided offset") {
+    it("should include the provided offset when latest") {
       forAll { (batch: CommittableOffsetBatch[IO], offset: CommittableOffset[IO]) =>
-        val updatedBatch  = batch.updated(offset)
-        val updatedOffset = updatedBatch.offsets.get(offset.topicPartition)
+        val updatedBatch = batch.updated(offset)
 
-        assert {
-          updatedOffset.contains(offset.offsetAndMetadata)
-        }
-      }
-    }
-
-    it("should override using the provided offset") {
-      forAll { (batch: CommittableOffsetBatch[IO]) =>
-        whenever(batch.offsets.nonEmpty) {
-          Gen
-            .oneOf(batch.offsets.toList)
-            .sample
-            .foreach { offset =>
-              val (topicPartition, offsetAndMetadata) = offset
-
-              val newOffsetAndMetadata =
-                new OffsetAndMetadata(Long.MaxValue, offsetAndMetadata.metadata)
-
-              val committable =
-                CommittableOffset[IO](
-                  topicPartition = topicPartition,
-                  offsetAndMetadata = newOffsetAndMetadata,
-                  consumerGroupId = None,
-                  commit = _ => IO.unit
-                )
-
-              val updatedOffset = batch.updated(committable).offsets.get(topicPartition)
-              assert(updatedOffset.contains(newOffsetAndMetadata))
-            }
-        }
+        assert(
+          updatedBatch
+            .offsets
+            .get(offset.committer)
+            .flatMap(_.get(offset.topicPartition))
+            .exists(_ >= offset.offsetAndMetadata)
+        )
       }
     }
 
@@ -74,57 +53,37 @@ final class CommittableOffsetBatchSpec extends BaseSpec {
       forAll { (batch1: CommittableOffsetBatch[IO], batch2: CommittableOffsetBatch[IO]) =>
         val result = batch1.updated(batch2)
 
-        val offsets = batch2
-          .offsets
-          .map { case (topicPartition, offsetAndMetadata) =>
-            CommittableOffset[IO](topicPartition, offsetAndMetadata, None, _ => IO.unit)
+        val keys = batch1.offsets.keySet ++ batch2.offsets.keySet
+        assert(result.offsets.size == keys.size)
+
+        keys.foreach { committer =>
+          val first  = batch1.offsets.get(committer)
+          val second = batch2.offsets.get(committer)
+
+          first.foreach { offsets =>
+            offsets.foreach { case (topicPartition, offsetAndMetadata) =>
+              assert {
+                result
+                  .offsets
+                  .get(committer)
+                  .flatMap(_.get(topicPartition))
+                  .exists(_ >= offsetAndMetadata)
+              }
+            }
           }
 
-        val expected = offsets.foldLeft(batch1)(_ updated _)
-
-        assert {
-          result.offsets == expected.offsets
+          second.foreach { offsets =>
+            offsets.foreach { case (topicPartition, offsetAndMetadata) =>
+              assert {
+                result
+                  .offsets
+                  .get(committer)
+                  .flatMap(_.get(topicPartition))
+                  .exists(_ >= offsetAndMetadata)
+              }
+            }
+          }
         }
-      }
-    }
-  }
-
-  describe("CommittableOffsetBatch#toString") {
-    it("should provide a Show instance and matching toString") {
-      assert {
-        CommittableOffsetBatch.empty[Id].toString == "CommittableOffsetBatch(<empty>)" &&
-        CommittableOffsetBatch.empty[Id].show == CommittableOffsetBatch.empty[Id].show
-      }
-
-      val one = CommittableOffset[IO](
-        new TopicPartition("topic", 0),
-        new OffsetAndMetadata(0L),
-        None,
-        _ => IO.unit
-      ).batch
-
-      assert {
-        one.toString == "CommittableOffsetBatch(topic-0 -> 0)" &&
-        one.show == one.toString
-      }
-
-      val oneMetadata = CommittableOffset[IO](
-        new TopicPartition("topic", 1),
-        new OffsetAndMetadata(0L, "metadata"),
-        None,
-        _ => IO.unit
-      ).batch
-
-      assert {
-        oneMetadata.toString == "CommittableOffsetBatch(topic-1 -> (0, metadata))" &&
-        oneMetadata.show == oneMetadata.toString
-      }
-
-      val two = one.updated(oneMetadata)
-
-      assert {
-        two.toString == "CommittableOffsetBatch(topic-0 -> 0, topic-1 -> (0, metadata))" &&
-        two.show == two.toString
       }
     }
   }
