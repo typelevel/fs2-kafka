@@ -15,7 +15,8 @@ import fs2.kafka.instances.*
 import fs2.kafka.internal.syntax.*
 
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
-import org.apache.kafka.common.{KafkaException, TopicPartition}
+import org.apache.kafka.clients.consumer.RetriableCommitFailedException
+import org.apache.kafka.common.TopicPartition
 
 /**
   * [[CommitTimeoutException]] indicates that offset commit took longer than the configured
@@ -25,7 +26,7 @@ import org.apache.kafka.common.{KafkaException, TopicPartition}
 sealed abstract class CommitTimeoutException(
   timeout: FiniteDuration,
   offsets: Map[TopicPartition, OffsetAndMetadata]
-) extends KafkaException({
+) extends RetriableCommitFailedException({
       offsets
         .toList
         .sorted
