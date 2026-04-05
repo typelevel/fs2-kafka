@@ -40,6 +40,12 @@ In order to test vulcan codecs against a [schema registry](https://docs.confluen
 libraryDependencies += "@ORGANIZATION@" %% "@VULCAN_TESTKIT_MUNIT_MODULE_NAME@" % "@LATEST_VERSION@"
 ```
 
+#### External Modules
+
+Following is an incomplete list of third-party integrations.
+
+- [trace4cats-kafka](https://github.com/trace4cats/trace4cats-kafka)
+
 ### Signatures
 
 Stable release artifacts are signed with the [`E97C 64AB 4987 7F74`](https://keys.openpgp.org/search?q=D9A5006CBC771CEAEB0CA118E97C64AB49877F74) key.
@@ -70,9 +76,22 @@ Refer to the table below for dependencies and version support across modules.
 | `@CORE_MODULE_NAME@`   | [FS2 @FS2_VERSION@](https://github.com/functional-streams-for-scala/fs2), [Apache Kafka Client @KAFKA_VERSION@](https://github.com/apache/kafka)                  | Scala @CORE_CROSS_SCALA_VERSIONS@   |
 | `@VULCAN_MODULE_NAME@` | [Vulcan @VULCAN_VERSION@](https://github.com/fd4s/vulcan), [Confluent Kafka Avro Serializer @CONFLUENT_VERSION@](https://github.com/confluentinc/schema-registry) | Scala @VULCAN_CROSS_SCALA_VERSIONS@ |
 
+## Adopters
+
+Following are some companies using FS2 Kafka in production.<br>
+Feel free to raise a pull request to add your company to the list.
+
+- [ITV](https://github.com/itv)
+- [OVO Energy](https://github.com/ovotech)
+- [Stuart](https://github.com/StuartApp)
+
 ## Inspiration
 
 Library is heavily inspired by ideas from [Alpakka Kafka](https://github.com/akka/alpakka-kafka).
+
+## Participation
+
+FS2 Kafka embraces pure, typeful, idiomatic functional programming in Scala, and wants to provide a safe and friendly environment for teaching, learning, and contributing as described in the [Scala Code of Conduct](https://www.scala-lang.org/conduct/).
 
 ## License
 
