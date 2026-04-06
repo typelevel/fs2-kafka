@@ -96,7 +96,7 @@ class Index extends React.Component {
     );
 
     const index =
-      `[![GitHub Actions](https://img.shields.io/github/actions/workflow/status/fd4s/fs2-kafka/ci.yml?branch=main)](https://github.com/fd4s/fs2-kafka/actions) [![Discord](https://img.shields.io/discord/632277896739946517?color=5865f2)](https://discord.gg/XF3CXcMzqD) [![Version](https://img.shields.io/badge/version-v${latestVersionBadge}-orange.svg)](https://index.scala-lang.org/fd4s/fs2-kafka)
+      `[![GitHub Actions](https://img.shields.io/github/actions/workflow/status/typelevel/fs2-kafka/ci.yml?branch=main)](https://github.com/typelevel/fs2-kafka/actions) [![Discord](https://img.shields.io/discord/632277896739946517?color=5865f2)](https://discord.gg/XF3CXcMzqD) [![Version](https://img.shields.io/badge/version-v${latestVersionBadge}-orange.svg)](https://index.scala-lang.org/typelevel/fs2-kafka)
 
 Functional streams for Kafka with [FS2](https://fs2.io) and the official Apache Kafka client.<br>
 Project is under active development. Feedback and contributions welcome.
@@ -108,7 +108,7 @@ To get started with [sbt](https://scala-sbt.org), simply add the following line 
 libraryDependencies += "${organization}" %% "${coreModuleName}" % "${latestVersion}"
 \`\`\`
 
-Published for Scala ${scalaPublishVersions}. For changes, refer to the [release notes](https://github.com/fd4s/fs2-kafka/releases).
+Published for Scala ${scalaPublishVersions}. For changes, refer to the [release notes](https://github.com/typelevel/fs2-kafka/releases).
 `.trim();
 
     return (

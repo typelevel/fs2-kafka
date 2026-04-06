@@ -164,7 +164,7 @@ lazy val mdocSettings = Seq(
       .value,
   // format: off
   ScalaUnidoc / unidoc / scalacOptions ++= Seq(
-    "-doc-source-url", s"https://github.com/fd4s/fs2-kafka/tree/v${(ThisBuild / latestVersion).value}€{FILE_PATH}.scala",
+    "-doc-source-url", s"https://github.com/typelevel/fs2-kafka/tree/v${(ThisBuild / latestVersion).value}€{FILE_PATH}.scala",
     "-sourcepath", (LocalRootProject / baseDirectory).value.getAbsolutePath,
     "-doc-title", "FS2 Kafka",
     "-doc-version", s"v${(ThisBuild / latestVersion).value}"
@@ -208,7 +208,7 @@ lazy val buildInfoSettings = Seq(
 )
 
 lazy val metadataSettings = Seq(
-  organization := "com.github.fd4s"
+  organization := "org.typelevel"
 )
 
 ThisBuild / githubWorkflowBuild := Seq(
@@ -240,7 +240,7 @@ lazy val publishSettings =
   metadataSettings ++ Seq(
     Test / publishArtifact := false,
     pomIncludeRepository   := (_ => false),
-    homepage               := Some(url("https://fd4s.github.io/fs2-kafka")),
+    homepage               := Some(url("https://typelevel.org/fs2-kafka")),
     licenses               := List("Apache-2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0.txt")),
     startYear              := Some(2018),
     headerLicense          := Some(
