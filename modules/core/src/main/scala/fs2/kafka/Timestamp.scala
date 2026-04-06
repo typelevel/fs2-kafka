@@ -6,34 +6,25 @@
 
 package fs2.kafka
 
-import cats.{Eq, Show}
-import cats.instances.boolean.*
-import cats.instances.long.*
-import cats.instances.option.*
-import cats.syntax.eq.*
+import cats.Eq
+import cats.Show
+
+import org.apache.kafka.common.record.TimestampType
 
 /**
-  * [[Timestamp]] is an optional timestamp value representing a [[createTime]], [[logAppendTime]],
-  * [[unknownTime]], or no timestamp at all.
+  * [[Timestamp]] is an optional timestamp value.
   */
 sealed abstract class Timestamp {
 
   /**
-    * Returns the timestamp value, if the timestamp is representing the time when a record was
-    * created.
+    * Returns the timestamp value if it is present; otherwise `None`.
     */
-  def createTime: Option[Long]
+  def toOption: Option[Long]
 
   /**
-    * Returns the timestamp value, if the timestamp is representing the time when a record was
-    * appended to the log.
+    * Returns the timestamp type if it is present; otherwise `None`.
     */
-  def logAppendTime: Option[Long]
-
-  /**
-    * Returns the timestamp value, if there is a timestamp, but the type is unknown.
-    */
-  def unknownTime: Option[Long]
+  def timestampType: Option[TimestampType]
 
   /**
     * Returns `true` if there is no timestamp value; otherwise `false`.
@@ -55,69 +46,75 @@ object Timestamp {
     * when the record was created.
     */
   def createTime(value: Long): Timestamp =
-    new Timestamp {
-
-      override val createTime: Option[Long]    = Some(value)
-      override val logAppendTime: Option[Long] = None
-      override val unknownTime: Option[Long]   = None
-      override val isEmpty: Boolean            = false
-      override def toString: String            = s"Timestamp(createTime = $value)"
-
-    }
+    CreateTime(value)
 
   /**
     * Creates a new [[Timestamp]] instance from the specified timestamp value representing the time
     * when the record was appended to the log.
     */
   def logAppendTime(value: Long): Timestamp =
-    new Timestamp {
-
-      override val createTime: Option[Long]    = None
-      override val logAppendTime: Option[Long] = Some(value)
-      override val unknownTime: Option[Long]   = None
-      override val isEmpty: Boolean            = false
-      override def toString: String            = s"Timestamp(logAppendTime = $value)"
-
-    }
+    LogAppendTime(value)
 
   /**
     * Creates a new [[Timestamp]] instance from the specified timestamp value, when the timestamp
     * type is unknown.
     */
   def unknownTime(value: Long): Timestamp =
-    new Timestamp {
-
-      override val createTime: Option[Long]    = None
-      override val logAppendTime: Option[Long] = None
-      override val unknownTime: Option[Long]   = Some(value)
-      override val isEmpty: Boolean            = false
-      override def toString: String            = s"Timestamp(unknownTime = $value)"
-
-    }
+    UnknownTime(value)
 
   /**
     * The [[Timestamp]] instance without any timestamp values.
     */
   val none: Timestamp =
-    new Timestamp {
+    NoTimestamp
 
-      override val createTime: Option[Long]    = None
-      override val logAppendTime: Option[Long] = None
-      override val unknownTime: Option[Long]   = None
-      override val isEmpty: Boolean            = true
-      override def toString: String            = "Timestamp()"
+  final case class CreateTime(value: Long) extends Timestamp {
 
-    }
+    override val toOption: Option[Long] = Some(value)
+
+    override val timestampType: Option[TimestampType] =
+      Some(TimestampType.CREATE_TIME)
+
+    override val isEmpty: Boolean = false
+
+  }
+
+  final case class LogAppendTime(value: Long) extends Timestamp {
+
+    override val toOption: Option[Long] = Some(value)
+
+    override val timestampType: Option[TimestampType] =
+      Some(TimestampType.LOG_APPEND_TIME)
+
+    override val isEmpty: Boolean = false
+
+  }
+
+  final case class UnknownTime(value: Long) extends Timestamp {
+
+    override val toOption: Option[Long] = Some(value)
+
+    override val timestampType: Option[TimestampType] =
+      Some(TimestampType.NO_TIMESTAMP_TYPE)
+
+    override val isEmpty: Boolean = false
+
+  }
+
+  case object NoTimestamp extends Timestamp {
+
+    override val toOption: Option[Long] = None
+
+    override val timestampType: Option[TimestampType] = None
+
+    override val isEmpty: Boolean = true
+
+  }
+
+  implicit val timestampEq: Eq[Timestamp] =
+    Eq.fromUniversalEquals
 
   implicit val timestampShow: Show[Timestamp] =
     Show.fromToString
-
-  implicit val timestampEq: Eq[Timestamp] =
-    Eq.instance { case (l, r) =>
-      l.createTime === r.createTime &&
-      l.logAppendTime === r.logAppendTime &&
-      l.unknownTime === r.unknownTime &&
-      l.isEmpty === r.isEmpty
-    }
 
 }
