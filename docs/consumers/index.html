@@ -157,7 +157,6 @@
 <li><p><code>withCloseTimeout</code> controls the timeout when waiting for consumer shutdown. Default is 20 seconds.</p></li>
 <li><p><code>withCommitRecovery</code> defines how offset commit exceptions are recovered. See <a href="/fs2-kafka/api/fs2/kafka/CommitRecovery$.html#Default:fs2.kafka.CommitRecovery"><code>CommitRecovery.Default</code></a>.</p></li>
 <li><p><code>withCommitTimeout</code> sets the timeout for offset commits. Default is 15 seconds.</p></li>
-<li><p><code>withCreateConsumer</code> changes how the underlying Java Kafka consumer is created. The default merely creates a Java <code>KafkaConsumer</code> instance using set properties, but this function allows overriding the behaviour for e.g. testing purposes.</p></li>
 <li><p><code>withMaxPrefetchBatches</code> adjusts the maximum number of record batches per topic-partition to prefetch before backpressure is applied. The default is 2, meaning there can be up to 2 record batches per topic-partition waiting to be processed.</p></li>
 <li><p><code>withPollInterval</code> alters how often consumer <code>poll</code> should take place. Default is 50 milliseconds.</p></li>
 <li><p><code>withPollTimeout</code> modifies for how long <code>poll</code> is allowed to block. Default is 50 milliseconds.</p></li>
