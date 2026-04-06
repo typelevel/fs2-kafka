@@ -9,18 +9,22 @@ package fs2.kafka
 import java.nio.charset.*
 import java.util.UUID
 
-import cats.{ApplicativeError, ApplicativeThrow}
 import cats.data.Chain
 import cats.effect.*
 import cats.laws.discipline.arbitrary.*
 import cats.syntax.all.*
+import cats.ApplicativeThrow
+import cats.Parallel
 import fs2.Chunk
 
+import org.apache.kafka.clients.consumer.ConsumerGroupMetadata
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.TopicPartition
-import org.scalacheck.{Arbitrary, Cogen, Gen}
 import org.scalacheck.rng.Seed
+import org.scalacheck.Arbitrary
 import org.scalacheck.Arbitrary.arbitrary
+import org.scalacheck.Cogen
+import org.scalacheck.Gen
 
 trait BaseGenerators {
 
@@ -58,23 +62,38 @@ trait BaseGenerators {
       Cogen.perturbPair(seed, (offset.offset, offset.metadata()))
     }
 
-  def genCommittableOffset[F[_]](implicit
-    F: ApplicativeError[F, Throwable]
-  ): Gen[CommittableOffset[F]] =
+  def genKafkaCommitter[F[_]: ApplicativeThrow]: Gen[KafkaCommitter[F]] =
+    for {
+      commit <- Gen.oneOf(
+                  Gen.const((_: Map[TopicPartition, OffsetAndMetadata]) =>
+                    ApplicativeThrow[F].unit
+                  ),
+                  Gen.const((_: Map[TopicPartition, OffsetAndMetadata]) =>
+                    ApplicativeThrow[F].raiseError[Unit](new RuntimeException("commit"))
+                  )
+                )
+      metadata <- Gen.const(
+                    ApplicativeThrow[F].raiseError[ConsumerGroupMetadata](
+                      new RuntimeException("consumerGroupMetadata")
+                    )
+                  )
+    } yield KafkaCommitter(commit, metadata)
+
+  implicit def arbKafkaCommitter[F[_]: ApplicativeThrow]: Arbitrary[KafkaCommitter[F]] =
+    Arbitrary(genKafkaCommitter[F])
+
+  def genCommittableOffset[F[_]: ApplicativeThrow]: Gen[CommittableOffset[F]] =
     for {
       topicPartition    <- genTopicPartition
       offsetAndMetadata <- genOffsetAndMetadata
-      groupId           <- arbitrary[Option[String]]
+      committer         <- genKafkaCommitter[F]
     } yield CommittableOffset[F](
       topicPartition = topicPartition,
       offsetAndMetadata = offsetAndMetadata,
-      consumerGroupId = groupId,
-      commit = _ => F.unit
+      committer = committer
     )
 
-  implicit def arbCommittableOffset[F[_]](implicit
-    F: ApplicativeError[F, Throwable]
-  ): Arbitrary[CommittableOffset[F]] =
+  implicit def arbCommittableOffset[F[_]: ApplicativeThrow]: Arbitrary[CommittableOffset[F]] =
     Arbitrary(genCommittableOffset[F])
 
   implicit def cogenCommittableOffset[F[_]]: Cogen[CommittableOffset[F]] =
@@ -82,20 +101,14 @@ trait BaseGenerators {
       (Cogen
         .perturb(_: Seed, offset.topicPartition))
         .andThen(Cogen.perturb(_, offset.offsetAndMetadata))
-        .andThen(Cogen.perturb(_, offset.consumerGroupId))
         .apply(seed)
     }
 
-  def genCommittableOffsetBatch[F[_]](implicit
-    F: ApplicativeError[F, Throwable]
-  ): Gen[CommittableOffsetBatch[F]] =
-    arbitrary[Map[TopicPartition, OffsetAndMetadata]].map(
-      CommittableOffsetBatch[F](_, Set.empty, consumerGroupIdsMissing = false, _ => F.unit)
-    )
+  def genCommittableOffsetBatch[F[_]: ApplicativeThrow: Parallel]: Gen[CommittableOffsetBatch[F]] =
+    Gen.listOf(genCommittableOffset[F]).map(CommittableOffsetBatch.fromFoldable(_))
 
-  implicit def arbCommittableOffsetBatch[F[_]](implicit
-    F: ApplicativeError[F, Throwable]
-  ): Arbitrary[CommittableOffsetBatch[F]] =
+  implicit def arbCommittableOffsetBatch[F[_]: ApplicativeThrow: Parallel]
+    : Arbitrary[CommittableOffsetBatch[F]] =
     Arbitrary(genCommittableOffsetBatch[F])
 
   val genUUID: Gen[UUID] =
@@ -306,7 +319,7 @@ trait BaseGenerators {
   ]: Gen[CommittableConsumerRecord[F, K, V]] =
     for {
       record <- Arbitrary.arbitrary[ConsumerRecord[K, V]]
-      offset <- Arbitrary.arbitrary[CommittableOffset[F]]
+      offset <- arbCommittableOffset[F].arbitrary
     } yield CommittableConsumerRecord[F, K, V](record, offset)
 
   implicit def arbCommittableConsumerRecord[
@@ -329,7 +342,7 @@ trait BaseGenerators {
   ]: Gen[CommittableProducerRecords[F, K, V]] =
     for {
       records <- Arbitrary.arbitrary[List[ProducerRecord[K, V]]]
-      offset  <- Arbitrary.arbitrary[CommittableOffset[F]]
+      offset  <- arbCommittableOffset[F].arbitrary
     } yield CommittableProducerRecords(records, offset)
 
   implicit def arbCommittableProducerRecords[

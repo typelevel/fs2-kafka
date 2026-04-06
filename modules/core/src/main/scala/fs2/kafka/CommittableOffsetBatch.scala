@@ -6,11 +6,11 @@
 
 package fs2.kafka
 
-import cats.{Applicative, Foldable, Show}
-import cats.instances.list.*
-import cats.syntax.foldable.*
-import cats.syntax.show.*
-import cats.ApplicativeError
+import cats.syntax.all.*
+import cats.Eq
+import cats.Foldable
+import cats.Parallel
+import cats.Show
 import fs2.kafka.instances.*
 import fs2.kafka.internal.syntax.*
 
@@ -18,68 +18,27 @@ import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.TopicPartition
 
 /**
-  * [[CommittableOffsetBatch]] represents a batch of Kafka [[offsets]] which can be committed
-  * together using [[commit]]. An offset, or one more batch, can be added an existing batch using
-  * `updated`. Note that this requires the offsets per topic-partition to be included in-order,
-  * since offset commits in general require it.<br><br>
-  *
-  * Use [[CommittableOffsetBatch#empty]] to create an empty batch. The [[CommittableOffset#batch]]
-  * function can be used to create a batch from an existing [[CommittableOffset]].<br><br>
-  *
-  * If you have some offsets in-order per topic-partition, you can fold them together using
-  * [[CommittableOffsetBatch#empty]] and `updated`, or you can use
-  * [[CommittableOffsetBatch#fromFoldable]]. Generally, prefer to use `fromFoldable`, as it has
-  * better performance. Provided pipes like [[commitBatchWithin]] are also to be preferred, as they
-  * also achieve better performance.
+  * Offsets and metadata for topics and partitions which can be committed.
   */
 sealed abstract class CommittableOffsetBatch[F[_]] {
 
   /**
-    * Creates a new [[CommittableOffsetBatch]] with the specified offset included. Note that this
-    * function requires offsets to be in-order per topic-partition, as provided offsets will
-    * override existing offsets for the same topic-partition.
+    * Returns a new batch with the specified offset included.
     */
   def updated(that: CommittableOffset[F]): CommittableOffsetBatch[F]
 
   /**
-    * Creates a new [[CommittableOffsetBatch]] with the specified offsets included. Note that this
-    * function requires offsets to be in-order per topic-partition, as provided offsets will
-    * override existing offsets for the same topic-partition.
+    * Returns a new batch with the specified offsets included.
     */
   def updated(that: CommittableOffsetBatch[F]): CommittableOffsetBatch[F]
 
   /**
-    * The offsets included in the [[CommittableOffsetBatch]].
+    * Returns the offsets and metadata included in the batch.
     */
-  def offsets: Map[TopicPartition, OffsetAndMetadata]
+  def offsets: Map[KafkaCommitter[F], Map[TopicPartition, OffsetAndMetadata]]
 
   /**
-    * The consumer group IDs for the [[offsets]] in the batch. For the batch to be valid and for
-    * [[commit]] to succeed, there should be exactly one ID in the set and the flag
-    * [[consumerGroupIdsMissing]] should be `false`.<br><br>
-    *
-    * There might be more than one consumer group ID in the set if offsets from multiple consumers,
-    * with different group IDs, have accidentally been mixed. The set might also be empty if no
-    * consumer group IDs have been specified.
-    */
-  def consumerGroupIds: Set[String]
-
-  /**
-    * `true` if any offset in the batch came from a consumer without a group ID; `false` otherwise.
-    * For the batch to be valid and for [[commit]] to succeed, this flag must be `false` and there
-    * should be exactly one consumer group ID in [[consumerGroupIds]].
-    */
-  def consumerGroupIdsMissing: Boolean
-
-  /**
-    * Commits the [[offsets]] to Kafka in a single commit. For the batch to be valid and for commit
-    * to succeed, the following conditions must hold:<br>
-    *   - [[consumerGroupIdsMissing]] must be false, and<br>
-    *   - [[consumerGroupIds]] must have exactly one ID.<br><br>
-    *
-    * If one of the conditions above do not hold, there will be a [[ConsumerGroupException]]
-    * exception raised and a commit will not be attempted. If [[offsets]] is empty then these
-    * conditions do not need to hold, as there is nothing to commit.
+    * Commits the offsets and metadata for the topics and partitions.
     */
   def commit: F[Unit]
 
@@ -87,223 +46,100 @@ sealed abstract class CommittableOffsetBatch[F[_]] {
 
 object CommittableOffsetBatch {
 
-  private[kafka] def apply[F[_]](
-    offsets: Map[TopicPartition, OffsetAndMetadata],
-    consumerGroupIds: Set[String],
-    consumerGroupIdsMissing: Boolean,
-    commit: Map[TopicPartition, OffsetAndMetadata] => F[Unit]
-  )(implicit F: ApplicativeError[F, Throwable]): CommittableOffsetBatch[F] = {
-    val _offsets                 = offsets
-    val _consumerGroupIds        = consumerGroupIds
-    val _consumerGroupIdsMissing = consumerGroupIdsMissing
-    val _commit                  = commit
+  final private[this] case class CommittableOffsetBatchImpl[F[_]: Parallel](
+    override val offsets: Map[KafkaCommitter[F], Map[TopicPartition, OffsetAndMetadata]]
+  ) extends CommittableOffsetBatch[F] {
 
-    new CommittableOffsetBatch[F] {
-
-      override def updated(that: CommittableOffset[F]): CommittableOffsetBatch[F] =
-        CommittableOffsetBatch(
-          _offsets.updated(that.topicPartition, that.offsetAndMetadata),
-          that.consumerGroupId.fold(_consumerGroupIds)(_consumerGroupIds + _),
-          _consumerGroupIdsMissing || that.consumerGroupId.isEmpty,
-          _commit
-        )
-
-      override def updated(that: CommittableOffsetBatch[F]): CommittableOffsetBatch[F] =
-        CommittableOffsetBatch(
-          _offsets ++ that.offsets,
-          _consumerGroupIds ++ that.consumerGroupIds,
-          _consumerGroupIdsMissing || that.consumerGroupIdsMissing,
-          _commit
-        )
-
-      override val offsets: Map[TopicPartition, OffsetAndMetadata] =
-        _offsets
-
-      override val consumerGroupIds: Set[String] =
-        _consumerGroupIds
-
-      override val consumerGroupIdsMissing: Boolean =
-        _consumerGroupIdsMissing
-
-      override def commit: F[Unit] =
-        if (_consumerGroupIdsMissing || _consumerGroupIds.size != 1)
-          F.raiseError(ConsumerGroupException(consumerGroupIds))
-        else _commit(offsets)
-
-      override def toString: String =
-        Show[CommittableOffsetBatch[F]].show(this)
-
+    override def updated(that: CommittableOffset[F]): CommittableOffsetBatch[F] = {
+      copy(offsets.updatedUsing(that.committer) {
+        case Some(offsets) =>
+          Some(offsets.updatedUsing(that.topicPartition) {
+            case existing @ Some(offset) if offset >= that.offsetAndMetadata =>
+              existing
+            case Some(_) | None =>
+              Some(that.offsetAndMetadata)
+          })
+        case None =>
+          Some(Map(that.topicPartition -> that.offsetAndMetadata))
+      })
     }
+
+    override def updated(that: CommittableOffsetBatch[F]): CommittableOffsetBatch[F] =
+      if (that.offsets.isEmpty) this
+      else if (this.offsets.isEmpty) that
+      else
+        copy(
+          this.offsets ++ that
+            .offsets
+            .map { case (committer, thatOffsets) =>
+              (
+                committer,
+                this.offsets.get(committer) match {
+                  case Some(thisOffsets) =>
+                    thisOffsets ++ thatOffsets.map { case (topicPartition, thatOffset) =>
+                      (
+                        topicPartition,
+                        thisOffsets.get(topicPartition) match {
+                          case Some(thisOffset) if thisOffset >= thatOffset => thisOffset
+                          case Some(_) | None                               => thatOffset
+                        }
+                      )
+                    }
+                  case None =>
+                    thatOffsets
+                }
+              )
+            }
+        )
+
+    override def commit: F[Unit] =
+      offsets.toList.parTraverse_ { case (committer, offsets) => committer.commit(offsets) }
+
+    override def toString: String =
+      show"CommittableOffsetBatch($offsets)"
+
   }
 
   /**
-    * Creates a [[CommittableOffsetBatch]] from some [[CommittableOffset]]s, where the containing
-    * type has a `Foldable` instance. Guaranteed to be equivalent to the following, but implemented
-    * more efficiently.
-    *
-    * {{{
-    * offsets.foldLeft(CommittableOffsetBatch.empty[F])(_ updated _)
-    * }}}
-    *
-    * Note that just like for `updated`, `offsets` have to be in order per topic-partition.
-    *
-    * @see
-    *   [[CommittableOffsetBatch#fromFoldableMap]]
-    * @see
-    *   [[CommittableOffsetBatch#fromFoldableOption]]
+    * Returns a new offset batch from the specified foldable offsets.
     */
-  def fromFoldable[F[_], G[_]](offsets: G[CommittableOffset[F]])(implicit
-    F: ApplicativeError[F, Throwable],
-    G: Foldable[G]
+  def fromFoldable[F[_]: Parallel, G[_]: Foldable](
+    offsets: G[CommittableOffset[F]]
   ): CommittableOffsetBatch[F] =
     fromFoldableMap(offsets)(identity)
 
   /**
-    * Creates a [[CommittableOffsetBatch]] from a `Foldable` containing `A`s, by applying `f` to
-    * each `A` to get the [[CommittableOffset]]. Guaranteed to be equivalent to the following, but
-    * implemented more efficiently.
+    * Returns a new offset batch from the specified foldable elements.
     *
-    * {{{
-    * ga.foldLeft(CommittableOffsetBatch.empty[F])(_ updated f(_))
-    * }}}
-    *
-    * Note that just like for `updated`, `offsets` have to be in order per topic-partition.
-    *
-    * @see
-    *   [[CommittableOffsetBatch#fromFoldable]]
-    * @see
-    *   [[CommittableOffsetBatch#fromFoldableOption]]
+    * The provided function is used on each element to retrieve the offset.
     */
-  def fromFoldableMap[F[_], G[_], A](ga: G[A])(f: A => CommittableOffset[F])(implicit
-    F: ApplicativeError[F, Throwable],
-    G: Foldable[G]
+  def fromFoldableMap[F[_]: Parallel, G[_]: Foldable, A](
+    ga: G[A]
+  )(f: A => CommittableOffset[F]): CommittableOffsetBatch[F] =
+    ga.foldLeft(empty) { case (batch, a) => batch.updated(f(a)) }
+
+  /**
+    * Returns a new offset batch from the specified optional offsets.
+    */
+  def fromFoldableOption[F[_]: Parallel, G[_]: Foldable](
+    offsets: G[Option[CommittableOffset[F]]]
   ): CommittableOffsetBatch[F] = {
-    var commit: Map[TopicPartition, OffsetAndMetadata] => F[Unit] = null
-    var offsetsMap: Map[TopicPartition, OffsetAndMetadata]        = Map.empty
-    var consumerGroupIds: Set[String]                             = Set.empty
-    var consumerGroupIdsMissing: Boolean                          = false
-    var empty: Boolean                                            = true
-
-    ga.foldLeft(()) { (_, a) =>
-      val offset = f(a)
-
-      if (empty) {
-        commit = offset.commitOffsets
-        empty = false
-      }
-
-      offsetsMap = offsetsMap.updated(offset.topicPartition, offset.offsetAndMetadata)
-      offset.consumerGroupId match {
-        case Some(consumerGroupId) => consumerGroupIds = consumerGroupIds + consumerGroupId
-        case None                  => consumerGroupIdsMissing = true
-      }
+    offsets.foldLeft(empty) {
+      case (batch, Some(offset)) => batch.updated(offset)
+      case (batch, None)         => batch
     }
-
-    if (empty) CommittableOffsetBatch.empty[F]
-    else CommittableOffsetBatch(offsetsMap, consumerGroupIds, consumerGroupIdsMissing, commit)
   }
 
   /**
-    * Creates a [[CommittableOffsetBatch]] from some [[CommittableOffset]]s wrapped in `Option`,
-    * where the containing type has a `Foldable` instance. Guaranteed to be equivalent to the
-    * following, but implemented more efficiently.
-    *
-    * {{{
-    * offsets.foldLeft(CommittableOffsetBatch.empty[F]) {
-    *   case (batch, Some(offset)) => batch.updated(offset)
-    *   case (batch, None)         => batch
-    * }
-    * }}}
-    *
-    * Note that just like for `updated`, `offsets` have to be in order per topic-partition.
-    *
-    * @see
-    *   [[CommittableOffsetBatch#fromFoldable]]
-    * @see
-    *   [[CommittableOffsetBatch#fromFoldableMap]]
+    * Returns an empty batch without any offsets or metadata.
     */
-  def fromFoldableOption[F[_], G[_]](offsets: G[Option[CommittableOffset[F]]])(implicit
-    F: ApplicativeError[F, Throwable],
-    G: Foldable[G]
-  ): CommittableOffsetBatch[F] = {
-    var commit: Map[TopicPartition, OffsetAndMetadata] => F[Unit] = null
-    var offsetsMap: Map[TopicPartition, OffsetAndMetadata]        = Map.empty
-    var consumerGroupIds: Set[String]                             = Set.empty
-    var consumerGroupIdsMissing: Boolean                          = false
-    var empty: Boolean                                            = true
+  def empty[F[_]: Parallel]: CommittableOffsetBatch[F] =
+    CommittableOffsetBatchImpl(Map.empty)
 
-    offsets.foldLeft(()) {
-      case (_, Some(offset)) =>
-        if (empty) {
-          commit = offset.commitOffsets
-          empty = false
-        }
-
-        offsetsMap = offsetsMap.updated(offset.topicPartition, offset.offsetAndMetadata)
-        offset.consumerGroupId match {
-          case Some(consumerGroupId) => consumerGroupIds = consumerGroupIds + consumerGroupId
-          case None                  => consumerGroupIdsMissing = true
-        }
-      case (_, None) => ()
-    }
-
-    if (empty) CommittableOffsetBatch.empty[F]
-    else CommittableOffsetBatch(offsetsMap, consumerGroupIds, consumerGroupIdsMissing, commit)
-  }
-
-  /**
-    * An empty [[CommittableOffsetBatch]] which does not include any offsets and `commit` will not
-    * commit offsets. This can be used together with `updated` to create a batch from some offsets.
-    *
-    * @see
-    *   [[CommittableOffsetBatch#fromFoldable]]
-    * @see
-    *   [[CommittableOffsetBatch#fromFoldableOption]]
-    */
-  def empty[F[_]](implicit F: Applicative[F]): CommittableOffsetBatch[F] =
-    new CommittableOffsetBatch[F] {
-
-      override def updated(that: CommittableOffset[F]): CommittableOffsetBatch[F] =
-        that.batch
-
-      override def updated(that: CommittableOffsetBatch[F]): CommittableOffsetBatch[F] =
-        that
-
-      override val offsets: Map[TopicPartition, OffsetAndMetadata] =
-        Map.empty
-
-      override val consumerGroupIds: Set[String] =
-        Set.empty
-
-      override val consumerGroupIdsMissing: Boolean =
-        false
-
-      override val commit: F[Unit] =
-        F.unit
-
-      override def toString: String =
-        Show[CommittableOffsetBatch[F]].show(this)
-
-    }
+  implicit def committableOffsetBatchEq[F[_]]: Eq[CommittableOffsetBatch[F]] =
+    Eq.fromUniversalEquals
 
   implicit def committableOffsetBatchShow[F[_]]: Show[CommittableOffsetBatch[F]] =
-    Show.show { cob =>
-      if (cob.offsets.isEmpty) "CommittableOffsetBatch(<empty>)"
-      else {
-        cob
-          .offsets
-          .toList
-          .sorted
-          .mkStringAppend { case (append, (tp, oam)) =>
-            append(tp.show)
-            append(" -> ")
-            append(oam.show)
-          }(
-            start = "CommittableOffsetBatch(",
-            sep = ", ",
-            end = ")"
-          )
-      }
-    }
+    Show.fromToString
 
 }

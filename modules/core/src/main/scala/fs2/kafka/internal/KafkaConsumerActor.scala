@@ -25,11 +25,9 @@ import fs2.kafka.internal.KafkaConsumerActor.*
 import fs2.kafka.internal.LogEntry.*
 import fs2.Chunk
 
-import org.apache.kafka.clients.consumer.{
-  ConsumerConfig,
-  ConsumerRebalanceListener,
-  OffsetAndMetadata
-}
+import org.apache.kafka.clients.consumer.ConsumerGroupMetadata
+import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
+import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.TopicPartition
 
 /**
@@ -64,8 +62,11 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
 
   private[this] type ConsumerQueue = Queue[F, Chunk[CommittableConsumerRecord[F, K, V]]]
 
-  private[this] val consumerGroupId: Option[String] =
-    settings.properties.get(ConsumerConfig.GROUP_ID_CONFIG)
+  private[this] val committer: KafkaCommitter[F] =
+    KafkaCommitter(
+      commitOffsets = resilientOffsetCommitAsync,
+      consumerGroupMetadata = consumerGroupMetadata
+    )
 
   val consumerRebalanceListener: ConsumerRebalanceListener =
     new ConsumerRebalanceListener {
@@ -77,6 +78,9 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
         dispatcher.unsafeRunSync(assigned(partitions.toSortedSet))
 
     }
+
+  private[this] def consumerGroupMetadata: F[ConsumerGroupMetadata] =
+    withConsumer.blocking(_.groupMetadata())
 
   private[this] def commitAsync(
     offsets: Map[TopicPartition, OffsetAndMetadata],
@@ -150,12 +154,11 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
       record = record,
       offset = CommittableOffset(
         topicPartition = partition,
-        consumerGroupId = consumerGroupId,
         offsetAndMetadata = new OffsetAndMetadata(
           record.offset + 1L,
           settings.recordMetadata(record)
         ),
-        commit = resilientOffsetCommitAsync
+        committer = committer
       )
     )
 

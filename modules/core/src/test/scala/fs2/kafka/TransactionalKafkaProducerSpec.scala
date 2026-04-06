@@ -8,20 +8,26 @@ package fs2.kafka
 
 import java.nio.charset.StandardCharsets
 import java.util
-import java.util.concurrent.{CompletableFuture, Future}
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Future
 
 import scala.concurrent.duration.*
 
 import cats.effect.unsafe.implicits.global
 import cats.effect.IO
 import cats.syntax.all.*
-import fs2.{Chunk, Stream}
 import fs2.kafka.internal.converters.collection.*
 import fs2.kafka.producer.MkProducer
+import fs2.Chunk
+import fs2.Stream
 
-import org.apache.kafka.clients.consumer.{ConsumerConfig, ConsumerGroupMetadata, OffsetAndMetadata}
-import org.apache.kafka.clients.producer.{Callback, ProducerConfig, RecordMetadata}
+import org.apache.kafka.clients.consumer.ConsumerConfig
+import org.apache.kafka.clients.consumer.ConsumerGroupMetadata
+import org.apache.kafka.clients.consumer.OffsetAndMetadata
+import org.apache.kafka.clients.producer.Callback
+import org.apache.kafka.clients.producer.ProducerConfig
+import org.apache.kafka.clients.producer.RecordMetadata
 import org.apache.kafka.common.errors.ProducerFencedException
 import org.apache.kafka.common.serialization.ByteArraySerializer
 import org.apache.kafka.common.TopicPartition
@@ -46,6 +52,8 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
   }
 
   it("should be able to produce single records with offsets in a transaction") {
+    val committer = kafkaCommitter("group")
+
     withTopic { topic =>
       testSingle(
         topic,
@@ -53,8 +61,7 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
           CommittableOffset[IO](
             new TopicPartition(topic, (i % 3).toInt),
             new OffsetAndMetadata(i),
-            Some("group"),
-            _ => IO.unit
+            committer
           )
         )
       )
@@ -129,6 +136,8 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
   }
 
   it("should be able to produce multiple records with offsets in a transaction") {
+    val committer = kafkaCommitter("group")
+
     withTopic { topic =>
       testMultiple(
         topic,
@@ -136,8 +145,7 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
           CommittableOffset[IO](
             new TopicPartition(topic, i % 3),
             new OffsetAndMetadata(i.toLong),
-            Some("group"),
-            _ => IO.unit
+            committer
           )
         )
       )
@@ -179,6 +187,7 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
           }
 
       }
+      val committer = kafkaCommitter("group")
       for {
         producer <- TransactionalKafkaProducer.stream(
                       TransactionalProducerSettings(
@@ -190,8 +199,7 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
                     CommittableOffset[IO](
                       new TopicPartition(topic, i % 3),
                       new OffsetAndMetadata(i.toLong),
-                      Some("group"),
-                      _ => IO.unit
+                      committer
                     )
 
         records = Chunk.from(0 to 100).map(i => CommittableProducerRecords(Chunk.empty, offsets(i)))
@@ -285,14 +293,15 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
           recordsToProduce = toProduce.map { case (key, value) =>
                                ProducerRecord(topic, key, value)
                              }
-          offsets = toProduce.mapWithIndex { case (_, i) =>
-                      CommittableOffset[IO](
-                        new TopicPartition(topic, i % 3),
-                        new OffsetAndMetadata(i.toLong),
-                        Some("group"),
-                        _ => IO.unit
-                      )
-                    }
+          committer = kafkaCommitter("group")
+          offsets   =
+            toProduce.mapWithIndex { case (_, i) =>
+              CommittableOffset[IO](
+                new TopicPartition(topic, i % 3),
+                new OffsetAndMetadata(i.toLong),
+                committer
+              )
+            }
           records = recordsToProduce
                       .zip(offsets)
                       .map { case (record, offset) =>
@@ -312,8 +321,7 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
                            CommittableOffset[IO](
                              new TopicPartition(topic, 0),
                              new OffsetAndMetadata(0),
-                             Some("group"),
-                             _ => IO.unit
+                             committer
                            )
                          )
                        )
@@ -370,14 +378,15 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
           recordsToProduce = toProduce.map { case (key, value) =>
                                ProducerRecord(topic, key, value)
                              }
-          offsets = toProduce.mapWithIndex { case (_, i) =>
-                      CommittableOffset(
-                        new TopicPartition(topic, i % 3),
-                        new OffsetAndMetadata(i.toLong),
-                        Some("group"),
-                        _ => IO.unit
-                      )
-                    }
+          committer = kafkaCommitter("group")
+          offsets   =
+            toProduce.mapWithIndex { case (_, i) =>
+              CommittableOffset(
+                new TopicPartition(topic, i % 3),
+                new OffsetAndMetadata(i.toLong),
+                committer
+              )
+            }
           records = Chunk
                       .from(recordsToProduce.zip(offsets))
                       .map { case (record, offset) =>
@@ -463,8 +472,10 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
       val committableOffset = CommittableOffset[IO](
         new TopicPartition("topic-consumer", 0),
         new OffsetAndMetadata(0),
-        Some("consumer-group"),
-        _ => IO.raiseError(new RuntimeException("Commit should not be called")).void
+        KafkaCommitter[IO](
+          _ => IO.raiseError(new RuntimeException("Commit should not be called")),
+          IO.pure(consumerGroupMetadata("consumer-group"))
+        )
       )
       val committable = CommittableProducerRecords(producerRecords, committableOffset)
 
@@ -510,9 +521,17 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
     }
   }
 
+  @annotation.nowarn("msg=deprecated")
+  private def consumerGroupMetadata(groupId: String): ConsumerGroupMetadata =
+    new ConsumerGroupMetadata(groupId)
+
+  private def kafkaCommitter(groupId: String): KafkaCommitter[IO] =
+    KafkaCommitter(_ => IO.unit, IO.pure(consumerGroupMetadata(groupId)))
+
 }
 
 class TransactionalKafkaProducerTimeoutSpec extends BaseKafkaSpec with EitherValues {
+
   it("should use user-specified transaction timeouts") {
     withTopic { topic =>
       createCustomTopic(topic, partitions = 3)
@@ -551,8 +570,7 @@ class TransactionalKafkaProducerTimeoutSpec extends BaseKafkaSpec with EitherVal
           offset = CommittableOffset(
                      new TopicPartition(topic, 1),
                      new OffsetAndMetadata(recordsToProduce.length.toLong),
-                     Some("group"),
-                     _ => IO.unit
+                     kafkaCommitter("group")
                    )
           records = TransactionalProducerRecords.one(
                       CommittableProducerRecords(recordsToProduce, offset)
@@ -574,4 +592,12 @@ class TransactionalKafkaProducerTimeoutSpec extends BaseKafkaSpec with EitherVal
       consumedOrError.isLeft shouldBe true
     }
   }
+
+  @annotation.nowarn("msg=deprecated")
+  private def consumerGroupMetadata(groupId: String): ConsumerGroupMetadata =
+    new ConsumerGroupMetadata(groupId)
+
+  private def kafkaCommitter(groupId: String): KafkaCommitter[IO] =
+    KafkaCommitter(_ => IO.unit, IO.pure(consumerGroupMetadata(groupId)))
+
 }

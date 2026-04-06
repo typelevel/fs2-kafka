@@ -8,7 +8,8 @@ package fs2.kafka.consumer
 
 import cats.effect.Concurrent
 import cats.syntax.flatMap.*
-import cats.Monad
+import cats.FlatMap
+import cats.Parallel
 import fs2.*
 import fs2.kafka.consumer.KafkaConsumeChunk.CommitNow
 import fs2.kafka.CommittableConsumerRecord
@@ -59,7 +60,7 @@ trait KafkaConsumeChunk[F[_], K, V] extends KafkaConsume[F, K, V] {
     */
   final def consumeChunk(
     processor: Chunk[ConsumerRecord[K, V]] => F[CommitNow]
-  )(implicit F: Concurrent[F]): F[Nothing] = partitionedStream
+  )(implicit F: Concurrent[F], P: Parallel[F]): F[Nothing] = partitionedStream
     .map(
       _.chunks.evalMap(consume(processor))
     )
@@ -70,9 +71,9 @@ trait KafkaConsumeChunk[F[_], K, V] extends KafkaConsume[F, K, V] {
 
   private def consume(processor: Chunk[ConsumerRecord[K, V]] => F[CommitNow])(
     chunk: Chunk[CommittableConsumerRecord[F, K, V]]
-  )(implicit F: Monad[F]): F[Unit] = {
+  )(implicit F: FlatMap[F], P: Parallel[F]): F[Unit] = {
     val (offsets, records) =
-      chunk.mapAccumulate(CommittableOffsetBatch.empty)((offsetBatch, committableRecord) =>
+      chunk.mapAccumulate(CommittableOffsetBatch.empty[F])((offsetBatch, committableRecord) =>
         (offsetBatch.updated(committableRecord.offset), committableRecord.record)
       )
 

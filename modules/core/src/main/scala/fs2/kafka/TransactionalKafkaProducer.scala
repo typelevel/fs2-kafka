@@ -9,17 +9,21 @@ package fs2.kafka
 import scala.annotation.nowarn
 import scala.concurrent.Promise
 
-import cats.effect.{Async, Outcome, Resource}
 import cats.effect.syntax.all.*
+import cats.effect.Async
+import cats.effect.Outcome
+import cats.effect.Resource
 import cats.syntax.all.*
-import fs2.{Chunk, Stream}
+import cats.Parallel
 import fs2.kafka.internal.*
 import fs2.kafka.internal.converters.collection.*
 import fs2.kafka.producer.MkProducer
+import fs2.Chunk
+import fs2.Stream
 
-import org.apache.kafka.clients.consumer.ConsumerGroupMetadata
 import org.apache.kafka.clients.producer.RecordMetadata
-import org.apache.kafka.common.{Metric, MetricName}
+import org.apache.kafka.common.Metric
+import org.apache.kafka.common.MetricName
 
 /**
   * Represents a producer of Kafka records specialized for 'read-process-write' streams, with the
@@ -77,7 +81,8 @@ object TransactionalKafkaProducer {
     settings: TransactionalProducerSettings[F, K, V]
   )(implicit
     F: Async[F],
-    mk: MkProducer[F]
+    mk: MkProducer[F],
+    p: Parallel[F]
   ): Resource[F, TransactionalKafkaProducer[F, K, V]] =
     (
       settings.producerSettings.keySerializer,
@@ -91,30 +96,32 @@ object TransactionalKafkaProducer {
         ): F[ProducerResult[K, V]] =
           produceTransactionWithOffsets(records)
 
-        @scala.annotation.nowarn("msg=deprecated")
         private[this] def produceTransactionWithOffsets(
           records: Chunk[CommittableProducerRecords[F, K, V]]
         ): F[Chunk[(ProducerRecord[K, V], RecordMetadata)]] =
           if (records.isEmpty) F.pure(Chunk.empty)
           else {
-            val batch =
-              CommittableOffsetBatch.fromFoldableMap(records)(_.offset)
+            val batch   = CommittableOffsetBatch.fromFoldableMap(records)(_.offset)
+            val offsets = Chunk.from(batch.offsets.toVector)
 
-            val consumerGroupId =
-              if (batch.consumerGroupIdsMissing || batch.consumerGroupIds.size != 1)
-                F.raiseError(ConsumerGroupException(batch.consumerGroupIds))
-              else F.pure(batch.consumerGroupIds.head)
+            offsets.parFlatTraverse { case (committer, offsets) =>
+              committer
+                .metadata
+                .flatMap { consumerGroupMetadata =>
+                  val sendOffsets: (KafkaByteProducer, Blocking[F]) => F[Unit] =
+                    (producer, blocking) =>
+                      blocking {
+                        producer.sendOffsetsToTransaction(
+                          offsets.asJava,
+                          consumerGroupMetadata
+                        )
+                      }
 
-            consumerGroupId.flatMap { groupId =>
-              val sendOffsets: (KafkaByteProducer, Blocking[F]) => F[Unit] = (producer, blocking) =>
-                blocking {
-                  producer.sendOffsetsToTransaction(
-                    batch.offsets.asJava,
-                    new ConsumerGroupMetadata(groupId)
-                  )
+                  val producerRecords: Chunk[ProducerRecord[K, V]] =
+                    records.filter(_.offset.committer == committer).flatMap(_.records)
+
+                  produceTransaction(producerRecords, Some(sendOffsets))
                 }
-
-              produceTransaction(records.flatMap(_.records), Some(sendOffsets))
             }
           }
 
@@ -191,9 +198,10 @@ object TransactionalKafkaProducer {
     settings: TransactionalProducerSettings[F, K, V]
   )(implicit
     F: Async[F],
-    mk: MkProducer[F]
+    mk: MkProducer[F],
+    p: Parallel[F]
   ): Stream[F, TransactionalKafkaProducer[F, K, V]] =
-    Stream.resource(resource(settings)(F, mk))
+    Stream.resource(resource(settings)(F, mk, p))
 
   def apply[F[_]]: TransactionalProducerPartiallyApplied[F] =
     new TransactionalProducerPartiallyApplied
@@ -212,9 +220,10 @@ object TransactionalKafkaProducer {
       */
     def resource[K, V](settings: TransactionalProducerSettings[F, K, V])(implicit
       F: Async[F],
-      mk: MkProducer[F]
+      mk: MkProducer[F],
+      p: Parallel[F]
     ): Resource[F, TransactionalKafkaProducer[F, K, V]] =
-      TransactionalKafkaProducer.resource(settings)(F, mk)
+      TransactionalKafkaProducer.resource(settings)(F, mk, p)
 
     /**
       * Alternative version of `stream` where the `F[_]` is specified explicitly, and where the key
@@ -227,9 +236,10 @@ object TransactionalKafkaProducer {
       */
     def stream[K, V](settings: TransactionalProducerSettings[F, K, V])(implicit
       F: Async[F],
-      mk: MkProducer[F]
+      mk: MkProducer[F],
+      p: Parallel[F]
     ): Stream[F, TransactionalKafkaProducer[F, K, V]] =
-      TransactionalKafkaProducer.stream(settings)(F, mk)
+      TransactionalKafkaProducer.stream(settings)(F, mk, p)
 
     override def toString: String =
       "TransactionalProducerPartiallyApplied$" + System.identityHashCode(this)

@@ -11,8 +11,9 @@ import scala.concurrent.duration.*
 import cats.effect.unsafe.implicits.global
 import cats.effect.IO
 import cats.effect.Ref
-import cats.ApplicativeError
-import fs2.{Chunk, Stream}
+import cats.ApplicativeThrow
+import fs2.Chunk
+import fs2.Stream
 
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.TopicPartition
@@ -34,44 +35,45 @@ final class KafkaSpec extends BaseAsyncSpec {
     }
   }
 
-  def exampleOffsets[F[_]](
+  def exampleOffsets[F[_]: ApplicativeThrow](
     commit: Map[TopicPartition, OffsetAndMetadata] => F[Unit]
-  )(implicit F: ApplicativeError[F, Throwable]): List[CommittableOffset[F]] = List(
-    CommittableOffset[F](
-      new TopicPartition("topic", 0),
-      new OffsetAndMetadata(1L),
-      Some("group-1"),
-      commit
-    ),
-    CommittableOffset[F](
-      new TopicPartition("topic", 0),
-      new OffsetAndMetadata(2L),
-      Some("group-1"),
-      commit
-    ),
-    CommittableOffset[F](
-      new TopicPartition("topic", 1),
-      new OffsetAndMetadata(1L),
-      Some("group-1"),
-      commit
-    ),
-    CommittableOffset[F](
-      new TopicPartition("topic", 1),
-      new OffsetAndMetadata(2L),
-      Some("group-1"),
-      commit
-    ),
-    CommittableOffset[F](
-      new TopicPartition("topic", 1),
-      new OffsetAndMetadata(3L),
-      Some("group-1"),
-      commit
-    )
-  )
+  ): List[CommittableOffset[F]] = {
+    val committer =
+      KafkaCommitter[F](commit, ApplicativeThrow[F].raiseError(new NotImplementedError))
 
-  val exampleOffsetsCommitted: Map[TopicPartition, OffsetAndMetadata] = Map(
-    new TopicPartition("topic", 0) -> new OffsetAndMetadata(2L),
-    new TopicPartition("topic", 1) -> new OffsetAndMetadata(3L)
-  )
+    List(
+      CommittableOffset[F](
+        new TopicPartition("topic", 0),
+        new OffsetAndMetadata(1L),
+        committer
+      ),
+      CommittableOffset[F](
+        new TopicPartition("topic", 0),
+        new OffsetAndMetadata(2L),
+        committer
+      ),
+      CommittableOffset[F](
+        new TopicPartition("topic", 1),
+        new OffsetAndMetadata(1L),
+        committer
+      ),
+      CommittableOffset[F](
+        new TopicPartition("topic", 1),
+        new OffsetAndMetadata(2L),
+        committer
+      ),
+      CommittableOffset[F](
+        new TopicPartition("topic", 1),
+        new OffsetAndMetadata(3L),
+        committer
+      )
+    )
+  }
+
+  val exampleOffsetsCommitted: Map[TopicPartition, OffsetAndMetadata] =
+    Map(
+      new TopicPartition("topic", 0) -> new OffsetAndMetadata(2L),
+      new TopicPartition("topic", 1) -> new OffsetAndMetadata(3L)
+    )
 
 }
