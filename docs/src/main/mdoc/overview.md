@@ -46,6 +46,10 @@ Following is an incomplete list of third-party integrations.
 
 - [trace4cats-kafka](https://github.com/trace4cats/trace4cats-kafka)
 
+### Signatures
+
+Stable release artifacts are signed with the [`14CA 4AC4 FDB0 0D5F`](https://keys.openpgp.org/search?q=598648A65DF64506) key.
+
 ### Compatibility
 
 Backwards binary-compatibility for the library is guaranteed between minor and patch versions.<br>
