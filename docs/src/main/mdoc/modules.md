@@ -7,12 +7,12 @@ The following sections describe the additional modules.
 
 ## Vulcan
 
-The `@VULCAN_MODULE_NAME@` module provides [Avro](https://avro.apache.org) serialization support using [Vulcan](https://fd4s.github.io/vulcan).
+The `@VULCAN_MODULE_NAME@` module provides [Avro](https://avro.apache.org) serialization support using [Vulcan](https://typelevel.org/vulcan).
 
 Add it to your project in build.sbt;
 
 ```scala
-libraryDependencies += "com.github.fd4s" %% "fs2-kafka-vulcan" % fs2KafkaVersion
+libraryDependencies += "org.typelevel" %% "fs2-kafka-vulcan" % fs2KafkaVersion
 resolvers += "confluent" at "https://packages.confluent.io/maven/",
 ```
 
@@ -98,8 +98,9 @@ ProducerSettings(
 ).withBootstrapServers("localhost:9092")
 ```
 
-By default, a schema will automatically be registered when used to publish a message. We can disable this behaviour by 
+By default, a schema will automatically be registered when used to publish a message. We can disable this behaviour by
 using `withAutoRegisterSchemas(false)`. We can then use `registerSchema` to manually register the schema with the registry server:
+
 ```scala mdoc:silent
 val avroSettingsWithoutAutoRegister = avroSettings.withAutoRegisterSchemas(false)
 avroSettingsWithoutAutoRegister.registerSchema[String]("person-key") *>
@@ -150,7 +151,7 @@ avroSettingsSharedClient.map { avroSettings =>
 
 ## Vulcan testkit munit
 
-The `@VULCAN_TESTKIT_MUNIT_MODULE_NAME@` module provides an [munit](https://scalameta.org/munit/) fixture for testing vulcan 
+The `@VULCAN_TESTKIT_MUNIT_MODULE_NAME@` module provides an [munit](https://scalameta.org/munit/) fixture for testing vulcan
 codecs against a [schema registry](https://docs.confluent.io/platform/current/schema-registry/index.html)
 
 A usage example:
