@@ -49,9 +49,9 @@ final class ConsumerRecordSpec extends BaseSpec {
       check(NO_TIMESTAMP, CREATE_TIME)(_.timestamp.isEmpty shouldBe true)
       check(NO_TIMESTAMP, LOG_APPEND_TIME)(_.timestamp.isEmpty shouldBe true)
 
-      check(0, NO_TIMESTAMP_TYPE)(_.timestamp.unknownTime shouldBe Some(0))
-      check(0, CREATE_TIME)(_.timestamp.createTime shouldBe Some(0))
-      check(0, LOG_APPEND_TIME)(_.timestamp.logAppendTime shouldBe Some(0))
+      check(0, NO_TIMESTAMP_TYPE)(_.timestamp.toOption shouldBe Some(0))
+      check(0, CREATE_TIME)(_.timestamp.toOption shouldBe Some(0))
+      check(0, LOG_APPEND_TIME)(_.timestamp.toOption shouldBe Some(0))
     }
 
     it("should convert serialized key size") {
@@ -164,7 +164,7 @@ final class ConsumerRecordSpec extends BaseSpec {
         ConsumerRecord("topic", 0, 1, "key", "value").withTimestamp(Timestamp.createTime(0))
 
       val expected =
-        "ConsumerRecord(topic = topic, partition = 0, offset = 1, key = key, value = value, timestamp = Timestamp(createTime = 0))"
+        "ConsumerRecord(topic = topic, partition = 0, offset = 1, key = key, value = value, timestamp = CreateTime(0))"
 
       record.toString shouldBe expected
       record.show shouldBe expected

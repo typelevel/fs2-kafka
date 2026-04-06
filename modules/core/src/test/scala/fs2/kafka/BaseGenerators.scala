@@ -19,6 +19,7 @@ import fs2.Chunk
 
 import org.apache.kafka.clients.consumer.ConsumerGroupMetadata
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
+import org.apache.kafka.common.record.TimestampType
 import org.apache.kafka.common.TopicPartition
 import org.scalacheck.rng.Seed
 import org.scalacheck.Arbitrary
@@ -226,13 +227,14 @@ trait BaseGenerators {
 
   implicit val arbTimestamp: Arbitrary[Timestamp] = Arbitrary(genTimestamp)
 
+  implicit val cogenTimestampType: Cogen[TimestampType] =
+    Cogen[Int].contramap(_.id)
+
   implicit val cogenTimestamp: Cogen[Timestamp] =
     Cogen { (seed: Seed, timestamp: Timestamp) =>
       (Cogen
-        .perturb(_: Seed, timestamp.createTime))
-        .andThen(Cogen.perturb(_, timestamp.logAppendTime))
-        .andThen(Cogen.perturb(_, timestamp.unknownTime))
-        .andThen(Cogen.perturb(_, timestamp.isEmpty))
+        .perturb(_: Seed, timestamp.toOption))
+        .andThen(Cogen.perturb(_, timestamp.timestampType))
         .apply(seed)
     }
 
