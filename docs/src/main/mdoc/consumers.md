@@ -150,8 +150,6 @@ In addition, there are several settings specific to the library.
 
 - `withCommitTimeout` sets the timeout for offset commits. Default is 15 seconds.
 
-- `withCreateConsumer` changes how the underlying Java Kafka consumer is created. The default merely creates a Java `KafkaConsumer` instance using set properties, but this function allows overriding the behaviour for e.g. testing purposes.
-
 - `withMaxPrefetchBatches` adjusts the maximum number of record batches per topic-partition to prefetch before backpressure is applied. The default is 2, meaning there can be up to 2 record batches per topic-partition waiting to be processed.
 
 - `withPollInterval` alters how often consumer `poll` should take place. Default is 50 milliseconds.
@@ -345,7 +343,7 @@ object ConsumerCommitBatchExample extends IOApp.Simple {
 }
 ```
 
-The example above commits once every 500 offsets or 15 seconds, whichever happens first. The batch commit functions uses [`CommittableOffsetBatch`][committableoffsetbatch] and provided [functions][committableoffsetbatch$] for batching offsets. 
+The example above commits once every 500 offsets or 15 seconds, whichever happens first. The batch commit functions uses [`CommittableOffsetBatch`][committableoffsetbatch] and provided [functions][committableoffsetbatch$] for batching offsets.
 
 The batch commit functions uses [`CommittableOffsetBatch`][committableoffsetbatch] and provided [functions][committableoffsetbatch$] for batching offsets. For more involved batch commit scenarios, we can use [`CommittableOffsetBatch`][committableoffsetbatch] to batch offsets, while having custom logic to determine batch frequency.
 
@@ -386,6 +384,7 @@ When this application will be closed (for example, using Ctrl + C in the termina
 Usually, this is normal behavior for Kafka consumers because most of them work with the _at least once_ semantics. But sometimes, it is necessary to process all in-flight messages and close the `KafkaConsumer` instance only after that.
 
 To achieve this behavior we could use a `stopConsuming` method on a` KafkaConsumer`. Calling this method has the next effects:
+
 1. After this call no more data will be fetched from Kafka through the `poll` method.
 2. All currently running streams will continue to run until all in-flight messages will be processed.
    It means that streams will be completed when all fetched messages will be processed.
@@ -535,8 +534,8 @@ object WithGracefulShutdownExampleCE3 extends IOApp.Simple {
 }
 ```
 
-
 `processRecord` and `run` functions are the same. But resource handling part is changed:
+
 1. Here we allocated `KafkaConsumer` as a resource. Unlike the cats-effect 2 example, you don't need to use `allocated`.
 2. We created an `uncancelable` block. You can get more information about this in the [`MonadCancel` docs](https://typelevel.org/cats-effect/docs/typeclasses/monadcancel). But shortly — everything inside an `uncancelable` block ignores `cancel` signals. But if you want to create a _cancelable_ block inside, you can use `poll` for this. We will use it in our example.
 3. We started our application's main logic by calling the `run` function. An important note here: we are starting in a separate fiber. It's because we want to manually control the lifecycle of this fiber.

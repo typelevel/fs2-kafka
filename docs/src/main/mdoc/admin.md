@@ -25,8 +25,6 @@ There are several settings specific to the library.
 
 - `withCloseTimeout` controls the timeout when waiting for admin client shutdown. Default is 20 seconds.
 
-- `withCreateAdminClient` changes how the underlying Java Kafka admin client is created. The default creates a Java `AdminClient` instance using set properties, but this function allows overriding the behaviour for e.g. testing purposes.
-
 ## Client Creation
 
 Once settings are defined, we can use create an admin client in a `Stream`.

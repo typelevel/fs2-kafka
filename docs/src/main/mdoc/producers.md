@@ -131,8 +131,6 @@ The following settings are specific to the library.
 
 - `withCloseTimeout` controls the timeout when waiting for producer shutdown. Default is 60 seconds.
 
-- `withCreateProducer` changes how the underlying Java Kafka producer is created. The default merely creates a Java `KafkaProducer` instance using set properties, but this function allows overriding the behaviour for e.g. testing purposes.
-
 ## Producer Creation
 
 Once [`ProducerSettings`][producersettings] is defined, use `KafkaProducer.stream` to create a [`KafkaProducer`][kafkaproducer] instance.
