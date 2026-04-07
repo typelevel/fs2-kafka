@@ -7,21 +7,13 @@
 package fs2.kafka
 
 import scala.annotation.nowarn
-import scala.concurrent.Promise
-
-import cats.effect.syntax.all.*
 import cats.effect.Async
-import cats.effect.Outcome
-import cats.effect.Resource
 import cats.syntax.all.*
+import cats.effect.Resource
 import cats.Parallel
-import fs2.kafka.internal.*
-import fs2.kafka.internal.converters.collection.*
 import fs2.kafka.producer.MkProducer
 import fs2.Chunk
 import fs2.Stream
-
-import org.apache.kafka.clients.producer.RecordMetadata
 import org.apache.kafka.common.Metric
 import org.apache.kafka.common.MetricName
 
@@ -83,106 +75,49 @@ object TransactionalKafkaProducer {
     F: Async[F],
     mk: MkProducer[F],
     p: Parallel[F]
-  ): Resource[F, TransactionalKafkaProducer[F, K, V]] =
-    (
-      settings.producerSettings.keySerializer,
-      settings.producerSettings.valueSerializer,
-      WithTransactionalProducer(mk, settings)
-    ).mapN { (keySerializer, valueSerializer, withProducer) =>
-      new TransactionalKafkaProducer[F, K, V] {
+  ): Resource[F, TransactionalKafkaProducer[F, K, V]] = {
+    for {
+      producer <- LowLevelKafkaProducer.resource[F, K, V](settings)(F, mk)
+    } yield new TransactionalKafkaProducer[F, K, V] {
 
-        override def produce(
-          records: TransactionalProducerRecords[F, K, V]
-        ): F[ProducerResult[K, V]] =
-          produceTransactionWithOffsets(records)
-
-        private[this] def produceTransactionWithOffsets(
-          records: Chunk[CommittableProducerRecords[F, K, V]]
-        ): F[Chunk[(ProducerRecord[K, V], RecordMetadata)]] =
-          if (records.isEmpty) F.pure(Chunk.empty)
-          else {
-            val batch   = CommittableOffsetBatch.fromFoldableMap(records)(_.offset)
-            val offsets = Chunk.from(batch.offsets.toVector)
-
-            offsets.parFlatTraverse { case (committer, offsets) =>
-              committer
-                .metadata
-                .flatMap { consumerGroupMetadata =>
-                  val sendOffsets: (KafkaByteProducer, Blocking[F]) => F[Unit] =
-                    (producer, blocking) =>
-                      blocking {
-                        producer.sendOffsetsToTransaction(
-                          offsets.asJava,
-                          consumerGroupMetadata
-                        )
-                      }
-
-                  val producerRecords: Chunk[ProducerRecord[K, V]] =
+      override def produce(r: TransactionalProducerRecords[F, K, V]): F[ProducerResult[K, V]] = {
+        val records: Chunk[CommittableProducerRecords[F, K, V]] = r
+        if (records.isEmpty) F.pure(Chunk.empty)
+        else {
+          val batch   = CommittableOffsetBatch.fromFoldableMap(records)(_.offset)
+          val offsets = Chunk.from(batch.offsets.toVector)
+          producer
+            .transaction
+            .use { _ =>
+              offsets.parFlatTraverse { case (committer, offsets) =>
+                for {
+                  metadata       <- committer.metadata
+                  _              <- producer.sendOffsetsToTransaction(offsets, metadata)
+                  producerRecords =
                     records.filter(_.offset.committer == committer).flatMap(_.records)
-
-                  produceTransaction(producerRecords, Some(sendOffsets))
-                }
+                  result <- producer.produce(producerRecords)
+                } yield result
+              }
             }
-          }
-
-        override def produceWithoutOffsets(
-          records: ProducerRecords[K, V]
-        ): F[ProducerResult[K, V]] =
-          produceTransaction(records, None)
-
-        private[this] def produceTransaction(
-          records: Chunk[ProducerRecord[K, V]],
-          sendOffsets: Option[(KafkaByteProducer, Blocking[F]) => F[Unit]]
-        ): F[Chunk[(ProducerRecord[K, V], RecordMetadata)]] =
-          withProducer.exclusiveAccess { (producer, blocking) =>
-            blocking(producer.beginTransaction()).bracketCase { _ =>
-              def produceRecords(produceRecordError: Option[Promise[Throwable]]) =
-                records
-                  .traverse(
-                    KafkaProducer.produceRecord(
-                      keySerializer,
-                      valueSerializer,
-                      producer,
-                      blocking,
-                      produceRecordError
-                    )
-                  )
-                  .flatMap(_.sequence)
-
-              val produce =
-                if (settings.producerSettings.failFastProduce)
-                  Async[F]
-                    .delay(Promise[Throwable]())
-                    .flatMap { produceRecordError =>
-                      Async[F]
-                        .race(
-                          Async[F].fromFutureCancelable(
-                            Async[F].delay((produceRecordError.future, Async[F].unit))
-                          ),
-                          produceRecords(produceRecordError.some)
-                        )
-                        .rethrow
-                    }
-                else
-                  produceRecords(None)
-
-              sendOffsets.fold(produce)(f => produce.flatTap(_ => f(producer, blocking)))
-            } {
-              case (_, Outcome.Succeeded(_)) =>
-                blocking(producer.commitTransaction())
-              case (_, Outcome.Canceled() | Outcome.Errored(_)) =>
-                blocking(producer.abortTransaction())
-            }
-          }
-
-        override def metrics: F[Map[MetricName, Metric]] =
-          withProducer.blocking(_.metrics().asScala.toMap)
-
-        override def toString: String =
-          "TransactionalKafkaProducer$" + System.identityHashCode(this)
-
+        }
       }
+
+      override def produceWithoutOffsets(
+        records: ProducerRecords[K, V]
+      ): F[ProducerResult[K, V]] =
+        producer
+          .transaction
+          .use { _ =>
+            producer.produce(records)
+          }
+
+      override def metrics: F[Map[MetricName, Metric]] = producer.metrics
+
+      override def toString: String =
+        "TransactionalKafkaProducer$" + System.identityHashCode(this)
+
     }
+  }
 
   /**
     * Creates a new [[TransactionalKafkaProducer]] in the `Stream` context, using the specified
