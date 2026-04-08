@@ -7,16 +7,16 @@
 package fs2.kafka
 
 import scala.annotation.nowarn
-import scala.concurrent.{Promise}
+import scala.concurrent.Promise
 
 import cats.effect.{Async, Resource}
 import cats.effect.kernel.Resource.ExitCase
 import cats.effect.syntax.all.*
 import cats.syntax.all.*
-import fs2.{Chunk}
 import fs2.kafka.internal.*
 import fs2.kafka.internal.converters.collection.*
 import fs2.kafka.producer.MkProducer
+import fs2.Chunk
 
 import org.apache.kafka.clients.consumer.{ConsumerGroupMetadata, OffsetAndMetadata}
 import org.apache.kafka.clients.producer.RecordMetadata
@@ -70,8 +70,9 @@ object LowLevelKafkaProducer {
       for {
         _ <- withProducer.exclusiveAccess
         _ <- Resource.makeCase(acquireTx) {
-               case (_, ExitCase.Succeeded)                      => commitTx
-               case (_, ExitCase.Canceled | ExitCase.Errored(_)) => abortTx
+               case (_, ExitCase.Succeeded)  => commitTx
+               case (_, ExitCase.Canceled)   => abortTx
+               case (_, ExitCase.Errored(e)) => abortTx *> e.raiseError[F, Unit]
              }
       } yield ()
     }

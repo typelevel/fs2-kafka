@@ -92,10 +92,9 @@ object TransactionalKafkaProducer {
               offsets.parFlatTraverse { case (committer, offsets) =>
                 for {
                   metadata       <- committer.metadata
-                  _              <- producer.sendOffsetsToTransaction(offsets, metadata)
-                  producerRecords =
-                    records.filter(_.offset.committer == committer).flatMap(_.records)
+                  producerRecords = records.filter(_.offset.committer == committer).flatMap(_.records)
                   result <- producer.produce(producerRecords)
+                  _              <- producer.sendOffsetsToTransaction(offsets, metadata)
                 } yield result
               }
             }

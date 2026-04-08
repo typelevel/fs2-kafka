@@ -47,7 +47,6 @@ private[kafka] object WithTransactionalProducer {
                    .producerSettings
                    .customBlockingContext
                    .fold(Blocking.fromSync[F])(Blocking.fromExecutionContext)
-      _           <- blocking(producer.initTransactions()).toResource
       withProducer = create(producer, blocking, semaphore)
       close        = blocking(producer.close(settings.producerSettings.closeTimeout.toJava))
       _           <- Resource.onFinalize(close)
