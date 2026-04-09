@@ -26,6 +26,22 @@ import org.apache.kafka.common.{Metric, MetricName, PartitionInfo}
 abstract class KafkaProducer[F[_], K, V] {
 
   /**
+    * Returns producer metrics.
+    *
+    * @see
+    *   org.apache.kafka.clients.producer.KafkaProducer#metrics
+    */
+  def metrics: F[Map[MetricName, Metric]]
+
+  /**
+    * Returns partition metadata for the given topic.
+    *
+    * @see
+    *   org.apache.kafka.clients.producer.KafkaProducer#partitionsFor
+    */
+  def partitionsFor(topic: String): F[List[PartitionInfo]]
+
+  /**
     * Produces the specified [[ProducerRecords]] in two steps: the first effect puts the records in
     * the buffer of the producer, and the second effect waits for the records to send.<br><br>
     *
@@ -88,36 +104,6 @@ object KafkaProducer {
   }
 
   /**
-    * [[KafkaProducer.Metrics]] extends [[KafkaProducer]] to provide access to the underlying
-    * producer metrics.
-    */
-  abstract class Metrics[F[_], K, V] extends KafkaProducer[F, K, V] {
-
-    /**
-      * Returns producer metrics.
-      *
-      * @see
-      *   org.apache.kafka.clients.producer.KafkaProducer#metrics
-      */
-    def metrics: F[Map[MetricName, Metric]]
-  }
-
-  /**
-    * [[KafkaProducer.PartitionsFor]] extends [[KafkaProducer.Metrics]] to provide access to the
-    * underlying producer partitions.
-    */
-  abstract class PartitionsFor[F[_], K, V] extends KafkaProducer.Metrics[F, K, V] {
-
-    /**
-      * Returns partition metadata for the given topic.
-      *
-      * @see
-      *   org.apache.kafka.clients.producer.KafkaProducer#partitionsFor
-      */
-    def partitionsFor(topic: String): F[List[PartitionInfo]]
-  }
-
-  /**
     * Creates a new [[KafkaProducer]] in the `Resource` context, using the specified
     * [[ProducerSettings]]. Note that there is another version where `F[_]` is specified explicitly
     * and the key and value type can be inferred, which allows you to use the following syntax.
@@ -128,29 +114,28 @@ object KafkaProducer {
     */
   def resource[F[_], K, V](
     settings: ProducerSettings[F, K, V]
-  )(implicit F: Async[F], mk: MkProducer[F]): Resource[F, KafkaProducer.PartitionsFor[F, K, V]] =
+  )(implicit F: Async[F], mk: MkProducer[F]): Resource[F, KafkaProducer[F, K, V]] =
     KafkaProducerConnection.resource(settings)(F, mk).flatMap(_.withSerializersFrom(settings))
 
   private[kafka] def from[F[_], K, V](
     connection: KafkaProducerConnection[F],
     keySerializer: KeySerializer[F, K],
     valueSerializer: ValueSerializer[F, V]
-  ): KafkaProducer.PartitionsFor[F, K, V] =
-    new KafkaProducer.PartitionsFor[F, K, V] {
+  ): KafkaProducer[F, K, V] =
+    new KafkaProducer[F, K, V] {
+      override def metrics: F[Map[MetricName, Metric]] =
+        connection.metrics
+
+      override def partitionsFor(topic: String): F[List[PartitionInfo]] =
+        connection.partitionsFor(topic)
 
       override def produce(
         records: ProducerRecords[K, V]
       ): F[F[ProducerResult[K, V]]] =
         connection.produce(records)(keySerializer, valueSerializer)
 
-      override def metrics: F[Map[MetricName, Metric]] =
-        connection.metrics
-
       override def toString: String =
         "KafkaProducer$" + System.identityHashCode(this)
-
-      override def partitionsFor(topic: String): F[List[PartitionInfo]] =
-        connection.partitionsFor(topic)
 
     }
 
@@ -165,7 +150,7 @@ object KafkaProducer {
     */
   def stream[F[_], K, V](
     settings: ProducerSettings[F, K, V]
-  )(implicit F: Async[F], mk: MkProducer[F]): Stream[F, KafkaProducer.PartitionsFor[F, K, V]] =
+  )(implicit F: Async[F], mk: MkProducer[F]): Stream[F, KafkaProducer[F, K, V]] =
     Stream.resource(KafkaProducer.resource(settings)(F, mk))
 
   private[kafka] def produce[F[_]: Async, K, V](
