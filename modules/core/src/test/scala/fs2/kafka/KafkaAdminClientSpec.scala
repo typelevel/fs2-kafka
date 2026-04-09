@@ -505,9 +505,16 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
                 _            <- IO.blocking(consumer.poll(time.Duration.ofMillis(100)))
                 groupMembers <-
                   adminClient.describeConsumerGroups(List(groupID)).map(_(groupID)).map(_.members())
-                toRemove = groupMembers.asScala.map(_ => new MemberToRemove(instanceID)).toList
-                _       <-
+                toRemove = groupMembers
+                             .asScala
+                             .map(member => new MemberToRemove(member.groupInstanceId().get))
+                             .toList
+                _ <- IO.delay(assert(groupMembers.size == 1))
+                _ <-
                   adminClient.removeMembersFromConsumerGroup[List](groupID, toRemove, reason = None)
+                groupMembersAfter <-
+                  adminClient.describeConsumerGroups(List(groupID)).map(_(groupID)).map(_.members())
+                _ <- IO.delay(assert(groupMembersAfter.isEmpty))
               } yield ()
             }
             .unsafeRunSync()
