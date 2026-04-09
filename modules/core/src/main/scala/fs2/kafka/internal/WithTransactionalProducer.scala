@@ -59,10 +59,10 @@ private[kafka] object WithTransactionalProducer {
     transactionSemaphore: Semaphore[F]
   ): WithTransactionalProducer[F] = new WithTransactionalProducer[F] {
 
-
     override def blocking: Blocking[F] = _blocking
 
-    override def exclusiveAccess: Resource[F, Unit] = Resource.make(transactionSemaphore.acquire)(_ => transactionSemaphore.release)
+    override def exclusiveAccess: Resource[F, Unit] =
+      Resource.make(transactionSemaphore.acquire)(_ => transactionSemaphore.release)
 
     override def producer: KafkaByteProducer = _producer
   }

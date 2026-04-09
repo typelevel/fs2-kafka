@@ -7,9 +7,9 @@
 package fs2.kafka
 
 import scala.annotation.nowarn
+import scala.concurrent.duration.FiniteDuration
 
 import cats.{Foldable, Functor}
-import cats.data.NonEmptySet
 import cats.effect.*
 import cats.syntax.all.*
 import fs2.kafka.admin.MkAdminClient
@@ -103,21 +103,15 @@ sealed abstract class KafkaAdminClient[F[_]] {
   /**
     * Describes the cluster. Returns nodes using:
     *
-    * {{{
-    * describeCluster.nodes
-    * }}}
+    * {{{describeCluster.nodes}}}
     *
     * or the controller node using:
     *
-    * {{{
-    * describeCluster.controller
-    * }}}
+    * {{{describeCluster.controller}}}
     *
     * or the cluster ID using the following.
     *
-    * {{{
-    * describeCluster.clusterId
-    * }}}
+    * {{{describeCluster.clusterId}}}
     */
   def describeCluster: DescribeCluster[F]
 
@@ -264,6 +258,15 @@ sealed abstract class KafkaAdminClient[F[_]] {
   def deleteRecords(recordsToDelete: Map[TopicPartition, RecordsToDelete]): F[Unit]
 
   /**
+    * Creates a delegation token
+    */
+  def createDelegationToken(
+    renewers: List[KafkaPrincipal],
+    owner: Option[KafkaPrincipal],
+    maxLifeTime: Option[FiniteDuration]
+  ): F[DelegationToken]
+
+  /**
     * Expire a Delegation Token.
     */
   def expireDelegationToken(hmac: Array[Byte], expiryTimePeriodMs: Option[Long]): F[Long]
@@ -302,9 +305,9 @@ sealed abstract class KafkaAdminClient[F[_]] {
   /**
     * Remove members from the consumer group by given member identities.
     */
-  def removeMembersFromConsumerGroup(
+  def removeMembersFromConsumerGroup[G[_]: Foldable](
     groupId: String,
-    members: NonEmptySet[MemberToRemove],
+    members: G[MemberToRemove],
     reason: Option[String]
   ): F[Unit]
 
@@ -460,6 +463,19 @@ object KafkaAdminClient {
   ): F[Unit] =
     withAdminClient(_.deleteRecords(recordsToDelete.asJava).all).void
 
+  def createDelegationTokenWith[F[_]](
+    withAdminClient: WithAdminClient[F],
+    renewers: List[KafkaPrincipal],
+    owner: Option[KafkaPrincipal],
+    maxLifeTime: Option[FiniteDuration]
+  ): F[DelegationToken] = {
+    val options = new CreateDelegationTokenOptions()
+    options.renewers(renewers.asJava)
+    maxLifeTime.map(_.toMillis).foreach(options.maxLifetimeMs)
+    owner.foreach(options.owner)
+    withAdminClient(_.createDelegationToken(options).delegationToken())
+  }
+
   def expireDelegationTokenWith[F[_]: Functor](
     withAdminClient: WithAdminClient[F],
     hmac: Array[Byte],
@@ -517,13 +533,13 @@ object KafkaAdminClient {
         .reassignments()
     }.map(_.asScala.toMap)
 
-  def removeMembersFromConsumerGroupWith[F[_]: Functor](
+  def removeMembersFromConsumerGroupWith[F[_]: Functor, G[_]: Foldable](
     withAdminClient: WithAdminClient[F],
     groupId: String,
-    members: NonEmptySet[MemberToRemove],
+    members: G[MemberToRemove],
     reason: Option[String]
   ): F[Unit] = {
-    val options = new RemoveMembersFromConsumerGroupOptions(members.toSortedSet.asJava)
+    val options = new RemoveMembersFromConsumerGroupOptions(members.toList.asJava)
     reason.foreach(options.reason)
     withAdminClient(_.removeMembersFromConsumerGroup(groupId, options).all).void
   }
@@ -675,12 +691,6 @@ object KafkaAdminClient {
     withAdminClient { client =>
       KafkaFuture.completedFuture[Map[MetricName, Metric]](client.metrics().asScala.toMap)
     }
-
-  private[this] def alterConfigsWith[F[_]: Functor, G[_]: Foldable](
-    withAdminClient: WithAdminClient[F],
-    configs: Map[ConfigResource, G[AlterConfigOp]]
-  ): F[Unit] =
-    withAdminClient(_.incrementalAlterConfigs(configs.asJavaMap).all).void
 
   private[this] def createPartitionsWith[F[_]: Functor](
     withAdminClient: WithAdminClient[F],
@@ -1027,7 +1037,7 @@ object KafkaAdminClient {
     override def alterConfigs[G[_]](configs: Map[ConfigResource, G[AlterConfigOp]])(implicit
       G: Foldable[G]
     ): F[Unit] =
-      alterConfigsWith(client, configs)
+      alterConfigsWith(client, configs, validateOnly = false)
 
     override def createPartitions(newPartitions: Map[String, NewPartitions]): F[Unit] =
       createPartitionsWith(client, newPartitions)
@@ -1145,6 +1155,13 @@ object KafkaAdminClient {
     override def deleteRecords(recordsToDelete: Map[TopicPartition, RecordsToDelete]): F[Unit] =
       deleteRecordsWith[F](client, recordsToDelete)
 
+    override def createDelegationToken(
+      renewers: List[KafkaPrincipal],
+      owner: Option[KafkaPrincipal],
+      maxLifeTime: Option[FiniteDuration]
+    ): F[DelegationToken] =
+      createDelegationTokenWith[F](client, renewers, owner, maxLifeTime)
+
     /**
       * Expire a Delegation Token.
       */
@@ -1194,9 +1211,9 @@ object KafkaAdminClient {
     /**
       * Remove members from the consumer group by given member identities.
       */
-    override def removeMembersFromConsumerGroup(
+    override def removeMembersFromConsumerGroup[G[_]: Foldable](
       groupId: String,
-      members: NonEmptySet[MemberToRemove],
+      members: G[MemberToRemove],
       reason: Option[String]
     ): F[Unit] =
       removeMembersFromConsumerGroupWith(client, groupId, members, reason)

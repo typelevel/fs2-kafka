@@ -7,13 +7,15 @@
 package fs2.kafka
 
 import scala.annotation.nowarn
+
 import cats.effect.Async
-import cats.syntax.all.*
 import cats.effect.Resource
+import cats.syntax.all.*
 import cats.Parallel
 import fs2.kafka.producer.MkProducer
 import fs2.Chunk
 import fs2.Stream
+
 import org.apache.kafka.common.Metric
 import org.apache.kafka.common.MetricName
 
@@ -92,9 +94,10 @@ object TransactionalKafkaProducer {
               offsets.parFlatTraverse { case (committer, offsets) =>
                 for {
                   metadata       <- committer.metadata
-                  producerRecords = records.filter(_.offset.committer == committer).flatMap(_.records)
+                  producerRecords =
+                    records.filter(_.offset.committer == committer).flatMap(_.records)
                   result <- producer.produce(producerRecords)
-                  _              <- producer.sendOffsetsToTransaction(offsets, metadata)
+                  _      <- producer.sendOffsetsToTransaction(offsets, metadata)
                 } yield result
               }
             }
