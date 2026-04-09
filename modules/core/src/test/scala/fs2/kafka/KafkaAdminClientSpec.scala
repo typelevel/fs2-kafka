@@ -9,12 +9,12 @@ package fs2.kafka
 import java.time
 
 import scala.concurrent.duration.*
-import scala.jdk.CollectionConverters.*
 
 import cats.effect.{IO, SyncIO}
 import cats.effect.unsafe.implicits.global
 import cats.syntax.all.*
 import fs2.{Chunk, Stream}
+import fs2.kafka.internal.converters.collection.*
 
 import org.apache.kafka.clients.admin.{
   AlterConfigOp,
@@ -28,6 +28,7 @@ import org.apache.kafka.clients.admin.{
   RecordsToDelete
 }
 import org.apache.kafka.clients.consumer.{ConsumerConfig, OffsetAndMetadata}
+import org.apache.kafka.common.{IsolationLevel => KafkaIsolationLevel}
 import org.apache.kafka.common.acl.*
 import org.apache.kafka.common.config.ConfigResource
 import org.apache.kafka.common.errors.{
@@ -50,7 +51,6 @@ import org.apache.kafka.common.resource.{
 }
 import org.apache.kafka.common.security.auth.KafkaPrincipal
 import org.apache.kafka.common.ElectionType
-import org.apache.kafka.common.IsolationLevel
 import org.apache.kafka.common.TopicPartition
 import org.apache.kafka.common.TopicPartitionReplica
 
@@ -195,7 +195,6 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
               cr                    <- IO.pure(new ConfigResource(ConfigResource.Type.TOPIC, topic))
               delete                 = new ConfigEntry("cleanup.policy", "delete")
               compact                = new ConfigEntry("cleanup.policy", "compact")
-              invalid                = new ConfigEntry("cleanup.policy", "foo")
               setDelete              = Map(cr -> List(new AlterConfigOp(delete, AlterConfigOp.OpType.SET)))
               setCompact             = Map(cr -> List(new AlterConfigOp(compact, AlterConfigOp.OpType.SET)))
               _                     <- adminClient.alterConfigs[List](setDelete)
@@ -367,10 +366,9 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
               for {
                 offsets <- adminClient.listOffsets(
                              Map(tp -> OffsetSpec.latest()),
-                             IsolationLevel.READ_COMMITTED
+                             KafkaIsolationLevel.READ_COMMITTED
                            )
                 _            <- IO(assert(offsets(tp).offset() > 0L))
-                _             = println(offsets(tp).offset())
                 beforeDelete <-
                   IO.blocking(consumer.beginningOffsets(List(tp).asJava)).map(_.asScala)
                 _ <- adminClient.deleteRecords(
@@ -474,15 +472,15 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
               expireResult <- adminClient.expireDelegationToken(badHmac, None).attempt
             } yield {
               createResult match {
-                case Left(e: UnsupportedByAuthenticationException) => succeed
+                case Left(_: UnsupportedByAuthenticationException) => succeed
                 case other                                         => fail(s"expected createDelegationToken to fail but got: $other")
               }
               renewResult match {
-                case Left(e: UnsupportedByAuthenticationException) => succeed
+                case Left(_: UnsupportedByAuthenticationException) => succeed
                 case other                                         => fail(s"expected createDelegationToken to fail but got: $other")
               }
               expireResult match {
-                case Left(e: UnsupportedByAuthenticationException) => succeed
+                case Left(_: UnsupportedByAuthenticationException) => succeed
                 case other                                         => fail(s"expected createDelegationToken to fail but got: $other")
               }
             }
@@ -507,7 +505,7 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
                 _            <- IO.blocking(consumer.poll(time.Duration.ofMillis(100)))
                 groupMembers <-
                   adminClient.describeConsumerGroups(List(groupID)).map(_(groupID)).map(_.members())
-                toRemove = groupMembers.asScala.map(member => new MemberToRemove(instanceID)).toList
+                toRemove = groupMembers.asScala.map(_ => new MemberToRemove(instanceID)).toList
                 _       <-
                   adminClient.removeMembersFromConsumerGroup[List](groupID, toRemove, reason = None)
               } yield ()
@@ -537,7 +535,7 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
                  )
                  .toResource
         } yield (producer, adminClient))
-          .use { case (producer, adminClient) =>
+          .use { case (_, adminClient) =>
             for {
               listed       <- adminClient.listTransactions(None, None, None)
               _            <- IO(assert(listed.exists(_.transactionalId() == transactionID)))
@@ -637,9 +635,8 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
                   Stream
                     .repeatEval(IO.blocking(consumer.poll(java.time.Duration.ofMillis(2000))))
                     .map(_.asScala.toList.map(_.key()).map(new String(_)))
-                    .evalTap(IO.println)
                     .takeWhile(x => !x.exists(_ == "records02-success-tx"), true)
-                    .flatMap(Stream.emits)
+                    .flatMap(Stream.emits(_))
                     .compile
                     .toList
               } yield assert(!elements.exists(_ == "records01-aborted-tx"))
@@ -703,7 +700,7 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
           for {
             metrics <- adminClient.metrics()
             _       <- IO(assert(metrics.nonEmpty))
-          } yield println(metrics)
+          } yield ()
         }
         .unsafeRunSync()
     }
