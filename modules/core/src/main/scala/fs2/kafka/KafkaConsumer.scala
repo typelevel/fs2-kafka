@@ -28,7 +28,11 @@ import fs2.kafka.internal.converters.collection.*
 import fs2.kafka.internal.syntax.*
 import fs2.kafka.internal.KafkaConsumerActor.*
 
-import org.apache.kafka.clients.consumer.{OffsetAndMetadata, OffsetAndTimestamp}
+import org.apache.kafka.clients.consumer.{
+  ConsumerGroupMetadata,
+  OffsetAndMetadata,
+  OffsetAndTimestamp
+}
 import org.apache.kafka.common.{Metric, MetricName, PartitionInfo, TopicPartition}
 
 /**
@@ -569,6 +573,13 @@ object KafkaConsumer {
 
       override def awaitTermination: F[Unit] = fiber.joinWithUnit
 
+      /**
+        * Provides the current consumer group metadata.
+        *
+        * @return
+        */
+      override def groupMetadata: F[ConsumerGroupMetadata] =
+        withConsumer.blocking(_.groupMetadata())
     }
 
   /**

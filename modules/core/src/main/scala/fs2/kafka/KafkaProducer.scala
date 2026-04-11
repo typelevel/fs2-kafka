@@ -54,12 +54,14 @@ abstract class KafkaProducer[F[_], K, V] {
     * produceAndCommitTransactionally are called.
     *
     * Call is required to be done only once. Usually this is done after creating the producer.
+    *
+    * Using the "KafkaProducer.transactionalxxx" methods already calls this method.
     * @return
     */
-  def initializeTransaction(): F[Unit]
+  def initializeTransactions(): F[Unit]
 
   /**
-    * [[initializeTransaction()]] must be called before calling this method.
+    * [[initializeTransactions()]] must be called before calling this method.
     *
     * Returns a `Resource` that begins a transaction and:
     *   - commits it if the resource use finishes successfully,
@@ -224,7 +226,7 @@ object KafkaProducer {
   ): Resource[F, KafkaProducer[F, K, V]] = {
     for {
       producer <- KafkaProducer.resource(settings)(F, mk, P)
-      _        <- producer.initializeTransaction().toResource
+      _        <- producer.initializeTransactions().toResource
     } yield producer
   }
 
@@ -337,7 +339,7 @@ object KafkaProducer {
       else produceRecords(records, None)
     }
 
-    override def initializeTransaction(): F[Unit] =
+    override def initializeTransactions(): F[Unit] =
       blocking(producer.initTransactions())
 
     override def transaction: Resource[F, Unit] = {
