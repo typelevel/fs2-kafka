@@ -540,7 +540,7 @@ class TransactionalKafkaProducerTimeoutSpec extends BaseKafkaSpec with EitherVal
 
       val produced =
         (for {
-          producer <- KafkaProducer.stream(
+          producer <- KafkaProducer.transactionalStream(
                         producerSettingsTransactional[IO]
                           .withTransactionId(s"id-$topic")
                           .withTransactionTimeout(transactionTimeoutInterval)
