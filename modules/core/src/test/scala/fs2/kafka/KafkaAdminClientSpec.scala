@@ -42,49 +42,49 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
             for {
               consumerGroupIds <- adminClient.listConsumerGroups.groupIds
               consumerGroupId  <- IO(consumerGroupIds match {
-                case List(groupId) => groupId
-                case _             => fail()
-              })
+                                   case List(groupId) => groupId
+                                   case _             => fail()
+                                 })
               consumerGroupListings   <- adminClient.listConsumerGroups.listings
               _                       <- IO(assert(consumerGroupListings.size == 1))
               describedConsumerGroups <- adminClient.describeConsumerGroups(consumerGroupIds)
               _                       <- IO(assert(describedConsumerGroups.size == 1))
               _                       <- IO {
-                adminClient.listConsumerGroups.toString should
-                  startWith("ListConsumerGroups$")
-              }
+                     adminClient.listConsumerGroups.toString should
+                       startWith("ListConsumerGroups$")
+                   }
               consumerGroupsOffsets <- consumerGroupIds.parTraverse { groupId =>
-                adminClient
-                  .listConsumerGroupOffsets(groupId)
-                  .partitionsToOffsetAndMetadata
-                  .map((groupId, _))
-              }
+                                         adminClient
+                                           .listConsumerGroupOffsets(groupId)
+                                           .partitionsToOffsetAndMetadata
+                                           .map((groupId, _))
+                                       }
               offsets <- IO(consumerGroupsOffsets match {
-                case List(offsets) => offsets
-                case _             => fail()
-              })
+                           case List(offsets) => offsets
+                           case _             => fail()
+                         })
               (_, consumerGroupOffsetsMap) = offsets
               _                           <- IO(
-                assert(
-                  consumerGroupOffsetsMap
-                    .map { case (_, offset) =>
-                      offset.offset()
-                    }
-                    .forall(_ > 0)
-                )
-              )
+                     assert(
+                       consumerGroupOffsetsMap
+                         .map { case (_, offset) =>
+                           offset.offset()
+                         }
+                         .forall(_ > 0)
+                     )
+                   )
               _ <- IO {
-                adminClient
-                  .listConsumerGroupOffsets(consumerGroupId)
-                  .toString shouldBe "ListConsumerGroupOffsets(groupId = test-group-id)"
-              }
+                     adminClient
+                       .listConsumerGroupOffsets(consumerGroupId)
+                       .toString shouldBe "ListConsumerGroupOffsets(groupId = test-group-id)"
+                   }
               consumerGroupOffsetsPartitions <- consumerGroupIds.parTraverse { groupId =>
-                adminClient
-                  .listConsumerGroupOffsets(groupId)
-                  .forPartitions(List.empty[TopicPartition])
-                  .partitionsToOffsetAndMetadata
-                  .map((groupId, _))
-              }
+                                                  adminClient
+                                                    .listConsumerGroupOffsets(groupId)
+                                                    .forPartitions(List.empty[TopicPartition])
+                                                    .partitionsToOffsetAndMetadata
+                                                    .map((groupId, _))
+                                                }
               _ <- IO(assert(consumerGroupOffsetsPartitions.size == 1))
               _ <-
                 IO {
@@ -96,34 +96,34 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
               partition0    = new TopicPartition(topic, 0)
               updatedOffset = new OffsetAndMetadata(0)
               _            <- adminClient.alterConsumerGroupOffsets(
-                consumerGroupId,
-                Map(partition0 -> updatedOffset)
-              )
+                     consumerGroupId,
+                     Map(partition0 -> updatedOffset)
+                   )
               _ <- adminClient
-                .listConsumerGroupOffsets(consumerGroupId)
-                .partitionsToOffsetAndMetadata
-                .map { res =>
-                  val expected = consumerGroupOffsetsMap.updated(partition0, updatedOffset)
-                  assert {
-                    res(partition0) != consumerGroupOffsetsMap(partition0) && res == expected
-                  }
-                }
+                     .listConsumerGroupOffsets(consumerGroupId)
+                     .partitionsToOffsetAndMetadata
+                     .map { res =>
+                       val expected = consumerGroupOffsetsMap.updated(partition0, updatedOffset)
+                       assert {
+                         res(partition0) != consumerGroupOffsetsMap(partition0) && res == expected
+                       }
+                     }
               _ <- adminClient.deleteConsumerGroupOffsets(consumerGroupId, Set(partition0))
               _ <- adminClient
-                .listConsumerGroupOffsets(consumerGroupId)
-                .partitionsToOffsetAndMetadata
-                .map { res =>
-                  val expected = consumerGroupOffsetsMap - partition0
-                  assert(res == expected)
-                }
+                     .listConsumerGroupOffsets(consumerGroupId)
+                     .partitionsToOffsetAndMetadata
+                     .map { res =>
+                       val expected = consumerGroupOffsetsMap - partition0
+                       assert(res == expected)
+                     }
               _ <- adminClient.deleteConsumerGroups(consumerGroupIds)
               _ <- adminClient
-                .listConsumerGroups
-                .groupIds
-                .map { res =>
-                  val expected = List.empty
-                  assert(res == expected)
-                }
+                     .listConsumerGroups
+                     .groupIds
+                     .map { res =>
+                       val expected = List.empty
+                       assert(res == expected)
+                     }
             } yield ()
           }
           .unsafeRunSync()
@@ -145,8 +145,8 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
               clusterId         <- adminClient.describeCluster.clusterId
               _                 <- IO(assert(clusterId.nonEmpty))
               _                 <- IO {
-                adminClient.describeCluster.toString should startWith("DescribeCluster$")
-              }
+                     adminClient.describeCluster.toString should startWith("DescribeCluster$")
+                   }
             } yield ()
           }
           .unsafeRunSync()
@@ -164,19 +164,19 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
               cr             <- IO.pure(new ConfigResource(ConfigResource.Type.TOPIC, topic))
               ce              = new ConfigEntry("cleanup.policy", "delete")
               alteredConfigs <- adminClient
-                .alterConfigs {
-                  Map(cr -> List(new AlterConfigOp(ce, AlterConfigOp.OpType.SET)))
-                }
-                .attempt
+                                  .alterConfigs {
+                                    Map(cr -> List(new AlterConfigOp(ce, AlterConfigOp.OpType.SET)))
+                                  }
+                                  .attempt
               _                <- IO(assert(alteredConfigs.isRight))
               describedConfigs <- adminClient.describeConfigs(List(cr))
               _                <- IO(
-                assert(
-                  describedConfigs(cr).exists(actual =>
-                    actual.name == ce.name && actual.value == ce.value
-                  )
-                )
-              )
+                     assert(
+                       describedConfigs(cr).exists(actual =>
+                         actual.name == ce.name && actual.value == ce.value
+                       )
+                     )
+                   )
             } yield ()
           }
           .unsafeRunSync()
@@ -204,12 +204,12 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
               topicNamesToListingsInternal <- adminClient.listTopics.includeInternal.namesToListings
               _                            <- IO(assert(topicNamesToListingsInternal.size == topicCount + 1))
               _                            <- IO {
-                adminClient.listTopics.toString should startWith("ListTopics$")
-              }
+                     adminClient.listTopics.toString should startWith("ListTopics$")
+                   }
               _ <- IO {
-                adminClient.listTopics.includeInternal.toString should
-                  startWith("ListTopicsIncludeInternal$")
-              }
+                     adminClient.listTopics.includeInternal.toString should
+                       startWith("ListTopicsIncludeInternal$")
+                   }
               describedTopics  <- adminClient.describeTopics(topicNames.toList)
               _                <- IO(assert(describedTopics.size == topicCount))
               newTopic          = new NewTopic("new-test-topic", 1, 1.toShort)
@@ -226,18 +226,18 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
               describedTopics <- adminClient.describeTopics(topic :: Nil)
               _               <- IO(assert(describedTopics.size == 1))
               _               <- IO(
-                assert(describedTopics.headOption.exists(_._2.partitions.size == 4))
-              )
+                     assert(describedTopics.headOption.exists(_._2.partitions.size == 4))
+                   )
               deleteTopics    <- adminClient.deleteTopics(List(topic)).attempt
               _               <- IO(assert(deleteTopics.isRight))
               describedTopics <- adminClient.describeTopics(topic :: Nil).attempt
               _               <- IO(
-                assert(
-                  describedTopics.leftMap(_.getMessage()) == Left(
-                    "This server does not host this topic-partition."
-                  )
-                )
-              )
+                     assert(
+                       describedTopics.leftMap(_.getMessage()) == Left(
+                         "This server does not host this topic-partition."
+                       )
+                     )
+                   )
               deleteTopic <- adminClient.deleteTopic(newTopic.name()).attempt
               _           <- IO(assert(deleteTopic.isRight))
             } yield ()
@@ -258,11 +258,11 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
               _             <- IO(assert(describedAcls.isEmpty))
 
               aclEntry = new AccessControlEntry(
-                "User:ANONYMOUS",
-                "*",
-                AclOperation.DESCRIBE,
-                AclPermissionType.ALLOW
-              )
+                           "User:ANONYMOUS",
+                           "*",
+                           AclOperation.DESCRIBE,
+                           AclPermissionType.ALLOW
+                         )
               pattern    = new ResourcePattern(ResourceType.TOPIC, topic, PatternType.LITERAL)
               acl        = new AclBinding(pattern, aclEntry)
               _         <- adminClient.createAcls(List(acl))
@@ -272,18 +272,18 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
 
               // delete another Entry
               _ <- adminClient.deleteAcls(
-                List(
-                  new AclBindingFilter(
-                    ResourcePatternFilter.ANY,
-                    new AccessControlEntryFilter(
-                      "User:ANONYMOUS",
-                      "*",
-                      AclOperation.WRITE,
-                      AclPermissionType.ALLOW
-                    )
-                  )
-                )
-              )
+                     List(
+                       new AclBindingFilter(
+                         ResourcePatternFilter.ANY,
+                         new AccessControlEntryFilter(
+                           "User:ANONYMOUS",
+                           "*",
+                           AclOperation.WRITE,
+                           AclPermissionType.ALLOW
+                         )
+                       )
+                     )
+                   )
               foundAcls <- adminClient.describeAcls(AclBindingFilter.ANY)
               _         <- IO(assert(foundAcls.length == 1))
 
@@ -305,8 +305,8 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
           .use { adminClient =>
             for {
               _ <- IO {
-                adminClient.toString should startWith("KafkaAdminClient$")
-              }
+                     adminClient.toString should startWith("KafkaAdminClient$")
+                   }
             } yield ()
           }
           .unsafeRunSync()
