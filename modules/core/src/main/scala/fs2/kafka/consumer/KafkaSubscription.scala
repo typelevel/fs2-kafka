@@ -7,8 +7,10 @@
 package fs2.kafka.consumer
 
 import scala.util.matching.Regex
+
 import cats.data.NonEmptyList
 import cats.Reducible
+
 import org.apache.kafka.clients.consumer.ConsumerGroupMetadata
 
 trait KafkaSubscription[F[_]] {
@@ -47,9 +49,9 @@ trait KafkaSubscription[F[_]] {
   def unsubscribe: F[Unit]
 
   /**
-   * Provides the current consumer group metadata.
-   * @return
-   */
+    * Provides the current consumer group metadata.
+    * @return
+    */
   def groupMetadata: F[ConsumerGroupMetadata]
 
 }

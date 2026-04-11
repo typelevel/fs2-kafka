@@ -65,7 +65,6 @@ final class KafkaProducerSpec extends BaseKafkaSpec {
   it("should be able to produce with different serializers") {
     withTopic { topic =>
       createCustomTopic(topic, partitions = 3)
-      val toProduce = (0 until 100).map(n => s"key-$n" -> s"value->$n")
       (for {
         stringProducer <- KafkaProducer.stream(producerSettings[IO])
         unitProducer    = stringProducer.withSerializers[Unit, Unit](implicitly, implicitly)

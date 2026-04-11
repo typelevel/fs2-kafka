@@ -3,28 +3,13 @@ id: transactions
 title: Transactions
 ---
 
-Kafka transactions are supported through a [`TransactionalKafkaProducer`][transactionalkafkaproducer]. In order to use transactions, the following steps should be taken. For details on [consumers](consumers.md) and [producers](producers.md), see the respective sections.
+Kafka transactions are supported through a [`KafkaProducer`][transactionalkafkaproducer] instantiated via one of the `KafkaProducer.transactional` or `KafkaProducer.transactionalStream` methods.
 
-- Create `KafkaConsumer` then split its stream into sub-streams - one for each topic.
+For details on [consumers](consumers.md) and [producers](producers.md), see the respective sections.
 
-- Use `withIsolationLevel(IsolationLevel.ReadCommitted)` on `ConsumerSettings`.
+The following imports are assumed throughout this page.
 
-- Create `TransactionalKafkaProducer` for each sub-stream with `TransactionalProducerSettings` to create a producer with support for transactions with **partition unique** transaction id. Kafka requires partition unique transactional ids for producer "handover" and zombie fencing.   
-
-- Use `.withEnableIdempotence(true)` and `.withRetries(n)` where `n > 0` on `ProducerSettings`
-
-- Create `CommittableProducerRecords` and wrap them in `TransactionalProducerRecords`.
-
-- Combine all sub-streams into one stream.
-
-> Note that calls to `produce` are sequenced in the `TransactionalKafkaProducer` to ensure that, when used concurrently, transactions don't run into each other resulting in an invalid transaction transition exception.
->
-> Because the `TransactionalKafkaProducer` waits for the record batch to be flushed and the transaction committed on the broker, this could lead to performance bottlenecks where a single producer is shared among many threads.
-> To ensure the performance of `TransactionalKafkaProducer` aligns with your performance expectations when used concurrently, it is recommended you create a pool of transactional producers.
-
-Following is an example where transactions are used to consume, process, produce, and commit.
-
-```scala mdoc
+```scala mdoc:silent
 import scala.concurrent.duration._
 
 import cats.effect.{IO, IOApp}
@@ -32,7 +17,36 @@ import fs2.kafka._
 import fs2.Stream
 
 import org.apache.kafka.common.TopicPartition
+```
 
+## Producing and Committing Offsets
+
+To produce data and commit offsets transactionally, we first need to create a `KafkaConsumer` and `ProducerSettings`. The `ProducerSettings` must have idempotence enabled, retries set to a value greater than zero, and a transactional ID configured.
+
+```scala mdoc:silent
+val consumerSettings =
+  ConsumerSettings[IO, String, String]
+    .withIsolationLevel(IsolationLevel.ReadCommitted)
+    .withBootstrapServers("localhost:9092")
+    .withGroupId("group")
+
+val producerSettings =
+  ProducerSettings[IO, String, String]
+    .withBootstrapServers("localhost:9092")
+    .withEnableIdempotence(true)
+    .withRetries(10)
+    .withTransactionId("transactional-id")
+```
+
+Once the settings are created, we can instantiate a `KafkaProducer` using `KafkaProducer.transactional` or `KafkaProducer.transactionalStream`. We then create `CommittableProducerRecords`, wrap them in `TransactionalProducerRecords`, and use the `produceAndCommitTransactionally` method.
+
+> Note that calls to `produceAndCommitTransactionally` are sequenced in the `KafkaProducer` to ensure that, when used concurrently, transactions don't run into each other resulting in an invalid transaction transition exception.
+>
+> Because the `KafkaProducer` waits for the record batch to be flushed and the transaction committed on the broker, this could lead to performance bottlenecks where a single producer is shared among many threads. To ensure the performance of `KafkaProducer` aligns with your performance expectations when used concurrently, it is recommended you create a pool of transactional producers.
+
+Following is an example where transactions are used to consume, process, produce, and commit.
+
+```scala mdoc
 object Main extends IOApp.Simple {
 
   val run: IO[Unit] = {
@@ -47,13 +61,11 @@ object Main extends IOApp.Simple {
         .withGroupId("group")
 
     def producerSettings(partition: TopicPartition) =
-      TransactionalProducerSettings(
-        s"transactional-id-$partition",
-        ProducerSettings[IO, String, String]
-          .withBootstrapServers("localhost:9092")
-          .withEnableIdempotence(true)
-          .withRetries(10)
-      )
+      ProducerSettings[IO, String, String]
+        .withBootstrapServers("localhost:9092")
+        .withEnableIdempotence(true)
+        .withRetries(10)
+        .withTransactionId(s"transactional-id-$partition")
 
     KafkaConsumer
       .stream(consumerSettings)
@@ -61,8 +73,8 @@ object Main extends IOApp.Simple {
       .flatMap(_.partitionsMapStream)
       .map(
         _.map { case (partition, stream) =>
-          TransactionalKafkaProducer
-            .stream(producerSettings(partition))
+          KafkaProducer
+            .transactionalStream(producerSettings(partition))
             .flatMap { producer =>
               stream
                 .mapAsync(25) { committable =>
@@ -72,7 +84,7 @@ object Main extends IOApp.Simple {
                   }
                 }
                 .groupWithin(500, 15.seconds)
-                .evalMap(producer.produce)
+                .evalMap(producer.produceAndCommitTransactionally)
             }
         }
       )
@@ -85,5 +97,18 @@ object Main extends IOApp.Simple {
 
 }
 ```
+
+## Producing Only Data
+
+To produce only data transactionally, without committing offsets, we can use the `produceTransactionally` method. Similar to producing and committing offsets, we need a transactional `KafkaProducer` and `TransactionalProducerRecords`.
+
+## Fine-grained Control
+
+The following methods provide more control over the transaction lifecycle:
+
+- `initializeTransactions`: initializes the underlying Kafka Producer transaction mechanism.
+- `transaction`: a resource that represents a transaction, handling commit and abort automatically.
+- `commitOffsets`: allows committing offsets using the producer within a transaction.
+- `produce`: can be used within a transaction to produce records.
 
 [transactionalkafkaproducer]: @API_BASE_URL@/TransactionalKafkaProducer.html
