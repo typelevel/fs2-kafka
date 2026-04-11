@@ -602,15 +602,17 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
                        .transaction
                        .use { _ =>
                          for {
-                           _ <- producer.produce(
-                                  Chunk.singleton(
-                                    ProducerRecord(
-                                      tp.topic(),
-                                      "records01-aborted-tx",
-                                      "records01-aborted-tx"
-                                    ).withPartition(tp.partition())
+                           _ <- producer
+                                  .produce(
+                                    Chunk.singleton(
+                                      ProducerRecord(
+                                        tp.topic(),
+                                        "records01-aborted-tx",
+                                        "records01-aborted-tx"
+                                      ).withPartition(tp.partition())
+                                    )
                                   )
-                                )
+                                  .flatten
                            producers <- adminClient.describeProducers(tp.some, none)
                            myProducer = producers.headOption.get._2.activeProducers().asScala.head
                            _         <- adminClient.abortTransaction(

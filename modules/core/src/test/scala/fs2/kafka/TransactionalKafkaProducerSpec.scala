@@ -44,7 +44,7 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
       KafkaProducer[IO].resource(settings)
 
       KafkaProducer[IO].toString should startWith(
-        "TransactionalProducerPartiallyApplied$"
+        "ProducerPartiallyApplied$"
       )
     }
   }
@@ -82,8 +82,10 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
     val produced =
       (for {
         producer <-
-          KafkaProducer.stream(producerSettingsTransactional[IO].withTransactionId(s"id-$topic"))
-        _                      <- Stream.eval(IO(producer.toString should startWith("TransactionalKafkaProducer$")))
+          KafkaProducer.transactionalStream(
+            producerSettingsTransactional[IO].withTransactionId(s"id-$topic")
+          )
+        _                      <- Stream.eval(IO(producer.toString should startWith("KafkaProducer$")))
         (records, passthrough) <-
           Stream
             .chunk(Chunk.from(toProduce))
@@ -539,7 +541,9 @@ class TransactionalKafkaProducerTimeoutSpec extends BaseKafkaSpec with EitherVal
       val produced =
         (for {
           producer <- KafkaProducer.transactionalStream(
-                        producerSettingsTransactional[IO].withTransactionId(s"id-$topic")
+                        producerSettingsTransactional[IO]
+                          .withTransactionId(s"id-$topic")
+                          .withTransactionTimeout(transactionTimeoutInterval)
                       )
           recordsToProduce = toProduce.map { case (key, value) =>
                                ProducerRecord(topic, key, value)

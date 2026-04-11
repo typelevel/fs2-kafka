@@ -18,7 +18,6 @@ import cats.syntax.all.*
 import fs2.*
 import fs2.kafka.internal.*
 import fs2.kafka.internal.converters.collection.*
-import fs2.kafka.internal.converters.duration.*
 import fs2.kafka.producer.MkProducer
 
 import org.apache.kafka.clients.consumer.{ConsumerGroupMetadata, OffsetAndMetadata}
@@ -150,6 +149,8 @@ abstract class KafkaProducer[F[_], K, V] {
     v: ValueSerializer[F, V2]
   ): KafkaProducer[F, K2, V2]
 
+  def toString: String
+
 }
 
 object KafkaProducer {
@@ -242,9 +243,8 @@ object KafkaProducer {
     F: Async[F],
     mk: MkProducer[F],
     P: Parallel[F]
-  ): Stream[F, KafkaProducer[F, K, V]] = {
+  ): Stream[F, KafkaProducer[F, K, V]] =
     Stream.resource(transactional(settings)(F, mk, P))
-  }
 
   /**
     * Creates a [[KafkaProducer]] using the provided settings and produces record in batches.
@@ -289,7 +289,7 @@ object KafkaProducer {
       semaphore       <- Semaphore(1).toResource
       blocking         =
         settings.customBlockingContext.fold(Blocking.fromSync[F])(Blocking.fromExecutionContext)
-      close            = blocking(producer.close(settings.closeTimeout.toJava))
+      close            = blocking(producer.close(java.time.Duration.ofMillis(settings.closeTimeout.toMillis)))
       _               <- Resource.onFinalize(close)
       fs2KafkaProducer = resourceInternal[F, K, V](
                            settings.failFastProduce,
@@ -310,6 +310,9 @@ object KafkaProducer {
     txSemaphore: Semaphore[F],
     blocking: Blocking[F]
   )(implicit F: Async[F], P: Parallel[F]): KafkaProducer[F, K, V] = new KafkaProducer[F, K, V] {
+
+    override def toString: String =
+      "KafkaProducer$" + System.identityHashCode(this)
 
     def withSerializers[K2, V2](
       k: KeySerializer[F, K2],
@@ -390,7 +393,7 @@ object KafkaProducer {
       *   org.apache.kafka.clients.producer.KafkaProducer#metrics
       */
     override def metrics: F[Map[MetricName, Metric]] =
-      blocking(producer.metrics().asScala.toMap)
+      blocking(producer.metrics().asScala.toMap[MetricName, Metric])
 
     /**
       * Returns partition metadata for the given topic.
@@ -435,6 +438,9 @@ object KafkaProducer {
     ): F[F[Chunk[(ProducerRecord[K, V], RecordMetadata)]]] =
       records.traverse(produceRecord(produceRecordError)).map(_.sequence)
   }
+
+  override def toString: String =
+    "KafkaProducer$" + System.identityHashCode(this)
 
   private[this] def serializeToBytes[F[_], K, V](
     keySerializer: KeySerializer[F, K],
