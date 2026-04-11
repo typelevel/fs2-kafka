@@ -9,37 +9,27 @@ package fs2.kafka
 import scala.annotation.nowarn
 import scala.concurrent.Promise
 
-import cats.{Apply, Functor}
+import cats.{Apply, Functor, Parallel}
 import cats.effect.*
+import cats.effect.kernel.Resource.ExitCase
+import cats.effect.std.Semaphore
+import cats.effect.syntax.all.*
 import cats.syntax.all.*
 import fs2.*
 import fs2.kafka.internal.*
+import fs2.kafka.internal.converters.collection.*
+import fs2.kafka.internal.converters.duration.*
 import fs2.kafka.producer.MkProducer
 
+import org.apache.kafka.clients.consumer.{ConsumerGroupMetadata, OffsetAndMetadata}
 import org.apache.kafka.clients.producer.RecordMetadata
-import org.apache.kafka.common.{Metric, MetricName, PartitionInfo}
+import org.apache.kafka.common.{Metric, MetricName, PartitionInfo, TopicPartition}
 
 /**
   * [[KafkaProducer]] represents a producer of Kafka records, with the ability to produce
   * `ProducerRecord`s using [[produce]].
   */
 abstract class KafkaProducer[F[_], K, V] {
-
-  /**
-    * Returns producer metrics.
-    *
-    * @see
-    *   org.apache.kafka.clients.producer.KafkaProducer#metrics
-    */
-  def metrics: F[Map[MetricName, Metric]]
-
-  /**
-    * Returns partition metadata for the given topic.
-    *
-    * @see
-    *   org.apache.kafka.clients.producer.KafkaProducer#partitionsFor
-    */
-  def partitionsFor(topic: String): F[List[PartitionInfo]]
 
   /**
     * Produces the specified [[ProducerRecords]] in two steps: the first effect puts the records in
@@ -58,9 +48,107 @@ abstract class KafkaProducer[F[_], K, V] {
     *     records are produced, and still have `otherAction` execute after records have been sent,
     *     but losing the order of produced records.
     */
-  def produce(
-    records: ProducerRecords[K, V]
-  ): F[F[ProducerResult[K, V]]]
+  def produce(records: ProducerRecords[K, V]): F[F[ProducerResult[K, V]]]
+
+  /**
+    * Initialize transaction must be called before transaction, produceTransactionally and
+    * produceAndCommitTransactionally are called.
+    *
+    * Call is required to be done only once. Usually this is done after creating the producer.
+    * @return
+    */
+  def initializeTransaction(): F[Unit]
+
+  /**
+    * [[initializeTransaction()]] must be called before calling this method.
+    *
+    * Returns a `Resource` that begins a transaction and:
+    *   - commits it if the resource use finishes successfully,
+    *   - aborts it if an error occurs or the process is canceled.
+    *
+    * Important: Only one transaction can be opened at any time. If a transaction is started within
+    * the lifecycle a transaction, the code will deadlock.
+    *
+    * @example
+    *   {{{
+    *   producer.transaction.use { _ =>
+    *     producer.transaction.use { _ => //will deadlock since it will be waiting for the outter one to terminate
+    *        IO.unit
+    *      }
+    *   }
+    *   }}}
+    * @return
+    *   a `Resource` that handles the transaction lifecycle.
+    */
+  def transaction: Resource[F, Unit]
+
+  /**
+    * Commits offsets.
+    */
+  def commitOffsets(
+    offsets: Map[TopicPartition, OffsetAndMetadata],
+    groupMetadata: ConsumerGroupMetadata
+  ): F[Unit]
+
+  /**
+    * Produces the `ProducerRecord`s in the specified [[TransactionalProducerRecords]] in four
+    * steps: first a transaction is initialized, then the records are placed in the buffer of the
+    * producer, then the offsets of the records are sent to the transaction, and lastly the
+    * transaction is committed. If errors or cancellation occurs, the transaction is aborted. The
+    * returned effect succeeds if the whole transaction completes successfully.
+    *
+    * It's equivalent to
+    * @example
+    *   {{{
+    *        producer.transaction.use { _ =>
+    *          producer.produceRecords(records).sequence
+    *          producer.commitOffsets(offsets, consumer.groupMetadata)
+    *        }
+    *   }}}
+    */
+  def produceAndCommitTransactionally(
+    records: TransactionalProducerRecords[F, K, V]
+  ): F[ProducerResult[K, V]]
+
+  /**
+    * Produces the `ProducerRecord`s in the specified [[ProducerRecords]] in three steps: first a
+    * transaction is initialized, then the records are placed in the buffer of the producer, and
+    * lastly the transaction is committed. If errors or cancellation occurs, the transaction is
+    * aborted. The returned effect succeeds if the whole transaction completes successfully.
+    *
+    * * It's equivalent to * @example {{{ * producer.transaction.use { _ => *
+    * producer.produceRecords(records) * } * }}}
+    */
+  def produceTransactionally(records: ProducerRecords[K, V]): F[ProducerResult[K, V]]
+
+  /**
+    * Returns producer metrics.
+    *
+    * @see
+    *   org.apache.kafka.clients.producer.KafkaProducer#metrics
+    */
+  def metrics: F[Map[MetricName, Metric]]
+
+  /**
+    * Returns partition metadata for the given topic.
+    *
+    * @see
+    *   org.apache.kafka.clients.producer.KafkaProducer#partitionsFor
+    */
+  def partitionsFor(topic: String): F[List[PartitionInfo]]
+
+  /**
+    * Allows using the same producer with a different key and value serializer.
+    * @param k
+    * @param v
+    * @tparam K2
+    * @tparam V2
+    * @return
+    */
+  def withSerializers[K2, V2](
+    k: KeySerializer[F, K2],
+    v: ValueSerializer[F, V2]
+  ): KafkaProducer[F, K2, V2]
 
 }
 
@@ -104,42 +192,6 @@ object KafkaProducer {
   }
 
   /**
-    * Creates a new [[KafkaProducer]] in the `Resource` context, using the specified
-    * [[ProducerSettings]]. Note that there is another version where `F[_]` is specified explicitly
-    * and the key and value type can be inferred, which allows you to use the following syntax.
-    *
-    * {{{
-    * KafkaProducer.resource[F].using(settings)
-    * }}}
-    */
-  def resource[F[_], K, V](
-    settings: ProducerSettings[F, K, V]
-  )(implicit F: Async[F], mk: MkProducer[F]): Resource[F, KafkaProducer[F, K, V]] =
-    KafkaProducerConnection.resource(settings)(F, mk).flatMap(_.withSerializersFrom(settings))
-
-  private[kafka] def from[F[_], K, V](
-    connection: KafkaProducerConnection[F],
-    keySerializer: KeySerializer[F, K],
-    valueSerializer: ValueSerializer[F, V]
-  ): KafkaProducer[F, K, V] =
-    new KafkaProducer[F, K, V] {
-      override def metrics: F[Map[MetricName, Metric]] =
-        connection.metrics
-
-      override def partitionsFor(topic: String): F[List[PartitionInfo]] =
-        connection.partitionsFor(topic)
-
-      override def produce(
-        records: ProducerRecords[K, V]
-      ): F[F[ProducerResult[K, V]]] =
-        connection.produce(records)(keySerializer, valueSerializer)
-
-      override def toString: String =
-        "KafkaProducer$" + System.identityHashCode(this)
-
-    }
-
-  /**
     * Creates a new [[KafkaProducer]] in the `Stream` context, using the specified
     * [[ProducerSettings]]. Note that there is another version where `F[_]` is specified explicitly
     * and the key and value type can be inferred, which allows you to use the following syntax.
@@ -150,24 +202,122 @@ object KafkaProducer {
     */
   def stream[F[_], K, V](
     settings: ProducerSettings[F, K, V]
-  )(implicit F: Async[F], mk: MkProducer[F]): Stream[F, KafkaProducer[F, K, V]] =
-    Stream.resource(KafkaProducer.resource(settings)(F, mk))
+  )(implicit F: Async[F], mk: MkProducer[F], P: Parallel[F]): Stream[F, KafkaProducer[F, K, V]] =
+    Stream.resource(KafkaProducer.resource(settings)(F, mk, P))
 
-  private[kafka] def produce[F[_]: Async, K, V](
-    withProducer: WithProducer[F],
+  /**
+    * Creates a new [[KafkaProducer]] in the `Resource` context, using the specified
+    * [[ProducerSettings]]. Note that there is another version where `F[_]` is specified explicitly
+    * and the key and value type can be inferred, which allows you to use the following syntax.
+    *
+    * {{{
+    * KafkaProducer.stream[F].using(settings)
+    * }}}
+    */
+  def transactional[F[_], K, V](
+    settings: ProducerSettings[F, K, V]
+  )(implicit
+    F: Async[F],
+    mk: MkProducer[F],
+    P: Parallel[F]
+  ): Resource[F, KafkaProducer[F, K, V]] = {
+    for {
+      producer <- KafkaProducer.resource(settings)(F, mk, P)
+      _        <- producer.initializeTransaction().toResource
+    } yield producer
+  }
+
+  /**
+    * Creates a new [[KafkaProducer]] in the `Stream` context, using the specified
+    * [[ProducerSettings]]. Note that there is another version where `F[_]` is specified explicitly
+    * and the key and value type can be inferred, which allows you to use the following syntax.
+    *
+    * {{{
+    * KafkaProducer.stream[F].using(settings)
+    * }}}
+    */
+  def transactionalStream[F[_], K, V](
+    settings: ProducerSettings[F, K, V]
+  )(implicit
+    F: Async[F],
+    mk: MkProducer[F],
+    P: Parallel[F]
+  ): Stream[F, KafkaProducer[F, K, V]] = {
+    Stream.resource(transactional(settings)(F, mk, P))
+  }
+
+  /**
+    * Creates a [[KafkaProducer]] using the provided settings and produces record in batches.
+    */
+  def pipe[F[_], K, V](
+    settings: ProducerSettings[F, K, V]
+  )(implicit
+    F: Async[F],
+    mk: MkProducer[F],
+    P: Parallel[F]
+  ): Pipe[F, ProducerRecords[K, V], ProducerResult[K, V]] =
+    records => stream(settings)(F, mk, P).flatMap(pipe(_).apply(records))
+
+  /**
+    * Produces records in batches using the provided [[KafkaProducer]].
+    */
+  def pipe[F[_]: Concurrent, K, V](
+    producer: KafkaProducer[F, K, V]
+  ): Pipe[F, ProducerRecords[K, V], ProducerResult[K, V]] =
+    _.evalMap(producer.produce).parEvalMap(Int.MaxValue)(identity)
+
+  /**
+    * Creates a new [[KafkaProducer]] in the `Resource` context, using the specified
+    * [[ProducerSettings]]. Note that there is another version where `F[_]` is specified explicitly
+    * and the key and value type can be inferred, which allows you to use the following syntax.
+    *
+    * {{{
+    * KafkaProducer.resource[F].using(settings)
+    * }}}
+    */
+  def resource[F[_], K, V](
+    settings: ProducerSettings[F, K, V]
+  )(implicit
+    F: Async[F],
+    mk: MkProducer[F],
+    P: Parallel[F]
+  ): Resource[F, KafkaProducer[F, K, V]] = {
+    for {
+      keySerializer   <- settings.keySerializer
+      valueSerializer <- settings.valueSerializer
+      producer        <- mk(settings).toResource
+      semaphore       <- Semaphore(1).toResource
+      blocking         =
+        settings.customBlockingContext.fold(Blocking.fromSync[F])(Blocking.fromExecutionContext)
+      close            = blocking(producer.close(settings.closeTimeout.toJava))
+      _               <- Resource.onFinalize(close)
+      fs2KafkaProducer = resourceInternal[F, K, V](
+                           settings.failFastProduce,
+                           keySerializer,
+                           valueSerializer,
+                           producer,
+                           semaphore,
+                           blocking
+                         )
+    } yield fs2KafkaProducer
+  }
+
+  private def resourceInternal[F[_], K, V](
+    failFastProduce: Boolean,
     keySerializer: KeySerializer[F, K],
     valueSerializer: ValueSerializer[F, V],
-    records: ProducerRecords[K, V],
-    failFastProduce: Boolean
-  ): F[F[ProducerResult[K, V]]] =
-    withProducer { (producer, blocking) =>
-      def produceRecords(produceRecordError: Option[Promise[Throwable]]) =
-        records
-          .traverse(
-            produceRecord(keySerializer, valueSerializer, producer, blocking, produceRecordError)
-          )
-          .map(_.sequence)
+    producer: KafkaByteProducer,
+    txSemaphore: Semaphore[F],
+    blocking: Blocking[F]
+  )(implicit F: Async[F], P: Parallel[F]): KafkaProducer[F, K, V] = new KafkaProducer[F, K, V] {
 
+    def withSerializers[K2, V2](
+      k: KeySerializer[F, K2],
+      v: ValueSerializer[F, V2]
+    ): KafkaProducer[F, K2, V2] =
+      resourceInternal[F, K2, V2](failFastProduce, k, v, producer, txSemaphore, blocking)
+
+    override def produce(records: ProducerRecords[K, V]): F[F[ProducerResult[K, V]]] = {
       if (failFastProduce)
         Async[F]
           .delay(Promise[Throwable]())
@@ -177,63 +327,114 @@ object KafkaProducer {
                 Async[F].fromFutureCancelable(
                   Async[F].delay((produceRecordError.future, Async[F].unit))
                 ),
-                produceRecords(produceRecordError.some)
+                produceRecords(records, produceRecordError.some)
               )
               .rethrow
           }
-      else produceRecords(None)
+      else produceRecords(records, None)
     }
 
-  private[kafka] def produceRecord[F[_], K, V](
-    keySerializer: KeySerializer[F, K],
-    valueSerializer: ValueSerializer[F, V],
-    producer: KafkaByteProducer,
-    blocking: Blocking[F],
-    produceRecordError: Option[Promise[Throwable]]
-  )(implicit
-    F: Async[F]
-  ): ProducerRecord[K, V] => F[F[(ProducerRecord[K, V], RecordMetadata)]] =
-    record =>
-      asJavaRecord(keySerializer, valueSerializer, record).flatMap { javaRecord =>
-        F.delay(Promise[(ProducerRecord[K, V], RecordMetadata)]())
-          .flatMap { promise =>
-            blocking {
-              producer.send(
-                javaRecord,
-                { (metadata, exception) =>
-                  if (exception == null) { promise.success((record, metadata)) }
-                  else {
-                    promise.failure(exception)
-                    produceRecordError.foreach(_.tryFailure(exception))
-                  }
-                }
-              )
-            }.map(javaFuture =>
-              F.fromFutureCancelable(
-                F.delay((promise.future, F.delay(javaFuture.cancel(true)).void))
-              )
-            )
+    override def initializeTransaction(): F[Unit] =
+      blocking(producer.initTransactions())
+
+    override def transaction: Resource[F, Unit] = {
+      val acquireTx = blocking(producer.beginTransaction())
+      val commitTx  = blocking(producer.commitTransaction())
+      val abortTx   = blocking(producer.abortTransaction())
+      for {
+        _ <- txSemaphore.permit
+        _ <- Resource.makeCase(acquireTx) {
+               case (_, ExitCase.Succeeded)  => commitTx
+               case (_, ExitCase.Canceled)   => abortTx
+               case (_, ExitCase.Errored(e)) => abortTx *> e.raiseError[F, Unit]
+             }
+      } yield ()
+    }
+
+    override def commitOffsets(
+      offsets: Map[TopicPartition, OffsetAndMetadata],
+      groupMetadata: ConsumerGroupMetadata
+    ): F[Unit] = blocking(producer.sendOffsetsToTransaction(offsets.asJava, groupMetadata))
+
+    override def produceAndCommitTransactionally(
+      r: TransactionalProducerRecords[F, K, V]
+    ): F[ProducerResult[K, V]] = {
+      val records: Chunk[CommittableProducerRecords[F, K, V]] = r
+      if (records.isEmpty) F.pure(Chunk.empty)
+      else {
+        val batch   = CommittableOffsetBatch.fromFoldableMap(records)(_.offset)
+        val offsets = Chunk.from(batch.offsets.toVector)
+        transaction.use { _ =>
+          offsets.parFlatTraverse { case (committer, offsets) =>
+            for {
+              metadata       <- committer.metadata
+              producerRecords = records.filter(_.offset.committer == committer).flatMap(_.records)
+              result         <- produce(producerRecords).flatten
+              _              <- commitOffsets(offsets, metadata)
+            } yield result
           }
+        }
       }
+    }
 
-  /**
-    * Creates a [[KafkaProducer]] using the provided settings and produces record in batches.
-    */
-  def pipe[F[_], K, V](
-    settings: ProducerSettings[F, K, V]
-  )(implicit
-    F: Async[F],
-    mk: MkProducer[F]
-  ): Pipe[F, ProducerRecords[K, V], ProducerResult[K, V]] =
-    records => stream(settings)(F, mk).flatMap(pipe(_).apply(records))
+    override def produceTransactionally(
+      records: ProducerRecords[K, V]
+    ): F[ProducerResult[K, V]] =
+      if (records.isEmpty) F.pure(Chunk.empty)
+      else { transaction.use(_ => produce(records).flatten) }
 
-  /**
-    * Produces records in batches using the provided [[KafkaProducer]].
-    */
-  def pipe[F[_]: Concurrent, K, V](
-    producer: KafkaProducer[F, K, V]
-  ): Pipe[F, ProducerRecords[K, V], ProducerResult[K, V]] =
-    _.evalMap(producer.produce).parEvalMap(Int.MaxValue)(identity)
+    /**
+      * Returns producer metrics.
+      *
+      * @see
+      *   org.apache.kafka.clients.producer.KafkaProducer#metrics
+      */
+    override def metrics: F[Map[MetricName, Metric]] =
+      blocking(producer.metrics().asScala.toMap)
+
+    /**
+      * Returns partition metadata for the given topic.
+      *
+      * @see
+      *   org.apache.kafka.clients.producer.KafkaProducer#partitionsFor
+      */
+    override def partitionsFor(topic: String): F[List[PartitionInfo]] =
+      blocking(producer.partitionsFor(topic).asScala.toList)
+
+    private def produceRecord(
+      produceRecordError: Option[Promise[Throwable]]
+    )(implicit
+      F: Async[F]
+    ): ProducerRecord[K, V] => F[F[(ProducerRecord[K, V], RecordMetadata)]] =
+      record =>
+        asJavaRecord(keySerializer, valueSerializer, record).flatMap { javaRecord =>
+          F.delay(Promise[(ProducerRecord[K, V], RecordMetadata)]())
+            .flatMap { promise =>
+              blocking {
+                producer.send(
+                  javaRecord,
+                  { (metadata, exception) =>
+                    if (exception == null) { promise.success((record, metadata)) }
+                    else {
+                      promise.failure(exception)
+                      produceRecordError.foreach(_.tryFailure(exception))
+                    }
+                  }
+                )
+              }.map(javaFuture =>
+                F.fromFutureCancelable(
+                  F.delay((promise.future, F.delay(javaFuture.cancel(true)).void))
+                )
+              )
+            }
+        }
+
+    private def produceRecords(
+      records: ProducerRecords[K, V],
+      produceRecordError: Option[Promise[Throwable]]
+    ): F[F[Chunk[(ProducerRecord[K, V], RecordMetadata)]]] =
+      records.traverse(produceRecord(produceRecordError)).map(_.sequence)
+  }
 
   private[this] def serializeToBytes[F[_], K, V](
     keySerializer: KeySerializer[F, K],
@@ -282,9 +483,10 @@ object KafkaProducer {
       */
     def resource[K, V](settings: ProducerSettings[F, K, V])(implicit
       F: Async[F],
-      mk: MkProducer[F]
+      mk: MkProducer[F],
+      P: Parallel[F]
     ): Resource[F, KafkaProducer[F, K, V]] =
-      KafkaProducer.resource(settings)(F, mk)
+      KafkaProducer.resource(settings)(F, mk, P)
 
     /**
       * Alternative version of `stream` where the `F[_]` is specified explicitly, and where the key
@@ -297,9 +499,10 @@ object KafkaProducer {
       */
     def stream[K, V](settings: ProducerSettings[F, K, V])(implicit
       F: Async[F],
-      mk: MkProducer[F]
+      mk: MkProducer[F],
+      P: Parallel[F]
     ): Stream[F, KafkaProducer[F, K, V]] =
-      KafkaProducer.stream(settings)(F, mk)
+      KafkaProducer.stream(settings)(F, mk, P)
 
     override def toString: String =
       "ProducerPartiallyApplied$" + System.identityHashCode(this)

@@ -12,8 +12,6 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
 
-import scala.concurrent.duration.*
-
 import cats.effect.unsafe.implicits.global
 import cats.effect.IO
 import cats.syntax.all.*
@@ -37,15 +35,15 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
 
   describe("creating transactional producers") {
     it("should support defined syntax") {
-      val settings = TransactionalProducerSettings("id", producerSettingsTransactional[IO])
+      val settings = producerSettingsTransactional[IO].withTransactionId("id")
 
-      TransactionalKafkaProducer.resource[IO, String, String](settings)
-      TransactionalKafkaProducer[IO].resource(settings)
+      KafkaProducer.transactional[IO, String, String](settings)
+      KafkaProducer[IO].resource(settings)
 
-      TransactionalKafkaProducer.stream[IO, String, String](settings)
-      TransactionalKafkaProducer[IO].resource(settings)
+      KafkaProducer.stream[IO, String, String](settings)
+      KafkaProducer[IO].resource(settings)
 
-      TransactionalKafkaProducer[IO].toString should startWith(
+      KafkaProducer[IO].toString should startWith(
         "TransactionalProducerPartiallyApplied$"
       )
     }
@@ -83,12 +81,8 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
 
     val produced =
       (for {
-        producer <- TransactionalKafkaProducer.stream(
-                      TransactionalProducerSettings(
-                        s"id-$topic",
-                        producerSettingsTransactional[IO]
-                      )
-                    )
+        producer <-
+          KafkaProducer.stream(producerSettingsTransactional[IO].withTransactionId(s"id-$topic"))
         _                      <- Stream.eval(IO(producer.toString should startWith("TransactionalKafkaProducer$")))
         (records, passthrough) <-
           Stream
@@ -116,7 +110,9 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
         passthrough <-
           Stream
             .eval(
-              records.fold(producer.produceWithoutOffsets, producer.produce).tupleRight(passthrough)
+              records
+                .fold(producer.produceTransactionally, producer.produceAndCommitTransactionally)
+                .tupleRight(passthrough)
             )
             .map(_._2)
             .buffer(toProduce.size)
@@ -189,11 +185,8 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
       }
       val committer = kafkaCommitter("group")
       for {
-        producer <- TransactionalKafkaProducer.stream(
-                      TransactionalProducerSettings(
-                        s"id-$topic",
-                        producerSettingsTransactional[IO]
-                      )
+        producer <- KafkaProducer.transactionalStream(
+                      producerSettingsTransactional[IO].withTransactionId(s"id-$topic")
                     )
         offsets = (i: Int) =>
                     CommittableOffset[IO](
@@ -204,7 +197,7 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
 
         records = Chunk.from(0 to 100).map(i => CommittableProducerRecords(Chunk.empty, offsets(i)))
 
-        results <- Stream.eval(producer.produce(records))
+        results <- Stream.eval(producer.produceAndCommitTransactionally(records))
       } yield {
         results should be(empty)
         commitState.get shouldBe true
@@ -221,11 +214,8 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
 
     val produced =
       (for {
-        producer <- TransactionalKafkaProducer.stream(
-                      TransactionalProducerSettings(
-                        s"id-$topic",
-                        producerSettingsTransactional[IO]
-                      )
+        producer <- KafkaProducer.transactionalStream(
+                      producerSettingsTransactional[IO].withTransactionId(s"id-$topic")
                     )
         recordsToProduce = toProduce.map { case (key, value) =>
                              ProducerRecord(topic, key, value)
@@ -245,10 +235,10 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
                               offset
                             )
                           }
-                      producer.produce(records).tupleLeft(toPassthrough)
+                      producer.produceAndCommitTransactionally(records).tupleLeft(toPassthrough)
                     case None =>
                       val records = ProducerRecords(recordsToProduce)
-                      producer.produceWithoutOffsets(records).tupleLeft(toPassthrough)
+                      producer.produceTransactionally(records).tupleLeft(toPassthrough)
                   }
 
         result <- Stream.eval(produce)
@@ -284,11 +274,8 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
 
       val result =
         (for {
-          producer <- TransactionalKafkaProducer.stream(
-                        TransactionalProducerSettings(
-                          s"id-$topic",
-                          producerSettingsTransactional[IO]
-                        )
+          producer <- KafkaProducer.transactionalStream(
+                        producerSettingsTransactional[IO].withTransactionId(s"id-$topic")
                       )
           recordsToProduce = toProduce.map { case (key, value) =>
                                ProducerRecord(topic, key, value)
@@ -311,10 +298,10 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
                         )
                       }
           _ <- Stream
-                 .eval(producer.produce(records))
+                 .eval(producer.produceAndCommitTransactionally(records))
                  .concurrently(
                    Stream.eval(
-                     producer.produce(
+                     producer.produceAndCommitTransactionally(
                        TransactionalProducerRecords.one(
                          CommittableProducerRecords.one(
                            ProducerRecord[String, String](topic, "test", "test"),
@@ -369,11 +356,8 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
 
       val produced =
         (for {
-          producer <- TransactionalKafkaProducer.stream(
-                        TransactionalProducerSettings(
-                          s"id-$topic",
-                          producerSettingsTransactional[IO]
-                        )
+          producer <- KafkaProducer.transactionalStream(
+                        producerSettingsTransactional[IO].withTransactionId(s"id-$topic")
                       )
           recordsToProduce = toProduce.map { case (key, value) =>
                                ProducerRecord(topic, key, value)
@@ -395,7 +379,10 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
                           offset
                         )
                       }
-          result <- Stream.eval(producer.produce(records).tupleLeft(toPassthrough).attempt)
+          result <-
+            Stream.eval(
+              producer.produceAndCommitTransactionally(records).tupleLeft(toPassthrough).attempt
+            )
         } yield result).compile.lastOrError.unsafeRunSync()
 
       produced shouldBe Left(error)
@@ -479,17 +466,15 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
       )
       val committable = CommittableProducerRecords(producerRecords, committableOffset)
 
-      val settings = TransactionalProducerSettings(
-        transactionalId = s"fail-fast-$topic",
-        producerSettings = producerSettingsTransactional[IO]
-          .withProperty(ProducerConfig.MAX_BLOCK_MS_CONFIG, "10000")
-          .withFailFastProduce(true)
-      )
+      val settings = producerSettingsTransactional[IO]
+        .withProperty(ProducerConfig.MAX_BLOCK_MS_CONFIG, "10000")
+        .withFailFastProduce(true)
+        .withTransactionId(s"fail-fast-$topic")
 
       val result = intercept[RuntimeException] {
-        TransactionalKafkaProducer
-          .stream(settings)
-          .evalMap(_.produce(Chunk.singleton(committable)))
+        KafkaProducer
+          .transactionalStream(settings)
+          .evalMap(_.produceAndCommitTransactionally(Chunk.singleton(committable)))
           .compile
           .lastOrError
           .unsafeRunSync()
@@ -505,13 +490,8 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
       createCustomTopic(topic, partitions = 3)
 
       val info =
-        TransactionalKafkaProducer[IO]
-          .stream(
-            TransactionalProducerSettings(
-              transactionalId = s"id-$topic",
-              producerSettings = producerSettingsTransactional[IO]
-            )
-          )
+        KafkaProducer[IO]
+          .stream(producerSettingsTransactional[IO].withTransactionId(s"id-$topic"))
           .evalMap(_.metrics)
 
       val res =
@@ -558,11 +538,8 @@ class TransactionalKafkaProducerTimeoutSpec extends BaseKafkaSpec with EitherVal
 
       val produced =
         (for {
-          producer <- TransactionalKafkaProducer.stream(
-                        TransactionalProducerSettings(
-                          s"id-$topic",
-                          producerSettingsTransactional[IO]
-                        ).withTransactionTimeout(transactionTimeoutInterval - 250.millis)
+          producer <- KafkaProducer.transactionalStream(
+                        producerSettingsTransactional[IO].withTransactionId(s"id-$topic")
                       )
           recordsToProduce = toProduce.map { case (key, value) =>
                                ProducerRecord(topic, key, value)
@@ -575,7 +552,7 @@ class TransactionalKafkaProducerTimeoutSpec extends BaseKafkaSpec with EitherVal
           records = TransactionalProducerRecords.one(
                       CommittableProducerRecords(recordsToProduce, offset)
                     )
-          result <- Stream.eval(producer.produce(records).attempt)
+          result <- Stream.eval(producer.produceAndCommitTransactionally(records).attempt)
         } yield result).compile.lastOrError.unsafeRunSync()
 
       produced.left.value shouldBe an[ProducerFencedException]

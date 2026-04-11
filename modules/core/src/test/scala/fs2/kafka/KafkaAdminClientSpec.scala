@@ -528,11 +528,10 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
         commonSetup(topic)
         val tp = new TopicPartition(topic, 0)
         (for {
-          producer <- LowLevelKafkaProducer.resource[IO, Unit, Unit](
-                        TransactionalProducerSettings(
-                          transactionID,
-                          ProducerSettings[IO, Unit, Unit].withProperties(defaultConsumerProperties)
-                        )
+          producer <- KafkaProducer.transactional[IO, Unit, Unit](
+                        ProducerSettings[IO, Unit, Unit]
+                          .withProperties(defaultConsumerProperties)
+                          .withTransactionId(transactionID)
                       )
           adminClient <- KafkaAdminClient.resource[IO](adminClientSettings)
           _           <- producer.transaction // start transaction so that it can be managed
@@ -590,13 +589,11 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
           commonSetup(topic)
           val tp = new TopicPartition(topic, 0)
           (for {
-            producer <-
-              LowLevelKafkaProducer.resource[IO, String, String](
-                TransactionalProducerSettings(
-                  transactionID,
-                  ProducerSettings[IO, String, String].withProperties(defaultConsumerProperties)
-                )
-              )
+            producer <- KafkaProducer.transactional[IO, String, String](
+                          ProducerSettings[IO, String, String]
+                            .withProperties(defaultConsumerProperties)
+                            .withTransactionId(transactionID)
+                        )
             adminClient <- KafkaAdminClient.resource[IO](adminClientSettings)
           } yield (producer, adminClient))
             .use { case (producer, adminClient) =>
