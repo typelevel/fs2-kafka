@@ -197,13 +197,11 @@ object KafkaProducer {
     Stream.resource(KafkaProducer.resource(settings)(F, mk, P))
 
   /**
-    * Creates a new [[KafkaProducer]] in the `Resource` context, using the specified
-    * [[ProducerSettings]]. Note that there is another version where `F[_]` is specified explicitly
-    * and the key and value type can be inferred, which allows you to use the following syntax.
+    * Creates a new transactional [[KafkaProducer]] in the `Resource` context, using the specified
+    * [[ProducerSettings]].
     *
-    * {{{
-    * KafkaProducer.stream[F].using(settings)
-    * }}}
+    * This function will automatically invoke `KafkaProducer#initTransactions` when the producer is
+    * created.
     */
   def transactional[F[_], K, V](
     settings: ProducerSettings[F, K, V]
@@ -219,13 +217,11 @@ object KafkaProducer {
   }
 
   /**
-    * Creates a new [[KafkaProducer]] in the `Stream` context, using the specified
-    * [[ProducerSettings]]. Note that there is another version where `F[_]` is specified explicitly
-    * and the key and value type can be inferred, which allows you to use the following syntax.
+    * Creates a new transactional [[KafkaProducer]] in the `Stream` context, using the specified
+    * [[ProducerSettings]].
     *
-    * {{{
-    * KafkaProducer.stream[F].using(settings)
-    * }}}
+    * This function will automatically invoke `KafkaProducer#initTransactions` when the producer is
+    * created.
     */
   def transactionalStream[F[_], K, V](
     settings: ProducerSettings[F, K, V]
@@ -428,9 +424,6 @@ object KafkaProducer {
     ): F[F[Chunk[(ProducerRecord[K, V], RecordMetadata)]]] =
       records.traverse(produceRecord(produceRecordError)).map(_.sequence)
   }
-
-  override def toString: String =
-    "KafkaProducer$" + System.identityHashCode(this)
 
   private[this] def serializeToBytes[F[_], K, V](
     keySerializer: KeySerializer[F, K],
