@@ -1216,7 +1216,7 @@ object KafkaAdminClient {
       ): F[Map[String, UserScramCredentialsDescription]] =
         describeUserScramCredentialsWith(client, users)
 
-      override def describeFeatures(): F[FeatureMetadata] =
+      override def describeFeatures: F[FeatureMetadata] =
         describeFeaturesWith(client)
 
       override def updateFeatures(
@@ -1224,7 +1224,7 @@ object KafkaAdminClient {
         validateOnly: Boolean
       ): F[Unit] = updateFeaturesWith(client, features, validateOnly)
 
-      override def describeMetadataQuorum(): F[QuorumInfo] =
+      override def describeMetadataQuorum: F[QuorumInfo] =
         describeMetadataQuorumWith(client)
 
       override def describeProducers[G[_]: Foldable](
@@ -1256,7 +1256,7 @@ object KafkaAdminClient {
       override def fenceProducers[G[_]: Foldable](transactionalIds: G[String]): F[Unit] =
         fenceProducersWith(client, transactionalIds)
 
-      override def listConfigResources(): F[List[ConfigResource]] =
+      override def listConfigResources: F[List[ConfigResource]] =
         listConfigResourcesWith[F](client)
 
       override def addRaftVoter(
