@@ -62,6 +62,20 @@ final class KafkaProducerSpec extends BaseKafkaSpec {
     }
   }
 
+  it("should be able to produce with different serializers") {
+    withTopic { topic =>
+      createCustomTopic(topic, partitions = 3)
+      (for {
+        stringProducer <- KafkaProducer.stream(producerSettings[IO])
+        unitProducer    = stringProducer.withSerializers[Unit, Unit](implicitly, implicitly)
+        intProducer     = stringProducer.withSerializers[Int, Int](implicitly, implicitly)
+        _              <- Stream.eval(stringProducer.produceOne(ProducerRecord(topic, "str", "str")).flatten)
+        _              <- Stream.eval(unitProducer.produceOne(ProducerRecord(topic, (), ())).flatten)
+        _              <- Stream.eval(intProducer.produceOne(ProducerRecord(topic, 1, 2)).flatten)
+      } yield ()).compile.toVector.unsafeRunSync()
+    }
+  }
+
   it("should preserve order of records within a partition") {
     withTopic { topic =>
       createCustomTopic(topic)

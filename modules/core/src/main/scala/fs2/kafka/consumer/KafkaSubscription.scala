@@ -11,6 +11,8 @@ import scala.util.matching.Regex
 import cats.data.NonEmptyList
 import cats.Reducible
 
+import org.apache.kafka.clients.consumer.ConsumerGroupMetadata
+
 trait KafkaSubscription[F[_]] {
 
   /**
@@ -45,5 +47,10 @@ trait KafkaSubscription[F[_]] {
     * Unsubscribes the consumer from all topics and partitions assigned by `subscribe` or `assign`.
     */
   def unsubscribe: F[Unit]
+
+  /**
+    * Returns the current consumer group metadata.
+    */
+  def groupMetadata: F[ConsumerGroupMetadata]
 
 }

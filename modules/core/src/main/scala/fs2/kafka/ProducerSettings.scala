@@ -216,6 +216,27 @@ sealed abstract class ProducerSettings[F[_], K, V] {
   def withCredentials(credentialsStore: KafkaCredentialStore): ProducerSettings[F, K, V]
 
   /**
+    * Returns a new [[ProducerSettings]] instance with the specified transaction timeout. This is
+    * setting the following producer property, except you can specify it with a `FiniteDuration`
+    * instead of a `String`.
+    *
+    * {{{
+    * ProducerConfig.TRANSACTION_TIMEOUT_CONFIG
+    * }}}
+    */
+  def withTransactionTimeout(transactionTimeout: FiniteDuration): ProducerSettings[F, K, V]
+
+  /**
+    * Returns a new [[ProducerSettings]] instance with the specified transactional id. This is
+    * equivalent to setting the following property using the [[withProperty]] function.
+    *
+    * {{{
+    * ProducerConfig.TRANSACTIONAL_ID_CONFIG
+    * }}}
+    */
+  def withTransactionalId(transactionalId: String): ProducerSettings[F, K, V]
+
+  /**
     * Controls whether [[fs2.kafka.KafkaProducer.produce]] fails immediately if any
     * [[org.apache.kafka.clients.producer.KafkaProducer.send]] callback resolves with error.
     *
@@ -321,6 +342,14 @@ object ProducerSettings {
 
     override def withFailFastProduce(failFastProduce: Boolean): ProducerSettings[F, K, V] =
       copy(failFastProduce = failFastProduce)
+
+    override def withTransactionTimeout(
+      transactionTimeout: FiniteDuration
+    ): ProducerSettings[F, K, V] =
+      withProperty(ProducerConfig.TRANSACTION_TIMEOUT_CONFIG, transactionTimeout.toMillis.toString)
+
+    override def withTransactionalId(transactionalId: String): ProducerSettings[F, K, V] =
+      withProperty(ProducerConfig.TRANSACTIONAL_ID_CONFIG, transactionalId)
 
   }
 
