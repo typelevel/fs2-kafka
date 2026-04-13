@@ -347,7 +347,7 @@ sealed abstract class KafkaAdminClient[F[_]] {
     * Describe all SASL/SCRAM credentials.
     */
   def describeUserScramCredentials(
-    users: Option[List[String]] = None
+    users: Option[List[String]]
   ): F[Map[String, UserScramCredentialsDescription]]
 
   /**
