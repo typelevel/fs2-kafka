@@ -113,9 +113,6 @@ abstract class KafkaProducer[F[_], K, V] {
     * transaction is initialized, then the records are placed in the buffer of the producer, and
     * lastly the transaction is committed. If errors or cancellation occurs, the transaction is
     * aborted. The returned effect succeeds if the whole transaction completes successfully.
-    *
-    * * It's equivalent to * @example {{{ * producer.transaction.use { _ => *
-    * producer.produceRecords(records) * } * }}}
     */
   def produceTransactionally(records: ProducerRecords[K, V]): F[ProducerResult[K, V]]
 
