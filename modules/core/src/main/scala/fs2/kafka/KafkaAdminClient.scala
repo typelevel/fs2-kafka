@@ -9,9 +9,10 @@ package fs2.kafka
 import scala.annotation.nowarn
 import scala.concurrent.duration.FiniteDuration
 
-import cats.{Foldable, Functor}
 import cats.effect.*
 import cats.syntax.all.*
+import cats.Foldable
+import cats.Functor
 import fs2.kafka.admin.MkAdminClient
 import fs2.kafka.internal.converters.collection.*
 import fs2.kafka.internal.converters.option.*
@@ -26,21 +27,22 @@ import org.apache.kafka.clients.admin.DescribeReplicaLogDirsResult.ReplicaLogDir
 import org.apache.kafka.clients.admin.ListOffsetsResult.ListOffsetsResultInfo
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common
-import org.apache.kafka.common.{
-  ElectionType,
-  KafkaFuture,
-  Metric,
-  MetricName,
-  Node,
-  TopicPartition,
-  TopicPartitionReplica,
-  Uuid
-}
-import org.apache.kafka.common.acl.{AclBinding, AclBindingFilter}
+import org.apache.kafka.common.acl.AclBinding
+import org.apache.kafka.common.acl.AclBindingFilter
 import org.apache.kafka.common.config.ConfigResource
-import org.apache.kafka.common.quota.{ClientQuotaAlteration, ClientQuotaEntity, ClientQuotaFilter}
+import org.apache.kafka.common.quota.ClientQuotaAlteration
+import org.apache.kafka.common.quota.ClientQuotaEntity
+import org.apache.kafka.common.quota.ClientQuotaFilter
 import org.apache.kafka.common.security.auth.KafkaPrincipal
 import org.apache.kafka.common.security.token.delegation.DelegationToken
+import org.apache.kafka.common.ElectionType
+import org.apache.kafka.common.KafkaFuture
+import org.apache.kafka.common.Metric
+import org.apache.kafka.common.MetricName
+import org.apache.kafka.common.Node
+import org.apache.kafka.common.TopicPartition
+import org.apache.kafka.common.TopicPartitionReplica
+import org.apache.kafka.common.Uuid
 
 /**
   * [[KafkaAdminClient]] represents an admin client for Kafka, which is able to describe queries
@@ -433,7 +435,7 @@ sealed abstract class KafkaAdminClient[F[_]] {
 
 object KafkaAdminClient {
 
-  def alterConfigsWith[F[_]: Functor, G[_]: Foldable](
+  private[this] def alterConfigsWith[F[_]: Functor, G[_]: Foldable](
     withAdminClient: WithAdminClient[F],
     configs: Map[ConfigResource, G[AlterConfigOp]],
     validateOnly: Boolean
@@ -443,13 +445,13 @@ object KafkaAdminClient {
       client.incrementalAlterConfigs(configs.asJavaMap, options).all
     }.void
 
-  def alterReplicaLogDirsWith[F[_]: Functor](
+  private[this] def alterReplicaLogDirsWith[F[_]: Functor](
     withAdminClient: WithAdminClient[F],
     replicaAssignment: Map[TopicPartitionReplica, String]
   ): F[Unit] =
     withAdminClient(_.alterReplicaLogDirs(replicaAssignment.asJava).all).void
 
-  def describeLogDirsWith[F[_]: Functor, G[_]: Foldable: Functor](
+  private[this] def describeLogDirsWith[F[_]: Functor, G[_]: Foldable: Functor](
     withAdminClient: WithAdminClient[F],
     brokers: G[Int]
   ): F[Map[Int, Map[String, LogDirDescription]]] =
@@ -457,19 +459,19 @@ object KafkaAdminClient {
       _.asScala.view.map { case (k, v) => k.toInt -> v.asScala.toMap }.toMap
     )
 
-  def describeReplicaLogDirsWith[F[_]: Functor, G[_]: Foldable](
+  private[this] def describeReplicaLogDirsWith[F[_]: Functor, G[_]: Foldable](
     withAdminClient: WithAdminClient[F],
     replicas: G[TopicPartitionReplica]
   ): F[Map[TopicPartitionReplica, ReplicaLogDirInfo]] =
     withAdminClient(_.describeReplicaLogDirs(replicas.asJava).all).map(_.asScala.toMap)
 
-  def deleteRecordsWith[F[_]: Functor](
+  private[this] def deleteRecordsWith[F[_]: Functor](
     withAdminClient: WithAdminClient[F],
     recordsToDelete: Map[TopicPartition, RecordsToDelete]
   ): F[Unit] =
     withAdminClient(_.deleteRecords(recordsToDelete.asJava).all).void
 
-  def createDelegationTokenWith[F[_]](
+  private[this] def createDelegationTokenWith[F[_]](
     withAdminClient: WithAdminClient[F],
     renewers: List[KafkaPrincipal],
     owner: Option[KafkaPrincipal],
@@ -482,7 +484,7 @@ object KafkaAdminClient {
     withAdminClient(_.createDelegationToken(options).delegationToken())
   }
 
-  def expireDelegationTokenWith[F[_]: Functor](
+  private[this] def expireDelegationTokenWith[F[_]: Functor](
     withAdminClient: WithAdminClient[F],
     hmac: Array[Byte],
     options: Option[Long]
@@ -493,7 +495,7 @@ object KafkaAdminClient {
     withAdminClient(_.expireDelegationToken(hmac, opt).expiryTimestamp()).map(_.toLong)
   }
 
-  def renewDelegationTokenWith[F[_]: Functor](
+  private[this] def renewDelegationTokenWith[F[_]: Functor](
     withAdminClient: WithAdminClient[F],
     hmac: Array[Byte],
     renewTimePeriodMs: Option[Long]
@@ -503,7 +505,7 @@ object KafkaAdminClient {
     withAdminClient(_.renewDelegationToken(hmac, options).expiryTimestamp()).map(_.toLong)
   }
 
-  def describeDelegationTokenWith[F[_]: Functor, G[_]: Foldable](
+  private[this] def describeDelegationTokenWith[F[_]: Functor, G[_]: Foldable](
     withAdminClient: WithAdminClient[F],
     owners: Option[G[KafkaPrincipal]]
   ): F[List[DelegationToken]] = {
@@ -512,14 +514,14 @@ object KafkaAdminClient {
     withAdminClient(_.describeDelegationToken(options).delegationTokens()).map(_.asScala.toList)
   }
 
-  def electLeadersWith[F[_]: Functor](
+  private[this] def electLeadersWith[F[_]: Functor](
     withAdminClient: WithAdminClient[F],
     electionType: ElectionType,
     partitions: Set[TopicPartition]
   ): F[Unit] =
     withAdminClient(_.electLeaders(electionType, partitions.asJava).all).void
 
-  def alterPartitionReassignmentsWith[F[_]: Functor](
+  private[this] def alterPartitionReassignmentsWith[F[_]: Functor](
     withAdminClient: WithAdminClient[F],
     reassignments: Map[TopicPartition, Option[NewPartitionReassignment]]
   ): F[Unit] = {
@@ -527,7 +529,7 @@ object KafkaAdminClient {
     withAdminClient(_.alterPartitionReassignments(javaOpts).all).void
   }
 
-  def listPartitionReassignmentsWith[F[_]: Functor](
+  private[this] def listPartitionReassignmentsWith[F[_]: Functor](
     withAdminClient: WithAdminClient[F],
     partitions: Option[Set[TopicPartition]]
   ): F[Map[TopicPartition, PartitionReassignment]] =
@@ -539,7 +541,7 @@ object KafkaAdminClient {
         .reassignments()
     }.map(_.asScala.toMap)
 
-  def removeMembersFromConsumerGroupWith[F[_]: Functor, G[_]: Foldable](
+  private[this] def removeMembersFromConsumerGroupWith[F[_]: Functor, G[_]: Foldable](
     withAdminClient: WithAdminClient[F],
     groupId: String,
     members: G[MemberToRemove],
@@ -550,7 +552,7 @@ object KafkaAdminClient {
     withAdminClient(_.removeMembersFromConsumerGroup(groupId, options).all).void
   }
 
-  def listOffsetsWith[F[_]: Functor](
+  private[this] def listOffsetsWith[F[_]: Functor](
     withAdminClient: WithAdminClient[F],
     topicPartitionOffsets: Map[TopicPartition, OffsetSpec],
     isolationLevel: org.apache.kafka.common.IsolationLevel
@@ -559,7 +561,7 @@ object KafkaAdminClient {
     withAdminClient(_.listOffsets(topicPartitionOffsets.asJava, opts).all).map(_.asScala.toMap)
   }
 
-  def describeClientQuotasWith[F[_]: Functor](
+  private[this] def describeClientQuotasWith[F[_]: Functor](
     withAdminClient: WithAdminClient[F],
     filter: ClientQuotaFilter
   ): F[Map[ClientQuotaEntity, Map[String, Double]]] =
@@ -573,13 +575,13 @@ object KafkaAdminClient {
         .toMap
     }
 
-  def alterClientQuotasWith[F[_]: Functor, G[_]: Foldable](
+  private[this] def alterClientQuotasWith[F[_]: Functor, G[_]: Foldable](
     withAdminClient: WithAdminClient[F],
     entries: G[ClientQuotaAlteration]
   ): F[Unit] =
     withAdminClient(_.alterClientQuotas(entries.asJava).all).void
 
-  def describeUserScramCredentialsWith[F[_]: Functor](
+  private[this] def describeUserScramCredentialsWith[F[_]: Functor](
     withAdminClient: WithAdminClient[F],
     users: Option[List[String]]
   ): F[Map[String, UserScramCredentialsDescription]] =
@@ -588,10 +590,12 @@ object KafkaAdminClient {
       _.asScala.toMap
     )
 
-  def describeFeaturesWith[F[_]](withAdminClient: WithAdminClient[F]): F[FeatureMetadata] =
+  private[this] def describeFeaturesWith[F[_]](
+    withAdminClient: WithAdminClient[F]
+  ): F[FeatureMetadata] =
     withAdminClient(_.describeFeatures().featureMetadata())
 
-  def updateFeaturesWith[F[_]: Functor](
+  private[this] def updateFeaturesWith[F[_]: Functor](
     withAdminClient: WithAdminClient[F],
     features: Map[String, FeatureUpdate],
     validateOnly: Boolean
@@ -600,12 +604,12 @@ object KafkaAdminClient {
     withAdminClient(_.updateFeatures(features.asJava, opts).all).void
   }
 
-  def describeMetadataQuorumWith[F[_]](
+  private[this] def describeMetadataQuorumWith[F[_]](
     withAdminClient: WithAdminClient[F]
   ): F[QuorumInfo] =
     withAdminClient(_.describeMetadataQuorum().quorumInfo())
 
-  def describeProducersWith[F[_]: Functor, G[_]: Foldable](
+  private[this] def describeProducersWith[F[_]: Functor, G[_]: Foldable](
     withAdminClient: WithAdminClient[F],
     partitions: G[TopicPartition],
     brokerId: Option[Int]
@@ -614,13 +618,13 @@ object KafkaAdminClient {
     withAdminClient(_.describeProducers(partitions.asJava, opts).all).map(_.asScala.toMap)
   }
 
-  def describeTransactionsWith[F[_]: Functor, G[_]: Foldable](
+  private[this] def describeTransactionsWith[F[_]: Functor, G[_]: Foldable](
     withAdminClient: WithAdminClient[F],
     transactionalIds: G[String]
   ): F[Map[String, TransactionDescription]] =
     withAdminClient(_.describeTransactions(transactionalIds.asJava).all).map(_.asScala.toMap)
 
-  def abortTransactionWith[F[_]: Functor](
+  private[this] def abortTransactionWith[F[_]: Functor](
     withAdminClient: WithAdminClient[F],
     topicPartition: TopicPartition,
     producerId: Long,
@@ -632,7 +636,7 @@ object KafkaAdminClient {
     withAdminClient(_.abortTransaction(spec).all).void
   }
 
-  def listTransactionsWith[F[_]: Functor](
+  private[this] def listTransactionsWith[F[_]: Functor](
     withAdminClient: WithAdminClient[F],
     states: Option[Set[TransactionState]],
     producerIds: Option[Set[Long]],
@@ -647,17 +651,17 @@ object KafkaAdminClient {
     withAdminClient(_.listTransactions(wDuration).all).map(_.asScala.toList)
   }
 
-  def fenceProducersWith[F[_]: Functor, G[_]: Foldable](
+  private[this] def fenceProducersWith[F[_]: Functor, G[_]: Foldable](
     withAdminClient: WithAdminClient[F],
     transactionalIds: G[String]
   ): F[Unit] =
     withAdminClient(_.fenceProducers(transactionalIds.asJava).all).map(_ => ())
 
-  def listConfigResourcesWith[F[_]: Functor](
+  private[this] def listConfigResourcesWith[F[_]: Functor](
     withAdminClient: WithAdminClient[F]
   ): F[List[ConfigResource]] = withAdminClient(_.listConfigResources().all()).map(_.asScala.toList)
 
-  def addRaftVoterWith[F[_]: Functor](
+  private[this] def addRaftVoterWith[F[_]: Functor](
     withAdminClient: WithAdminClient[F],
     voterId: Int,
     voterDirectoryId: org.apache.kafka.common.Uuid,
@@ -676,7 +680,7 @@ object KafkaAdminClient {
     ).void
   }
 
-  def removeRaftVoterWith[F[_]: Functor](
+  private[this] def removeRaftVoterWith[F[_]: Functor](
     withAdminClient: WithAdminClient[F],
     voterId: Int,
     voterDirectoryId: org.apache.kafka.common.Uuid,
@@ -691,7 +695,7 @@ object KafkaAdminClient {
         .all
     ).map(_ => ())
 
-  def metricsWith[F[_]](
+  private[this] def metricsWith[F[_]](
     withAdminClient: WithAdminClient[F]
   ): F[Map[MetricName, Metric]] =
     withAdminClient { client =>
