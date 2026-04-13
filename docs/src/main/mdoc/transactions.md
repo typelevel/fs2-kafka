@@ -3,7 +3,7 @@ id: transactions
 title: Transactions
 ---
 
-Kafka transactions are supported through a [`KafkaProducer`][transactionalkafkaproducer] instantiated via one of the `KafkaProducer.transactional` or `KafkaProducer.transactionalStream` methods.
+Kafka transactions are supported through a [`KafkaProducer`][kafkaproducer] instantiated via one of the `KafkaProducer.transactional` or `KafkaProducer.transactionalStream` methods.
 
 For details on [consumers](consumers.md) and [producers](producers.md), see the respective sections.
 
@@ -98,9 +98,9 @@ object Main extends IOApp.Simple {
 }
 ```
 
-## Producing Only Data
+## Producing Data Only
 
-To produce only data transactionally, without committing offsets, we can use the `produceTransactionally` method. Similar to producing and committing offsets, we need a transactional `KafkaProducer` and `TransactionalProducerRecords`.
+To only produce data transactionally, without committing offsets, we can use the `produceTransactionally` method. Similar to producing and committing offsets, we need a transactional `KafkaProducer` and `TransactionalProducerRecords`.
 
 ## Fine-grained Control
 
@@ -108,7 +108,7 @@ The following methods provide more control over the transaction lifecycle:
 
 - `initTransactions`: initializes the underlying Kafka Producer transaction mechanism.
 - `transaction`: a resource that represents a transaction, handling commit and abort automatically.
-- `commitOffsets`: allows committing offsets using the producer within a transaction.
+- `sendOffsetsToTransaction`: allows committing offsets using the producer within a transaction.
 - `produce`: can be used within a transaction to produce records.
 
-[transactionalkafkaproducer]: @API_BASE_URL@/TransactionalKafkaProducer.html
+[kafkaproducer]: @API_BASE_URL@/KafkaProducer.html
