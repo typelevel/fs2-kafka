@@ -11,9 +11,9 @@ import scala.concurrent.Promise
 
 import cats.{Apply, Functor, Parallel}
 import cats.effect.*
-import cats.effect.kernel.Resource.ExitCase
 import cats.effect.std.Semaphore
 import cats.effect.syntax.all.*
+import cats.effect.Resource.ExitCase
 import cats.syntax.all.*
 import fs2.*
 import fs2.kafka.internal.*
@@ -50,18 +50,22 @@ abstract class KafkaProducer[F[_], K, V] {
   def produce(records: ProducerRecords[K, V]): F[F[ProducerResult[K, V]]]
 
   /**
-    * Initialize transaction must be called before transaction, produceTransactionally and
-    * produceAndCommitTransactionally are called.
+    * Enables transactions for the producer.
     *
-    * Call is required to be done only once. Usually this is done after creating the producer.
+    * If using [[KafkaProducer.transactional]] or [[KafkaProducer.transactionalStream]], then this
+    * will automatically be done when the producer is created. If not, then this function has to be
+    * called manually before using any of the transaction methods:
     *
-    * Using the "KafkaProducer.transactionalxxx" methods already calls this method.
-    * @return
+    *   - [[KafkaProducer#transaction]],
+    *   - [[KafkaProducer#produceTransactionally]],
+    *   - [[KafkaProducer#produceAndCommitTransactionally]]
+    *
+    * or an `IllegalStateException` exception will be raised.
     */
-  def initializeTransactions(): F[Unit]
+  def initTransactions: F[Unit]
 
   /**
-    * [[initializeTransactions()]] must be called before calling this method.
+    * [[initTransactions()]] must be called before calling this method.
     *
     * Returns a `Resource` that begins a transaction and:
     *   - commits it if the resource use finishes successfully,
@@ -226,7 +230,7 @@ object KafkaProducer {
   ): Resource[F, KafkaProducer[F, K, V]] = {
     for {
       producer <- KafkaProducer.resource(settings)(F, mk, P)
-      _        <- producer.initializeTransactions().toResource
+      _        <- producer.initTransactions.toResource
     } yield producer
   }
 
@@ -339,7 +343,7 @@ object KafkaProducer {
       else produceRecords(records, None)
     }
 
-    override def initializeTransactions(): F[Unit] =
+    override def initTransactions(): F[Unit] =
       blocking(producer.initTransactions())
 
     override def transaction: Resource[F, Unit] = {

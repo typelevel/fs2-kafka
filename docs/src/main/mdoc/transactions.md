@@ -106,7 +106,7 @@ To produce only data transactionally, without committing offsets, we can use the
 
 The following methods provide more control over the transaction lifecycle:
 
-- `initializeTransactions`: initializes the underlying Kafka Producer transaction mechanism.
+- `initTransactions`: initializes the underlying Kafka Producer transaction mechanism.
 - `transaction`: a resource that represents a transaction, handling commit and abort automatically.
 - `commitOffsets`: allows committing offsets using the producer within a transaction.
 - `produce`: can be used within a transaction to produce records.
