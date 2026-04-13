@@ -90,11 +90,14 @@ private[kafka] object syntax {
       A: Show[A]
     ): String = mkStringMap(_.show)(start, sep, end)
 
-    def asJava(implicit F: Foldable[F]): util.List[A] = {
-      val array = new util.ArrayList[A](fa.size.toInt)
-      fa.foldLeft(()) { (_, a) => array.add(a); () }
+    def mapAsJava[B](f: A => B)(implicit F: Foldable[F]): util.List[B] = {
+      val array = new util.ArrayList[B](fa.size.toInt)
+      fa.foldLeft(()) { (_, a) => array.add(f(a)); () }
       util.Collections.unmodifiableList(array)
     }
+
+    def asJava(implicit F: Foldable[F]): util.List[A] =
+      mapAsJava(identity)
 
   }
 
