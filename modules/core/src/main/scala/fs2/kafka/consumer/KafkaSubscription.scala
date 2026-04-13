@@ -49,8 +49,7 @@ trait KafkaSubscription[F[_]] {
   def unsubscribe: F[Unit]
 
   /**
-    * Provides the current consumer group metadata.
-    * @return
+    * Returns the current consumer group metadata.
     */
   def groupMetadata: F[ConsumerGroupMetadata]
 

@@ -573,11 +573,6 @@ object KafkaConsumer {
 
       override def awaitTermination: F[Unit] = fiber.joinWithUnit
 
-      /**
-        * Provides the current consumer group metadata.
-        *
-        * @return
-        */
       override def groupMetadata: F[ConsumerGroupMetadata] =
         withConsumer.blocking(_.groupMetadata())
     }
