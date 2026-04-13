@@ -1042,318 +1042,240 @@ object KafkaAdminClient {
   ): Resource[F, KafkaAdminClient[G]] =
     WithAdminClient[F, G](mk, settings).map(create[G])
 
-  private def create[F[_]: Functor](client: WithAdminClient[F]) = new KafkaAdminClient[F] {
+  private def create[F[_]: Functor](client: WithAdminClient[F]) =
+    new KafkaAdminClient[F] {
+      override def alterConfigs[G[_]](configs: Map[ConfigResource, G[AlterConfigOp]])(implicit
+        G: Foldable[G]
+      ): F[Unit] =
+        alterConfigsWith(client, configs, validateOnly = false)
 
-    override def alterConfigs[G[_]](configs: Map[ConfigResource, G[AlterConfigOp]])(implicit
-      G: Foldable[G]
-    ): F[Unit] =
-      alterConfigsWith(client, configs, validateOnly = false)
+      override def createPartitions(newPartitions: Map[String, NewPartitions]): F[Unit] =
+        createPartitionsWith(client, newPartitions)
 
-    override def createPartitions(newPartitions: Map[String, NewPartitions]): F[Unit] =
-      createPartitionsWith(client, newPartitions)
+      override def createTopic(topic: NewTopic): F[Unit] =
+        createTopicWith(client, topic)
 
-    override def createTopic(topic: NewTopic): F[Unit] =
-      createTopicWith(client, topic)
+      override def createTopics[G[_]](topics: G[NewTopic])(implicit
+        G: Foldable[G]
+      ): F[Unit] =
+        createTopicsWith(client, topics)
 
-    override def createTopics[G[_]](topics: G[NewTopic])(implicit
-      G: Foldable[G]
-    ): F[Unit] =
-      createTopicsWith(client, topics)
+      override def createAcls[G[_]](acls: G[AclBinding])(implicit
+        G: Foldable[G]
+      ): F[Unit] =
+        createAclsWith(client, acls)
 
-    override def createAcls[G[_]](acls: G[AclBinding])(implicit
-      G: Foldable[G]
-    ): F[Unit] =
-      createAclsWith(client, acls)
+      override def deleteTopic(topic: String): F[Unit] =
+        deleteTopicWith(client, topic)
 
-    override def deleteTopic(topic: String): F[Unit] =
-      deleteTopicWith(client, topic)
+      override def deleteTopics[G[_]](topics: G[String])(implicit G: Foldable[G]): F[Unit] =
+        deleteTopicsWith(client, topics)
 
-    override def deleteTopics[G[_]](topics: G[String])(implicit G: Foldable[G]): F[Unit] =
-      deleteTopicsWith(client, topics)
+      override def deleteAcls[G[_]](filters: G[AclBindingFilter])(implicit
+        G: Foldable[G]
+      ): F[Unit] =
+        deleteAclsWith(client, filters)
 
-    override def deleteAcls[G[_]](filters: G[AclBindingFilter])(implicit
-      G: Foldable[G]
-    ): F[Unit] =
-      deleteAclsWith(client, filters)
+      override def describeCluster: DescribeCluster[F] =
+        describeClusterWith(client)
 
-    override def describeCluster: DescribeCluster[F] =
-      describeClusterWith(client)
+      override def describeConfigs[G[_]](resources: G[ConfigResource])(implicit
+        G: Foldable[G]
+      ): F[Map[ConfigResource, List[ConfigEntry]]] =
+        describeConfigsWith(client, resources)
 
-    override def describeConfigs[G[_]](resources: G[ConfigResource])(implicit
-      G: Foldable[G]
-    ): F[Map[ConfigResource, List[ConfigEntry]]] =
-      describeConfigsWith(client, resources)
+      override def describeConsumerGroups[G[_]](groupIds: G[String])(implicit
+        G: Foldable[G]
+      ): F[Map[String, ConsumerGroupDescription]] =
+        describeConsumerGroupsWith(client, groupIds)
 
-    override def describeConsumerGroups[G[_]](groupIds: G[String])(implicit
-      G: Foldable[G]
-    ): F[Map[String, ConsumerGroupDescription]] =
-      describeConsumerGroupsWith(client, groupIds)
+      override def describeTopics[G[_]](topics: G[String])(implicit
+        G: Foldable[G]
+      ): F[Map[String, TopicDescription]] =
+        describeTopicsWith(client, topics)
 
-    override def describeTopics[G[_]](topics: G[String])(implicit
-      G: Foldable[G]
-    ): F[Map[String, TopicDescription]] =
-      describeTopicsWith(client, topics)
+      override def listConsumerGroupOffsets(groupId: String): ListConsumerGroupOffsets[F] =
+        listConsumerGroupOffsetsWith(client, groupId)
 
-    override def listConsumerGroupOffsets(groupId: String): ListConsumerGroupOffsets[F] =
-      listConsumerGroupOffsetsWith(client, groupId)
+      override def listConsumerGroups: ListConsumerGroups[F] =
+        listConsumerGroupsWith(client)
 
-    override def listConsumerGroups: ListConsumerGroups[F] =
-      listConsumerGroupsWith(client)
+      override def listTopics: ListTopics[F] =
+        listTopicsWith(client)
 
-    override def listTopics: ListTopics[F] =
-      listTopicsWith(client)
+      override def describeAcls(filter: AclBindingFilter): F[List[AclBinding]] =
+        describeAclsWith(client, filter)
 
-    override def describeAcls(filter: AclBindingFilter): F[List[AclBinding]] =
-      describeAclsWith(client, filter)
+      override def alterConsumerGroupOffsets(
+        groupId: String,
+        offsets: Map[TopicPartition, OffsetAndMetadata]
+      ): F[Unit] =
+        alterConsumerGroupOffsetsWith(client, groupId, offsets)
 
-    override def alterConsumerGroupOffsets(
-      groupId: String,
-      offsets: Map[TopicPartition, OffsetAndMetadata]
-    ): F[Unit] =
-      alterConsumerGroupOffsetsWith(client, groupId, offsets)
+      override def deleteConsumerGroupOffsets(
+        groupId: String,
+        partitions: Set[TopicPartition]
+      ): F[Unit] =
+        deleteConsumerGroupOffsetsWith(client, groupId, partitions)
 
-    override def deleteConsumerGroupOffsets(
-      groupId: String,
-      partitions: Set[TopicPartition]
-    ): F[Unit] =
-      deleteConsumerGroupOffsetsWith(client, groupId, partitions)
+      override def deleteConsumerGroups[G[_]](
+        groupIds: G[String]
+      )(implicit G: Foldable[G]): F[Unit] =
+        deleteConsumerGroupsWith(client, groupIds)
 
-    override def deleteConsumerGroups[G[_]](
-      groupIds: G[String]
-    )(implicit G: Foldable[G]): F[Unit] =
-      deleteConsumerGroupsWith(client, groupIds)
+      override def alterConfigs[G[_]: Foldable](
+        configs: Map[ConfigResource, G[AlterConfigOp]],
+        validateOnly: Boolean
+      ): F[Unit] =
+        alterConfigsWith[F, G](client, configs, validateOnly)
 
-    override def toString: String =
-      "KafkaAdminClient$" + System.identityHashCode(this)
+      override def alterReplicaLogDirs(
+        replicaAssignment: Map[TopicPartitionReplica, String]
+      ): F[Unit] =
+        alterReplicaLogDirsWith[F](client, replicaAssignment)
 
-    /**
-      * Incrementally update the configuration for the specified resources
-      */
-    override def alterConfigs[G[_]: Foldable](
-      configs: Map[ConfigResource, G[AlterConfigOp]],
-      validateOnly: Boolean
-    ): F[Unit] =
-      alterConfigsWith[F, G](client, configs, validateOnly)
+      override def describeLogDirs[G[_]: Foldable: Functor](
+        brokers: G[Int]
+      ): F[Map[Int, Map[String, LogDirDescription]]] =
+        describeLogDirsWith[F, G](client, brokers)
 
-    /**
-      * Change the log directory for the specified replicas.
-      */
-    override def alterReplicaLogDirs(
-      replicaAssignment: Map[TopicPartitionReplica, String]
-    ): F[Unit] =
-      alterReplicaLogDirsWith[F](client, replicaAssignment)
+      override def describeReplicaLogDirs[G[_]: Foldable](
+        replicas: G[TopicPartitionReplica]
+      ): F[Map[TopicPartitionReplica, ReplicaLogDirInfo]] =
+        describeReplicaLogDirsWith[F, G](client, replicas)
 
-    /**
-      * Query the information of all log directories on the given set of brokers.
-      */
-    override def describeLogDirs[G[_]: Foldable: Functor](
-      brokers: G[Int]
-    ): F[Map[Int, Map[String, LogDirDescription]]] =
-      describeLogDirsWith[F, G](client, brokers)
+      override def deleteRecords(recordsToDelete: Map[TopicPartition, RecordsToDelete]): F[Unit] =
+        deleteRecordsWith[F](client, recordsToDelete)
 
-    /**
-      * Query the replica log directory information for the specified replicas.
-      */
-    override def describeReplicaLogDirs[G[_]: Foldable](
-      replicas: G[TopicPartitionReplica]
-    ): F[Map[TopicPartitionReplica, ReplicaLogDirInfo]] =
-      describeReplicaLogDirsWith[F, G](client, replicas)
+      override def createDelegationToken(
+        renewers: List[KafkaPrincipal],
+        owner: Option[KafkaPrincipal],
+        maxLifeTime: Option[FiniteDuration]
+      ): F[DelegationToken] =
+        createDelegationTokenWith[F](client, renewers, owner, maxLifeTime)
 
-    /**
-      * Delete records whose offset is smaller than the given offset of the corresponding partition.
-      */
-    override def deleteRecords(recordsToDelete: Map[TopicPartition, RecordsToDelete]): F[Unit] =
-      deleteRecordsWith[F](client, recordsToDelete)
+      override def expireDelegationToken(
+        hmac: Array[Byte],
+        expiryTimePeriodMs: Option[Long]
+      ): F[Long] =
+        expireDelegationTokenWith(client, hmac, expiryTimePeriodMs)
 
-    override def createDelegationToken(
-      renewers: List[KafkaPrincipal],
-      owner: Option[KafkaPrincipal],
-      maxLifeTime: Option[FiniteDuration]
-    ): F[DelegationToken] =
-      createDelegationTokenWith[F](client, renewers, owner, maxLifeTime)
+      override def renewDelegationToken(
+        hmac: Array[Byte],
+        renewTimePeriodMs: Option[Long]
+      ): F[Long] = renewDelegationTokenWith(client, hmac, renewTimePeriodMs)
 
-    /**
-      * Expire a Delegation Token.
-      */
-    override def expireDelegationToken(
-      hmac: Array[Byte],
-      expiryTimePeriodMs: Option[Long]
-    ): F[Long] = expireDelegationTokenWith(client, hmac, expiryTimePeriodMs)
+      override def describeDelegationToken[G[_]: Foldable](
+        owners: Option[G[KafkaPrincipal]]
+      ): F[List[DelegationToken]] =
+        describeDelegationTokenWith[F, G](client, owners)
 
-    /**
-      * Renew a Delegation Token. Returns the expiryTimestamp.
-      */
-    override def renewDelegationToken(
-      hmac: Array[Byte],
-      renewTimePeriodMs: Option[Long]
-    ): F[Long] = renewDelegationTokenWith(client, hmac, renewTimePeriodMs)
+      override def electLeaders(
+        electionType: ElectionType,
+        partitions: Set[TopicPartition]
+      ): F[Unit] =
+        electLeadersWith[F](client, electionType, partitions)
 
-    /**
-      * Describe the Delegation Tokens.
-      */
-    override def describeDelegationToken[G[_]: Foldable](
-      owners: Option[G[KafkaPrincipal]]
-    ): F[List[DelegationToken]] = describeDelegationTokenWith[F, G](client, owners)
+      override def alterPartitionReassignments(
+        reassignments: Map[TopicPartition, Option[NewPartitionReassignment]]
+      ): F[Unit] =
+        alterPartitionReassignmentsWith[F](client, reassignments)
 
-    /**
-      * Elect a replica as leader for topic partitions.
-      */
-    override def electLeaders(
-      electionType: ElectionType,
-      partitions: Set[TopicPartition]
-    ): F[Unit] = electLeadersWith[F](client, electionType, partitions)
+      override def listPartitionReassignments(
+        partitionsFilter: Option[Set[TopicPartition]]
+      ): F[Map[TopicPartition, PartitionReassignment]] =
+        listPartitionReassignmentsWith(client, partitionsFilter)
 
-    /**
-      * Change the reassignments for one or more partitions.
-      */
-    override def alterPartitionReassignments(
-      reassignments: Map[TopicPartition, Option[NewPartitionReassignment]]
-    ): F[Unit] = alterPartitionReassignmentsWith[F](client, reassignments)
+      override def removeMembersFromConsumerGroup[G[_]: Foldable](
+        groupId: String,
+        members: G[MemberToRemove],
+        reason: Option[String]
+      ): F[Unit] =
+        removeMembersFromConsumerGroupWith(client, groupId, members, reason)
 
-    /**
-      * List the current reassignments for the given partitions.
-      */
-    override def listPartitionReassignments(
-      partitionsFilter: Option[Set[TopicPartition]]
-    ): F[Map[TopicPartition, PartitionReassignment]] =
-      listPartitionReassignmentsWith(client, partitionsFilter)
+      override def listOffsets(
+        topicPartitionOffsets: Map[TopicPartition, OffsetSpec],
+        isolationLevel: common.IsolationLevel
+      ): F[Map[TopicPartition, ListOffsetsResultInfo]] =
+        listOffsetsWith(client, topicPartitionOffsets, isolationLevel)
 
-    /**
-      * Remove members from the consumer group by given member identities.
-      */
-    override def removeMembersFromConsumerGroup[G[_]: Foldable](
-      groupId: String,
-      members: G[MemberToRemove],
-      reason: Option[String]
-    ): F[Unit] =
-      removeMembersFromConsumerGroupWith(client, groupId, members, reason)
+      override def describeClientQuotas(
+        filter: ClientQuotaFilter
+      ): F[Map[ClientQuotaEntity, Map[String, Double]]] =
+        describeClientQuotasWith(client, filter)
 
-    /**
-      * List offset for the specified partitions and isolation level.
-      */
-    override def listOffsets(
-      topicPartitionOffsets: Map[TopicPartition, OffsetSpec],
-      isolationLevel: common.IsolationLevel
-    ): F[Map[TopicPartition, ListOffsetsResultInfo]] =
-      listOffsetsWith(client, topicPartitionOffsets, isolationLevel)
+      override def alterClientQuotas[G[_]: Foldable](entries: G[ClientQuotaAlteration]): F[Unit] =
+        alterClientQuotasWith[F, G](client, entries)
 
-    /**
-      * Describes all entities matching the provided filter that have at least one client quota
-      * configuration value defined.
-      */
-    override def describeClientQuotas(
-      filter: ClientQuotaFilter
-    ): F[Map[ClientQuotaEntity, Map[String, Double]]] =
-      describeClientQuotasWith(client, filter)
+      override def describeUserScramCredentials(
+        users: Option[List[String]]
+      ): F[Map[String, UserScramCredentialsDescription]] =
+        describeUserScramCredentialsWith(client, users)
 
-    /**
-      * Alters client quota configurations with the specified alterations.
-      */
-    override def alterClientQuotas[G[_]: Foldable](entries: G[ClientQuotaAlteration]): F[Unit] =
-      alterClientQuotasWith[F, G](client, entries)
+      override def describeFeatures(): F[FeatureMetadata] =
+        describeFeaturesWith(client)
 
-    /**
-      * Describe all SASL/SCRAM credentials.
-      */
-    override def describeUserScramCredentials(
-      users: Option[List[String]]
-    ): F[Map[String, UserScramCredentialsDescription]] =
-      describeUserScramCredentialsWith(client, users)
+      override def updateFeatures(
+        features: Map[String, FeatureUpdate],
+        validateOnly: Boolean
+      ): F[Unit] = updateFeaturesWith(client, features, validateOnly)
 
-    /**
-      * Describes finalized as well as supported features.
-      */
-    override def describeFeatures(): F[FeatureMetadata] =
-      describeFeaturesWith(client)
+      override def describeMetadataQuorum(): F[QuorumInfo] =
+        describeMetadataQuorumWith(client)
 
-    /**
-      * Applies specified updates to finalized features.
-      */
-    override def updateFeatures(
-      features: Map[String, FeatureUpdate],
-      validateOnly: Boolean
-    ): F[Unit] = updateFeaturesWith(client, features, validateOnly)
+      override def describeProducers[G[_]: Foldable](
+        partitions: G[TopicPartition],
+        brokerId: Option[Int]
+      ): F[Map[TopicPartition, PartitionProducerState]] =
+        describeProducersWith(client, partitions, brokerId)
 
-    /**
-      * Describes the state of the metadata quorum.
-      */
-    override def describeMetadataQuorum(): F[QuorumInfo] =
-      describeMetadataQuorumWith(client)
+      override def describeTransactions[G[_]: Foldable](
+        transactionalIds: G[String]
+      ): F[Map[String, TransactionDescription]] =
+        describeTransactionsWith(client, transactionalIds)
 
-    /**
-      * Describe producer state on a set of topic partitions.
-      */
-    override def describeProducers[G[_]: Foldable](
-      partitions: G[TopicPartition],
-      brokerId: Option[Int]
-    ): F[Map[TopicPartition, PartitionProducerState]] =
-      describeProducersWith(client, partitions, brokerId)
+      override def abortTransaction(
+        topicPartition: TopicPartition,
+        producerId: Long,
+        producerEpoch: Short,
+        coordinationEpoch: Int
+      ): F[Unit] =
+        abortTransactionWith(client, topicPartition, producerId, producerEpoch, coordinationEpoch)
 
-    /**
-      * Describe the state of a set of transactional IDs from the respective transaction
-      * coordinators, which are dynamically discovered.
-      */
-    override def describeTransactions[G[_]: Foldable](
-      transactionalIds: G[String]
-    ): F[Map[String, TransactionDescription]] =
-      describeTransactionsWith(client, transactionalIds)
+      override def listTransactions(
+        states: Option[Set[TransactionState]],
+        producerIds: Option[Set[Long]],
+        duration: Option[Long]
+      ): F[List[TransactionListing]] =
+        listTransactionsWith(client, states, producerIds, duration)
 
-    /**
-      * Forcefully abort a transaction which is open on a topic partition.
-      */
-    override def abortTransaction(
-      topicPartition: TopicPartition,
-      producerId: Long,
-      producerEpoch: Short,
-      coordinationEpoch: Int
-    ): F[Unit] =
-      abortTransactionWith(client, topicPartition, producerId, producerEpoch, coordinationEpoch)
+      override def fenceProducers[G[_]: Foldable](transactionalIds: G[String]): F[Unit] =
+        fenceProducersWith(client, transactionalIds)
 
-    /**
-      * List active transactions in the cluster.
-      */
-    override def listTransactions(
-      states: Option[Set[TransactionState]],
-      producerIds: Option[Set[Long]],
-      duration: Option[Long]
-    ): F[List[TransactionListing]] = listTransactionsWith(client, states, producerIds, duration)
+      override def listConfigResources(): F[List[ConfigResource]] =
+        listConfigResourcesWith[F](client)
 
-    /**
-      * Fence out all active producers that use any of the provided transactional IDs.
-      */
-    override def fenceProducers[G[_]: Foldable](transactionalIds: G[String]): F[Unit] =
-      fenceProducersWith(client, transactionalIds)
+      override def addRaftVoter(
+        voterId: Int,
+        voterDirectoryId: Uuid,
+        endpoints: Set[RaftVoterEndpoint],
+        clusterId: Option[String]
+      ): F[Unit] =
+        addRaftVoterWith(client, voterId, voterDirectoryId, endpoints, clusterId)
 
-    /**
-      * List all configuration resources available in the cluster with the default options.
-      */
-    override def listConfigResources(): F[List[ConfigResource]] = listConfigResourcesWith[F](client)
+      override def removeRaftVoter(
+        voterId: Int,
+        voterDirectoryId: Uuid,
+        clusterId: Option[String]
+      ): F[Unit] =
+        removeRaftVoterWith(client, voterId, voterDirectoryId, clusterId)
 
-    /**
-      * Add a new voter node to the KRaft metadata quorum.
-      */
-    override def addRaftVoter(
-      voterId: Int,
-      voterDirectoryId: Uuid,
-      endpoints: Set[RaftVoterEndpoint],
-      clusterId: Option[String]
-    ): F[Unit] = addRaftVoterWith(client, voterId, voterDirectoryId, endpoints, clusterId)
+      override def metrics: F[Map[MetricName, Metric]] =
+        metricsWith(client)
 
-    /**
-      * Remove a voter node from the KRaft metadata quorum.
-      */
-    override def removeRaftVoter(
-      voterId: Int,
-      voterDirectoryId: Uuid,
-      clusterId: Option[String]
-    ): F[Unit] = removeRaftVoterWith(client, voterId, voterDirectoryId, clusterId)
-
-    /**
-      * Get the metrics kept by the adminClient
-      */
-    override def metrics(): F[Map[MetricName, Metric]] = metricsWith(client)
-
-  }
+      override def toString: String =
+        "KafkaAdminClient$" + System.identityHashCode(this)
+    }
 
   /**
     * Creates a new [[KafkaAdminClient]] in the `Stream` context, using the specified
