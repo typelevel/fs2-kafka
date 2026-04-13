@@ -252,7 +252,7 @@ sealed abstract class KafkaAdminClient[F[_]] {
   /**
     * Query the information of all log directories on the given set of brokers.
     */
-  def describeLogDirs[G[_]: Foldable: Functor](
+  def describeLogDirs[G[_]: Foldable](
     brokers: G[Int]
   ): F[Map[Int, Map[String, LogDirDescription]]]
 
@@ -451,11 +451,11 @@ object KafkaAdminClient {
   ): F[Unit] =
     withAdminClient(_.alterReplicaLogDirs(replicaAssignment.asJava).all).void
 
-  private[this] def describeLogDirsWith[F[_]: Functor, G[_]: Foldable: Functor](
+  private[this] def describeLogDirsWith[F[_]: Functor, G[_]: Foldable](
     withAdminClient: WithAdminClient[F],
     brokers: G[Int]
   ): F[Map[Int, Map[String, LogDirDescription]]] =
-    withAdminClient(_.describeLogDirs(brokers.map(Integer.valueOf).asJava).allDescriptions()).map(
+    withAdminClient(_.describeLogDirs(brokers.mapAsJava(Integer.valueOf)).allDescriptions()).map(
       _.asScala.view.map { case (k, v) => k.toInt -> v.asScala.toMap }.toMap
     )
 
@@ -1137,7 +1137,7 @@ object KafkaAdminClient {
       ): F[Unit] =
         alterReplicaLogDirsWith[F](client, replicaAssignment)
 
-      override def describeLogDirs[G[_]: Foldable: Functor](
+      override def describeLogDirs[G[_]: Foldable](
         brokers: G[Int]
       ): F[Map[Int, Map[String, LogDirDescription]]] =
         describeLogDirsWith[F, G](client, brokers)
