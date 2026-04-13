@@ -237,7 +237,7 @@ sealed abstract class KafkaAdminClient[F[_]] {
   def deleteConsumerGroupOffsets(groupId: String, partitions: Set[TopicPartition]): F[Unit]
 
   /**
-    * Incrementally update the configuration for the specified resources
+    * Incrementally update the configuration for the specified resources.
     */
   def alterConfigs[G[_]: Foldable](
     configs: Map[ConfigResource, G[AlterConfigOp]],
@@ -353,7 +353,7 @@ sealed abstract class KafkaAdminClient[F[_]] {
   /**
     * Describes finalized as well as supported features.
     */
-  def describeFeatures(): F[FeatureMetadata]
+  def describeFeatures: F[FeatureMetadata]
 
   /**
     * Applies specified updates to finalized features.
@@ -363,7 +363,7 @@ sealed abstract class KafkaAdminClient[F[_]] {
   /**
     * Describes the state of the metadata quorum.
     */
-  def describeMetadataQuorum(): F[QuorumInfo]
+  def describeMetadataQuorum: F[QuorumInfo]
 
   /**
     * Describe producer state on a set of topic partitions.
@@ -405,10 +405,7 @@ sealed abstract class KafkaAdminClient[F[_]] {
     */
   def fenceProducers[G[_]: Foldable](transactionalIds: G[String]): F[Unit]
 
-  /**
-    * @return
-    */
-  def listConfigResources(): F[List[ConfigResource]]
+  def listConfigResources: F[List[ConfigResource]]
 
   /**
     * Add a new voter node to the KRaft metadata quorum.
@@ -430,9 +427,9 @@ sealed abstract class KafkaAdminClient[F[_]] {
   ): F[Unit]
 
   /**
-    * Get the metrics kept by the adminClient
+    * Get the metrics kept by the admin client.
     */
-  def metrics(): F[Map[MetricName, Metric]]
+  def metrics: F[Map[MetricName, Metric]]
 
 }
 
@@ -699,7 +696,7 @@ object KafkaAdminClient {
           new RemoveRaftVoterOptions().setClusterId(clusterId.toJava)
         )
         .all
-    ).map(_ => ())
+    ).void
 
   private[this] def metricsWith[F[_]](
     withAdminClient: WithAdminClient[F]

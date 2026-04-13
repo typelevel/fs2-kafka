@@ -440,12 +440,12 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
                      .drain
               _       <- adminClient.describeUserScramCredentials(None) // no assertion other than we can make the call
               feature <-
-                adminClient.describeFeatures().map(_.supportedFeatures().asScala(metaFeature))
+                adminClient.describeFeatures.map(_.supportedFeatures().asScala(metaFeature))
               update     = new FeatureUpdate(feature.maxVersion(), FeatureUpdate.UpgradeType.UPGRADE)
               _         <- adminClient.updateFeatures(Map(metaFeature -> update), true)
-              quorum    <- adminClient.describeMetadataQuorum()
+              quorum    <- adminClient.describeMetadataQuorum
               _         <- IO(assert(quorum.leaderId() >= 0))
-              resources <- adminClient.listConfigResources()
+              resources <- adminClient.listConfigResources
               _         <- IO(assert(resources.nonEmpty))
             } yield ()
           }
@@ -710,7 +710,7 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
         .resource[IO](adminClientSettings)
         .use { adminClient =>
           for {
-            metrics <- adminClient.metrics()
+            metrics <- adminClient.metrics
             _       <- IO(assert(metrics.nonEmpty))
           } yield ()
         }
