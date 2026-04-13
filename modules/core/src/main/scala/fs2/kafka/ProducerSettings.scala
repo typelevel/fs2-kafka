@@ -216,7 +216,13 @@ sealed abstract class ProducerSettings[F[_], K, V] {
   def withCredentials(credentialsStore: KafkaCredentialStore): ProducerSettings[F, K, V]
 
   /**
-    * Includes the transaction timeout property from the provided [[KafkaCredentialStore]]
+    * Returns a new [[ProducerSettings]] instance with the specified transaction timeout. This is
+    * setting the following producer property, except you can specify it with a `FiniteDuration`
+    * instead of a `String`.
+    *
+    * {{{
+    * ProducerConfig.TRANSACTION_TIMEOUT_CONFIG
+    * }}}
     */
   def withTransactionTimeout(transactionTimeout: FiniteDuration): ProducerSettings[F, K, V]
 
