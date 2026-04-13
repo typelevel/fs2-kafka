@@ -35,7 +35,7 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
 
   describe("creating transactional producers") {
     it("should support defined syntax") {
-      val settings = producerSettingsTransactional[IO].withTransactionId("id")
+      val settings = producerSettingsTransactional[IO].withTransactionalId("id")
 
       KafkaProducer.transactional[IO, String, String](settings)
       KafkaProducer[IO].resource(settings)
@@ -83,7 +83,7 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
       (for {
         producer <-
           KafkaProducer.transactionalStream(
-            producerSettingsTransactional[IO].withTransactionId(s"id-$topic")
+            producerSettingsTransactional[IO].withTransactionalId(s"id-$topic")
           )
         _                      <- Stream.eval(IO(producer.toString should startWith("KafkaProducer$")))
         (records, passthrough) <-
@@ -188,7 +188,7 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
       val committer = kafkaCommitter("group")
       for {
         producer <- KafkaProducer.transactionalStream(
-                      producerSettingsTransactional[IO].withTransactionId(s"id-$topic")
+                      producerSettingsTransactional[IO].withTransactionalId(s"id-$topic")
                     )
         offsets = (i: Int) =>
                     CommittableOffset[IO](
@@ -217,7 +217,7 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
     val produced =
       (for {
         producer <- KafkaProducer.transactionalStream(
-                      producerSettingsTransactional[IO].withTransactionId(s"id-$topic")
+                      producerSettingsTransactional[IO].withTransactionalId(s"id-$topic")
                     )
         recordsToProduce = toProduce.map { case (key, value) =>
                              ProducerRecord(topic, key, value)
@@ -277,7 +277,7 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
       val result =
         (for {
           producer <- KafkaProducer.transactionalStream(
-                        producerSettingsTransactional[IO].withTransactionId(s"id-$topic")
+                        producerSettingsTransactional[IO].withTransactionalId(s"id-$topic")
                       )
           recordsToProduce = toProduce.map { case (key, value) =>
                                ProducerRecord(topic, key, value)
@@ -359,7 +359,7 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
       val produced =
         (for {
           producer <- KafkaProducer.transactionalStream(
-                        producerSettingsTransactional[IO].withTransactionId(s"id-$topic")
+                        producerSettingsTransactional[IO].withTransactionalId(s"id-$topic")
                       )
           recordsToProduce = toProduce.map { case (key, value) =>
                                ProducerRecord(topic, key, value)
@@ -471,7 +471,7 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
       val settings = producerSettingsTransactional[IO]
         .withProperty(ProducerConfig.MAX_BLOCK_MS_CONFIG, "10000")
         .withFailFastProduce(true)
-        .withTransactionId(s"fail-fast-$topic")
+        .withTransactionalId(s"fail-fast-$topic")
 
       val result = intercept[RuntimeException] {
         KafkaProducer
@@ -493,7 +493,7 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
 
       val info =
         KafkaProducer[IO]
-          .stream(producerSettingsTransactional[IO].withTransactionId(s"id-$topic"))
+          .stream(producerSettingsTransactional[IO].withTransactionalId(s"id-$topic"))
           .evalMap(_.metrics)
 
       val res =
@@ -542,7 +542,7 @@ class TransactionalKafkaProducerTimeoutSpec extends BaseKafkaSpec with EitherVal
         (for {
           producer <- KafkaProducer.transactionalStream(
                         producerSettingsTransactional[IO]
-                          .withTransactionId(s"id-$topic")
+                          .withTransactionalId(s"id-$topic")
                           .withTransactionTimeout(transactionTimeoutInterval)
                       )
           recordsToProduce = toProduce.map { case (key, value) =>

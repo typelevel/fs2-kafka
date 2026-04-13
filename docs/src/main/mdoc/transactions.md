@@ -35,7 +35,7 @@ val producerSettings =
     .withBootstrapServers("localhost:9092")
     .withEnableIdempotence(true)
     .withRetries(10)
-    .withTransactionId("transactional-id")
+    .withTransactionalId("transactional-id")
 ```
 
 Once the settings are created, we can instantiate a `KafkaProducer` using `KafkaProducer.transactional` or `KafkaProducer.transactionalStream`. We then create `CommittableProducerRecords`, wrap them in `TransactionalProducerRecords`, and use the `produceAndCommitTransactionally` method.
@@ -65,7 +65,7 @@ object Main extends IOApp.Simple {
         .withBootstrapServers("localhost:9092")
         .withEnableIdempotence(true)
         .withRetries(10)
-        .withTransactionId(s"transactional-id-$partition")
+        .withTransactionalId(s"transactional-id-$partition")
 
     KafkaConsumer
       .stream(consumerSettings)
