@@ -89,9 +89,10 @@ abstract class KafkaProducer[F[_], K, V] {
   def transaction: Resource[F, Unit]
 
   /**
-    * Commits offsets.
+    * Sends the specified offsets and [[KafkaConsumer.groupMetadata]] to be committed as part of a
+    * transaction.
     */
-  def commitOffsets(
+  def sendOffsetsToTransaction(
     offsets: Map[TopicPartition, OffsetAndMetadata],
     groupMetadata: ConsumerGroupMetadata
   ): F[Unit]
@@ -329,7 +330,7 @@ object KafkaProducer {
       else produceRecords(records, None)
     }
 
-    override def initTransactions(): F[Unit] =
+    override def initTransactions: F[Unit] =
       blocking(producer.initTransactions())
 
     override def transaction: Resource[F, Unit] = {
@@ -346,7 +347,7 @@ object KafkaProducer {
       } yield ()
     }
 
-    override def commitOffsets(
+    override def sendOffsetsToTransaction(
       offsets: Map[TopicPartition, OffsetAndMetadata],
       groupMetadata: ConsumerGroupMetadata
     ): F[Unit] = blocking(producer.sendOffsetsToTransaction(offsets.asJava, groupMetadata))
@@ -365,7 +366,7 @@ object KafkaProducer {
               metadata       <- committer.metadata
               producerRecords = records.filter(_.offset.committer == committer).flatMap(_.records)
               result         <- produce(producerRecords).flatten
-              _              <- commitOffsets(offsets, metadata)
+              _              <- sendOffsetsToTransaction(offsets, metadata)
             } yield result
           }
         }
