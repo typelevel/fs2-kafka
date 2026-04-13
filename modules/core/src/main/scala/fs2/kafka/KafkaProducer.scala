@@ -295,135 +295,137 @@ object KafkaProducer {
     producer: KafkaByteProducer,
     txSemaphore: Semaphore[F],
     blocking: Blocking[F]
-  )(implicit F: Async[F], P: Parallel[F]): KafkaProducer[F, K, V] = new KafkaProducer[F, K, V] {
+  )(implicit F: Async[F], P: Parallel[F]): KafkaProducer[F, K, V] =
+    new KafkaProducer[F, K, V] {
 
-    override def toString: String =
-      "KafkaProducer$" + System.identityHashCode(this)
+      override def produce(records: ProducerRecords[K, V]): F[F[ProducerResult[K, V]]] = {
+        if (failFastProduce)
+          Async[F]
+            .delay(Promise[Throwable]())
+            .flatMap { produceRecordError =>
+              Async[F]
+                .race(
+                  Async[F].fromFutureCancelable(
+                    Async[F].delay((produceRecordError.future, Async[F].unit))
+                  ),
+                  produceRecords(records, produceRecordError.some)
+                )
+                .rethrow
+            }
+        else produceRecords(records, None)
+      }
 
-    def withSerializers[K2, V2](
-      k: KeySerializer[F, K2],
-      v: ValueSerializer[F, V2]
-    ): KafkaProducer[F, K2, V2] =
-      resourceInternal[F, K2, V2](failFastProduce, k, v, producer, txSemaphore, blocking)
+      override def initTransactions: F[Unit] =
+        blocking(producer.initTransactions)
 
-    override def produce(records: ProducerRecords[K, V]): F[F[ProducerResult[K, V]]] = {
-      if (failFastProduce)
-        Async[F]
-          .delay(Promise[Throwable]())
-          .flatMap { produceRecordError =>
-            Async[F]
-              .race(
-                Async[F].fromFutureCancelable(
-                  Async[F].delay((produceRecordError.future, Async[F].unit))
-                ),
-                produceRecords(records, produceRecordError.some)
-              )
-              .rethrow
-          }
-      else produceRecords(records, None)
-    }
+      override def transaction: Resource[F, Unit] = {
+        val acquireTx = blocking(producer.beginTransaction())
+        val commitTx  = blocking(producer.commitTransaction())
+        val abortTx   = blocking(producer.abortTransaction())
 
-    override def initTransactions: F[Unit] =
-      blocking(producer.initTransactions())
+        for {
+          _ <- txSemaphore.permit
+          _ <- Resource.makeCase(acquireTx) {
+                 case (_, ExitCase.Succeeded)  => commitTx
+                 case (_, ExitCase.Canceled)   => abortTx
+                 case (_, ExitCase.Errored(e)) => abortTx >> e.raiseError[F, Unit]
+               }
+        } yield ()
+      }
 
-    override def transaction: Resource[F, Unit] = {
-      val acquireTx = blocking(producer.beginTransaction())
-      val commitTx  = blocking(producer.commitTransaction())
-      val abortTx   = blocking(producer.abortTransaction())
-      for {
-        _ <- txSemaphore.permit
-        _ <- Resource.makeCase(acquireTx) {
-               case (_, ExitCase.Succeeded)  => commitTx
-               case (_, ExitCase.Canceled)   => abortTx
-               case (_, ExitCase.Errored(e)) => abortTx *> e.raiseError[F, Unit]
-             }
-      } yield ()
-    }
+      override def sendOffsetsToTransaction(
+        offsets: Map[TopicPartition, OffsetAndMetadata],
+        groupMetadata: ConsumerGroupMetadata
+      ): F[Unit] =
+        blocking(producer.sendOffsetsToTransaction(offsets.asJava, groupMetadata))
 
-    override def sendOffsetsToTransaction(
-      offsets: Map[TopicPartition, OffsetAndMetadata],
-      groupMetadata: ConsumerGroupMetadata
-    ): F[Unit] = blocking(producer.sendOffsetsToTransaction(offsets.asJava, groupMetadata))
-
-    override def produceAndCommitTransactionally(
-      r: TransactionalProducerRecords[F, K, V]
-    ): F[ProducerResult[K, V]] = {
-      val records: Chunk[CommittableProducerRecords[F, K, V]] = r
-      if (records.isEmpty) F.pure(Chunk.empty)
-      else {
-        val batch   = CommittableOffsetBatch.fromFoldableMap(records)(_.offset)
-        val offsets = Chunk.from(batch.offsets.toVector)
-        transaction.use { _ =>
-          offsets.parFlatTraverse { case (committer, offsets) =>
-            for {
-              metadata       <- committer.metadata
-              producerRecords = records.filter(_.offset.committer == committer).flatMap(_.records)
-              result         <- produce(producerRecords).flatten
-              _              <- sendOffsetsToTransaction(offsets, metadata)
-            } yield result
+      override def produceAndCommitTransactionally(
+        records: Chunk[CommittableProducerRecords[F, K, V]]
+      ): F[ProducerResult[K, V]] = {
+        if (records.isEmpty) F.pure(Chunk.empty)
+        else {
+          val batch   = CommittableOffsetBatch.fromFoldableMap(records)(_.offset)
+          val offsets = Chunk.from(batch.offsets.toVector)
+          transaction.surround {
+            offsets.parFlatTraverse { case (committer, offsets) =>
+              for {
+                metadata       <- committer.metadata
+                producerRecords = records.filter(_.offset.committer == committer).flatMap(_.records)
+                result         <- produce(producerRecords).flatten
+                _              <- sendOffsetsToTransaction(offsets, metadata)
+              } yield result
+            }
           }
         }
       }
-    }
 
-    override def produceTransactionally(
-      records: ProducerRecords[K, V]
-    ): F[ProducerResult[K, V]] =
-      if (records.isEmpty) F.pure(Chunk.empty)
-      else { transaction.use(_ => produce(records).flatten) }
+      override def produceTransactionally(
+        records: ProducerRecords[K, V]
+      ): F[ProducerResult[K, V]] =
+        if (records.isEmpty) F.pure(Chunk.empty)
+        else transaction.surround(produce(records).flatten)
 
-    /**
-      * Returns producer metrics.
-      *
-      * @see
-      *   org.apache.kafka.clients.producer.KafkaProducer#metrics
-      */
-    override def metrics: F[Map[MetricName, Metric]] =
-      blocking(producer.metrics().asScala.toMap[MetricName, Metric])
+      /**
+        * Returns producer metrics.
+        *
+        * @see
+        *   org.apache.kafka.clients.producer.KafkaProducer#metrics
+        */
+      override def metrics: F[Map[MetricName, Metric]] =
+        blocking(producer.metrics().asScala.toMap[MetricName, Metric])
 
-    /**
-      * Returns partition metadata for the given topic.
-      *
-      * @see
-      *   org.apache.kafka.clients.producer.KafkaProducer#partitionsFor
-      */
-    override def partitionsFor(topic: String): F[List[PartitionInfo]] =
-      blocking(producer.partitionsFor(topic).asScala.toList)
+      /**
+        * Returns partition metadata for the given topic.
+        *
+        * @see
+        *   org.apache.kafka.clients.producer.KafkaProducer#partitionsFor
+        */
+      override def partitionsFor(topic: String): F[List[PartitionInfo]] =
+        blocking(producer.partitionsFor(topic).asScala.toList)
 
-    private def produceRecord(
-      produceRecordError: Option[Promise[Throwable]]
-    )(implicit
-      F: Async[F]
-    ): ProducerRecord[K, V] => F[F[(ProducerRecord[K, V], RecordMetadata)]] =
-      record =>
-        asJavaRecord(keySerializer, valueSerializer, record).flatMap { javaRecord =>
-          F.delay(Promise[(ProducerRecord[K, V], RecordMetadata)]())
-            .flatMap { promise =>
-              blocking {
-                producer.send(
-                  javaRecord,
-                  { (metadata, exception) =>
-                    if (exception == null) { promise.success((record, metadata)) }
-                    else {
-                      promise.failure(exception)
-                      produceRecordError.foreach(_.tryFailure(exception))
+      private def produceRecord(
+        produceRecordError: Option[Promise[Throwable]]
+      )(implicit
+        F: Async[F]
+      ): ProducerRecord[K, V] => F[F[(ProducerRecord[K, V], RecordMetadata)]] =
+        record =>
+          asJavaRecord(keySerializer, valueSerializer, record).flatMap { javaRecord =>
+            F.delay(Promise[(ProducerRecord[K, V], RecordMetadata)]())
+              .flatMap { promise =>
+                blocking {
+                  producer.send(
+                    javaRecord,
+                    { (metadata, exception) =>
+                      if (exception == null) { promise.success((record, metadata)) }
+                      else {
+                        promise.failure(exception)
+                        produceRecordError.foreach(_.tryFailure(exception))
+                      }
                     }
-                  }
+                  )
+                }.map(javaFuture =>
+                  F.fromFutureCancelable(
+                    F.delay((promise.future, F.delay(javaFuture.cancel(true)).void))
+                  )
                 )
-              }.map(javaFuture =>
-                F.fromFutureCancelable(
-                  F.delay((promise.future, F.delay(javaFuture.cancel(true)).void))
-                )
-              )
-            }
-        }
+              }
+          }
 
-    private def produceRecords(
-      records: ProducerRecords[K, V],
-      produceRecordError: Option[Promise[Throwable]]
-    ): F[F[Chunk[(ProducerRecord[K, V], RecordMetadata)]]] =
-      records.traverse(produceRecord(produceRecordError)).map(_.sequence)
-  }
+      private def produceRecords(
+        records: ProducerRecords[K, V],
+        produceRecordError: Option[Promise[Throwable]]
+      ): F[F[Chunk[(ProducerRecord[K, V], RecordMetadata)]]] =
+        records.traverse(produceRecord(produceRecordError)).map(_.sequence)
+
+      def withSerializers[K2, V2](
+        k: KeySerializer[F, K2],
+        v: ValueSerializer[F, V2]
+      ): KafkaProducer[F, K2, V2] =
+        resourceInternal[F, K2, V2](failFastProduce, k, v, producer, txSemaphore, blocking)
+
+      override def toString: String =
+        "KafkaProducer$" + System.identityHashCode(this)
+    }
 
   private[this] def serializeToBytes[F[_], K, V](
     keySerializer: KeySerializer[F, K],
