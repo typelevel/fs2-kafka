@@ -102,15 +102,6 @@ abstract class KafkaProducer[F[_], K, V] {
     * producer, then the offsets of the records are sent to the transaction, and lastly the
     * transaction is committed. If errors or cancellation occurs, the transaction is aborted. The
     * returned effect succeeds if the whole transaction completes successfully.
-    *
-    * It's equivalent to
-    * @example
-    *   {{{
-    *        producer.transaction.use { _ =>
-    *          producer.produceRecords(records).sequence
-    *          producer.commitOffsets(offsets, consumer.groupMetadata)
-    *        }
-    *   }}}
     */
   def produceAndCommitTransactionally(
     records: TransactionalProducerRecords[F, K, V]
@@ -144,19 +135,13 @@ abstract class KafkaProducer[F[_], K, V] {
   def partitionsFor(topic: String): F[List[PartitionInfo]]
 
   /**
-    * Allows using the same producer with a different key and value serializer.
-    * @param k
-    * @param v
-    * @tparam K2
-    * @tparam V2
-    * @return
+    * Returns a new [[KafkaProducer]] using the same underlying producer but with different key and
+    * value serializers.
     */
   def withSerializers[K2, V2](
-    k: KeySerializer[F, K2],
-    v: ValueSerializer[F, V2]
+    keySerializer: KeySerializer[F, K2],
+    valueSerializer: ValueSerializer[F, V2]
   ): KafkaProducer[F, K2, V2]
-
-  def toString: String
 
 }
 
