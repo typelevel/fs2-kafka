@@ -65,25 +65,26 @@ abstract class KafkaProducer[F[_], K, V] {
   def initTransactions: F[Unit]
 
   /**
-    * [[initTransactions()]] must be called before calling this method.
+    * Return a resource which handles the transaction lifecycle.
     *
-    * Returns a `Resource` that begins a transaction and:
-    *   - commits it if the resource use finishes successfully,
-    *   - aborts it if an error occurs or the process is canceled.
+    * The returned resource begins a transaction on `use` and:
+    *   - commits the transaction if the `use` finishes successfully, or
+    *   - aborts the transaction if an error occurs or the process is canceled.
     *
-    * Important: Only one transaction can be opened at any time. If a transaction is started within
-    * the lifecycle a transaction, the code will deadlock.
+    * Note [[initTransactions]] must have been called before using this method, either manually or
+    * automatically through the use of [[KafkaProducer.transactional]] or
+    * [[KafkaProducer.transactionalStream]].
     *
-    * @example
-    *   {{{
-    *   producer.transaction.use { _ =>
-    *     producer.transaction.use { _ => //will deadlock since it will be waiting for the outter one to terminate
-    *        IO.unit
-    *      }
+    * Also note only one transaction can be open at any time. If a second transaction is started
+    * within the lifecycle of a first transaction, the second transaction will deadlock.
+    *
+    * {{{
+    * producer.transaction.surround {
+    *   producer.transaction.surround { // deadlocks waiting for the outer transaction
+    *     IO.unit
     *   }
-    *   }}}
-    * @return
-    *   a `Resource` that handles the transaction lifecycle.
+    * }
+    * }}}
     */
   def transaction: Resource[F, Unit]
 
