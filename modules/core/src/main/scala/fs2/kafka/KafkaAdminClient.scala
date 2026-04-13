@@ -19,6 +19,7 @@ import fs2.kafka.internal.converters.option.*
 import fs2.kafka.internal.syntax.*
 import fs2.kafka.internal.WithAdminClient
 import fs2.kafka.KafkaAdminClient.*
+import fs2.Chunk
 import fs2.Stream
 
 import org.apache.kafka.clients.admin.*
@@ -275,14 +276,14 @@ sealed abstract class KafkaAdminClient[F[_]] {
   ): F[DelegationToken]
 
   /**
-    * Expire a Delegation Token.
+    * Expire a delegation token.
     */
-  def expireDelegationToken(hmac: Array[Byte], expiryTimePeriodMs: Option[Long]): F[Long]
+  def expireDelegationToken(hmac: Chunk[Byte], expiryTime: Option[FiniteDuration]): F[Long]
 
   /**
     * Renew a Delegation Token. Returns the expiryTimestamp.
     */
-  def renewDelegationToken(hmac: Array[Byte], renewTimePeriodMs: Option[Long]): F[Long]
+  def renewDelegationToken(hmac: Chunk[Byte], renewTime: Option[FiniteDuration]): F[Long]
 
   /**
     * Describe the Delegation Tokens.
@@ -486,23 +487,22 @@ object KafkaAdminClient {
 
   private[this] def expireDelegationTokenWith[F[_]: Functor](
     withAdminClient: WithAdminClient[F],
-    hmac: Array[Byte],
-    options: Option[Long]
+    hmac: Chunk[Byte],
+    expiryTime: Option[FiniteDuration]
   ): F[Long] = {
-    val opt = options.foldLeft(new ExpireDelegationTokenOptions())((opt, expiry) =>
-      opt.expiryTimePeriodMs(expiry)
-    )
-    withAdminClient(_.expireDelegationToken(hmac, opt).expiryTimestamp()).map(_.toLong)
+    val options = new ExpireDelegationTokenOptions()
+    expiryTime.foreach(expiryTime => options.expiryTimePeriodMs(expiryTime.toMillis))
+    withAdminClient(_.expireDelegationToken(hmac.toArray, options).expiryTimestamp()).map(_.toLong)
   }
 
   private[this] def renewDelegationTokenWith[F[_]: Functor](
     withAdminClient: WithAdminClient[F],
-    hmac: Array[Byte],
-    renewTimePeriodMs: Option[Long]
+    hmac: Chunk[Byte],
+    renewTime: Option[FiniteDuration]
   ): F[Long] = {
     val options = new RenewDelegationTokenOptions()
-    renewTimePeriodMs.foreach(options.renewTimePeriodMs)
-    withAdminClient(_.renewDelegationToken(hmac, options).expiryTimestamp()).map(_.toLong)
+    renewTime.foreach(renewTime => options.renewTimePeriodMs(renewTime.toMillis))
+    withAdminClient(_.renewDelegationToken(hmac.toArray, options).expiryTimestamp()).map(_.toLong)
   }
 
   private[this] def describeDelegationTokenWith[F[_]: Functor, G[_]: Foldable](
@@ -1155,15 +1155,16 @@ object KafkaAdminClient {
         createDelegationTokenWith[F](client, renewers, owner, maxLifeTime)
 
       override def expireDelegationToken(
-        hmac: Array[Byte],
-        expiryTimePeriodMs: Option[Long]
+        hmac: Chunk[Byte],
+        expiryTime: Option[FiniteDuration]
       ): F[Long] =
-        expireDelegationTokenWith(client, hmac, expiryTimePeriodMs)
+        expireDelegationTokenWith(client, hmac, expiryTime)
 
       override def renewDelegationToken(
-        hmac: Array[Byte],
-        renewTimePeriodMs: Option[Long]
-      ): F[Long] = renewDelegationTokenWith(client, hmac, renewTimePeriodMs)
+        hmac: Chunk[Byte],
+        renewTime: Option[FiniteDuration]
+      ): F[Long] =
+        renewDelegationTokenWith(client, hmac, renewTime)
 
       override def describeDelegationToken[G[_]: Foldable](
         owners: Option[G[KafkaPrincipal]]

@@ -457,9 +457,9 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
       withTopic { topic =>
         commonSetup(topic)
 
-        val renewers  = List(KafkaPrincipal.ANONYMOUS)
-        val maxLifeMs = Some(1.hour)
-        val badHmac   = Array[Byte](0)
+        val renewers    = List(KafkaPrincipal.ANONYMOUS)
+        val maxLifetime = Some(1.hour)
+        val badHmac     = Chunk[Byte](0)
         KafkaAdminClient
           .resource[IO](adminClientSettings)
           .use { adminClient =>
@@ -467,7 +467,7 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
             // To avoid the need for SSL, we will assert that the call fails with an UnsupportedByAuthenticationException meaning it was done
             for {
               createResult <-
-                adminClient.createDelegationToken(renewers, owner = None, maxLifeMs).attempt
+                adminClient.createDelegationToken(renewers, owner = None, maxLifetime).attempt
               renewResult  <- adminClient.renewDelegationToken(badHmac, None).attempt
               expireResult <- adminClient.expireDelegationToken(badHmac, None).attempt
             } yield {
