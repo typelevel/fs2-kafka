@@ -74,9 +74,14 @@ sealed abstract class KafkaConsumer[F[_], K, V]
     with KafkaTopics[F]
     with KafkaCommit[F]
     with KafkaMetrics[F]
-    with KafkaConsumerLifecycle[F]
+    with KafkaConsumerLifecycle[F] {
+
+  private[kafka] def metadata: ConsumerMetadata = ConsumerMetadata(None, None)
+}
 
 object KafkaConsumer {
+
+  abstract private[kafka] class Unsealed[F[_], K, V] extends KafkaConsumer[F, K, V]
 
   /**
     * Processes requests from the queue, if there are pending requests, otherwise waits for the next
@@ -138,6 +143,9 @@ object KafkaConsumer {
     stopConsumingDeferred: Deferred[F, Unit]
   )(implicit F: Async[F], logging: Logging[F]): KafkaConsumer[F, K, V] =
     new KafkaConsumer[F, K, V] {
+
+      override private[kafka] val metadata: ConsumerMetadata =
+        ConsumerMetadata.fromProperties(settings.properties)
 
       override def partitionsMapStream
         : Stream[F, Map[TopicPartition, Stream[F, CommittableConsumerRecord[F, K, V]]]] = {

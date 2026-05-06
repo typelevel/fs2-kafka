@@ -30,6 +30,8 @@ import org.apache.kafka.common.{Metric, MetricName, PartitionInfo, TopicPartitio
   */
 abstract class KafkaProducer[F[_], K, V] {
 
+  private[kafka] def metadata: ProducerMetadata = ProducerMetadata(None)
+
   /**
     * Produces the specified [[ProducerRecords]] in two steps: the first effect puts the records in
     * the buffer of the producer, and the second effect waits for the records to send.<br><br>
@@ -278,6 +280,7 @@ object KafkaProducer {
       close            = blocking(producer.close(java.time.Duration.ofMillis(settings.closeTimeout.toMillis)))
       _               <- Resource.onFinalize(close)
       fs2KafkaProducer = resourceInternal[F, K, V](
+                           ProducerMetadata.fromProperties(settings.properties),
                            settings.failFastProduce,
                            keySerializer,
                            valueSerializer,
@@ -289,6 +292,7 @@ object KafkaProducer {
   }
 
   private def resourceInternal[F[_], K, V](
+    producerMetadata: ProducerMetadata,
     failFastProduce: Boolean,
     keySerializer: KeySerializer[F, K],
     valueSerializer: ValueSerializer[F, V],
@@ -297,6 +301,8 @@ object KafkaProducer {
     blocking: Blocking[F]
   )(implicit F: Async[F], P: Parallel[F]): KafkaProducer[F, K, V] =
     new KafkaProducer[F, K, V] {
+
+      override private[kafka] val metadata: ProducerMetadata = producerMetadata
 
       override def produce(records: ProducerRecords[K, V]): F[F[ProducerResult[K, V]]] = {
         if (failFastProduce)
@@ -421,7 +427,15 @@ object KafkaProducer {
         k: KeySerializer[F, K2],
         v: ValueSerializer[F, V2]
       ): KafkaProducer[F, K2, V2] =
-        resourceInternal[F, K2, V2](failFastProduce, k, v, producer, txSemaphore, blocking)
+        resourceInternal[F, K2, V2](
+          producerMetadata,
+          failFastProduce,
+          k,
+          v,
+          producer,
+          txSemaphore,
+          blocking
+        )
 
       override def toString: String =
         "KafkaProducer$" + System.identityHashCode(this)

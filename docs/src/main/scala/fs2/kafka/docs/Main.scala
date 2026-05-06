@@ -36,6 +36,7 @@ object Main {
           "ORGANIZATION"                     -> organization,
           "CORE_MODULE_NAME"                 -> coreModuleName,
           "CORE_CROSS_SCALA_VERSIONS"        -> minorVersionsString(coreCrossScalaVersions),
+          "OTEL4S_TRACE_MODULE_NAME"         -> otel4sModuleName,
           "VULCAN_MODULE_NAME"               -> vulcanModuleName,
           "VULCAN_CROSS_SCALA_VERSIONS"      -> minorVersionsString(vulcanCrossScalaVersions),
           "VULCAN_TESTKIT_MUNIT_MODULE_NAME" -> vulcanTestkitMunitModuleName,
@@ -48,6 +49,7 @@ object Main {
           "VULCAN_VERSION"                   -> vulcanVersion,
           "CONFLUENT_VERSION"                -> confluentVersion,
           "KAFKA_DOCS_VERSION"               -> kafkaDocsVersion,
+          "OTEL4S_TRACE_MODULE_NAME"         -> otel4sVersion,
           "SCALA_PUBLISH_VERSIONS"           -> minorVersionsString(crossScalaVersions),
           "API_BASE_URL"                     -> s"/fs2-kafka/api/fs2/kafka",
           "KAFKA_API_BASE_URL"               -> s"https://kafka.apache.org/$kafkaDocsVersion/javadoc"

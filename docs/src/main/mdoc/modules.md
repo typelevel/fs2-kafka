@@ -5,6 +5,34 @@ title: Modules
 
 The following sections describe the additional modules.
 
+## otel4s-trace
+
+The `@OTEL4S_TRACE_MODULE_NAME@` module adds tracing support for `fs2-kafka` using
+[otel4s](https://typelevel.org/otel4s).
+
+Add it to your project in `build.sbt`:
+
+```scala
+libraryDependencies += "org.typelevel" %% "@OTEL4S_TRACE_MODULE_NAME@" % "@LATEST_VERSION@"
+```
+
+This module is optional:
+
+- `core` does not depend on `otel4s`
+- tracing is explicit, not automatic instrumentation of `KafkaProducer` or `KafkaConsumer`
+- producer tracing models `send`
+- consumer tracing models `receive` and `process` as separate boundaries
+
+The main entry points are:
+
+- `fs2.kafka.otel4s.trace.KafkaTracer`
+- `fs2.kafka.otel4s.trace.TracedKafkaProducer`
+- `fs2.kafka.otel4s.trace.TracedKafkaConsumer`
+- `fs2.kafka.otel4s.trace.syntax._`
+
+See the dedicated [otel4s Trace](otel4s-trace.md) guide for usage, configuration, span semantics,
+and caveats.
+
 ## Vulcan
 
 The `@VULCAN_MODULE_NAME@` module provides [Avro](https://avro.apache.org) serialization support using [Vulcan](https://typelevel.org/vulcan).

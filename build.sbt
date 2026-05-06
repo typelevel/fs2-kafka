@@ -7,6 +7,8 @@ val fs2Version                 = "3.13.0"
 val kafkaVersion               = "4.2.0"
 val logbackVersion             = "1.5.32"
 val munitVersion               = "1.3.0"
+val munitCatsEffectVersion     = "2.2.0"
+val otel4sVersion              = "1.0.0-RC1"
 val slf4jVersion               = "1.7.36"
 val testcontainersScalaVersion = "0.44.1"
 val vulcanVersion              = "1.13.0"
@@ -27,7 +29,7 @@ lazy val root = project
     Test / console        := (core / Test / console).value
   )
   .enablePlugins(TypelevelMimaPlugin)
-  .aggregate(core, vulcan, `vulcan-testkit-munit`)
+  .aggregate(core, vulcan, `vulcan-testkit-munit`, `otel4s-trace`)
 
 lazy val core = project
   .in(file("modules/core"))
@@ -96,6 +98,34 @@ lazy val `vulcan-testkit-munit` = project
   )
   .dependsOn(vulcan)
 
+lazy val `otel4s-trace` = project
+  .in(file("modules/otel4s-trace"))
+  .settings(
+    moduleName := "fs2-kafka-otel4s-trace",
+    name       := moduleName.value,
+    dependencySettings ++ Seq(
+      libraryDependencies ++= Seq(
+        "org.typelevel" %% "otel4s-core-trace"           % otel4sVersion,
+        "org.typelevel" %% "otel4s-semconv"              % otel4sVersion,
+        "org.typelevel" %% "otel4s-oteljava-testkit"     % otel4sVersion          % Test,
+        "org.typelevel" %% "otel4s-semconv-experimental" % otel4sVersion          % Test,
+        "org.scalameta" %% "munit"                       % munitVersion           % Test,
+        "org.typelevel" %% "munit-cats-effect"           % munitCatsEffectVersion % Test
+      )
+    ),
+    publishSettings,
+    scalaSettings,
+    testSettings,
+    scalaVersion       := scala213,
+    crossScalaVersions := Seq(scala213, scala3),
+    versionIntroduced("4.1.0"),
+    buildInfoPackage := "fs2.kafka",
+    buildInfoKeys    := Seq[BuildInfoKey](version),
+    buildInfoOptions += BuildInfoOption.PackagePrivate
+  )
+  .dependsOn(core % "compile->compile;test->test")
+  .enablePlugins(BuildInfoPlugin)
+
 lazy val docs = project
   .in(file("docs"))
   .settings(
@@ -107,7 +137,7 @@ lazy val docs = project
     mdocSettings,
     buildInfoSettings
   )
-  .dependsOn(core, vulcan, `vulcan-testkit-munit`)
+  .dependsOn(core, vulcan, `vulcan-testkit-munit`, `otel4s-trace`)
   .enablePlugins(BuildInfoPlugin, DocusaurusPlugin, MdocPlugin, ScalaUnidocPlugin)
 
 lazy val dependencySettings = Seq(
@@ -198,12 +228,16 @@ lazy val buildInfoSettings = Seq(
     BuildInfoKey.map(`vulcan-testkit-munit` / moduleName) { case (k, v) =>
       "vulcanTestkitMunit" ++ k.capitalize -> v
     },
+    BuildInfoKey.map(`otel4s-trace` / moduleName) { case (k, v) =>
+      "otel4s" ++ k.capitalize -> v
+    },
     LocalRootProject / organization,
     core / crossScalaVersions,
     BuildInfoKey("fs2Version"       -> fs2Version),
     BuildInfoKey("kafkaVersion"     -> kafkaVersion),
     BuildInfoKey("vulcanVersion"    -> vulcanVersion),
-    BuildInfoKey("confluentVersion" -> confluentVersion)
+    BuildInfoKey("confluentVersion" -> confluentVersion),
+    BuildInfoKey("otel4sVersion"    -> otel4sVersion)
   )
 )
 
@@ -327,10 +361,11 @@ ThisBuild / updateSiteVariables := {
 
   val variables =
     Map[String, String](
-      "organization"         -> (LocalRootProject / organization).value,
-      "coreModuleName"       -> (core / moduleName).value,
-      "latestVersion"        -> latestVersion.value,
-      "scalaPublishVersions" -> {
+      "organization"          -> (LocalRootProject / organization).value,
+      "coreModuleName"        -> (core / moduleName).value,
+      "otel4sTraceModuleName" -> (`otel4s-trace` / moduleName).value,
+      "latestVersion"         -> latestVersion.value,
+      "scalaPublishVersions"  -> {
         val minorVersions = (core / crossScalaVersions).value.map(minorVersion)
         if (minorVersions.size <= 2) minorVersions.mkString(" and ")
         else minorVersions.init.mkString(", ") ++ " and " ++ minorVersions.last

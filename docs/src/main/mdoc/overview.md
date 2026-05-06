@@ -40,6 +40,13 @@ In order to test vulcan codecs against a [schema registry](https://docs.confluen
 libraryDependencies += "@ORGANIZATION@" %% "@VULCAN_TESTKIT_MUNIT_MODULE_NAME@" % "@LATEST_VERSION@"
 ```
 
+For tracing support using [otel4s](otel4s-trace.md), add the following line to your `build.sbt`
+file.
+
+```scala
+libraryDependencies += "@ORGANIZATION@" %% "@OTEL4S_TRACE_MODULE_NAME@" % "@LATEST_VERSION@"
+```
+
 #### External Modules
 
 Following is an incomplete list of third-party integrations.
@@ -71,10 +78,11 @@ libraryDependencies += "@ORGANIZATION@" %% "@CORE_MODULE_NAME@" % "@LATEST_SNAPS
 
 Refer to the table below for dependencies and version support across modules.
 
-| Module                 | Dependencies                                                                                                                                                           | Scala                               |
-| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
-| `@CORE_MODULE_NAME@`   | [FS2 @FS2_VERSION@](https://github.com/typelevel/fs2), [Apache Kafka Client @KAFKA_VERSION@](https://github.com/apache/kafka)                                          | Scala @CORE_CROSS_SCALA_VERSIONS@   |
-| `@VULCAN_MODULE_NAME@` | [Vulcan @VULCAN_VERSION@](https://github.com/typelevel/vulcan), [Confluent Kafka Avro Serializer @CONFLUENT_VERSION@](https://github.com/confluentinc/schema-registry) | Scala @VULCAN_CROSS_SCALA_VERSIONS@ |
+| Module                       | Dependencies                                                                                                                                                           | Scala                               |
+|------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------|
+| `@CORE_MODULE_NAME@`         | [FS2 @FS2_VERSION@](https://github.com/typelevel/fs2), [Apache Kafka Client @KAFKA_VERSION@](https://github.com/apache/kafka)                                          | Scala @CORE_CROSS_SCALA_VERSIONS@   |
+| `@OTEL4S_TRACE_MODULE_NAME@` | [otel4s @OTEL4S_VERSION@](https://github.com/typelevel/otel4s)                                                                                                         | Scala 2.13 and 3                    |
+| `@VULCAN_MODULE_NAME@`       | [Vulcan @VULCAN_VERSION@](https://github.com/typelevel/vulcan), [Confluent Kafka Avro Serializer @CONFLUENT_VERSION@](https://github.com/confluentinc/schema-registry) | Scala @VULCAN_CROSS_SCALA_VERSIONS@ |
 
 ## Adopters
 
