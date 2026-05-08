@@ -89,7 +89,7 @@ object KafkaTracer {
       * When these attributes use the same keys as metadata derived from the bound producer or
       * consumer, the configured values take precedence.
       */
-    def addConstAttributes(head: Attribute[_], tail: Attribute[_]*): Config
+    def addConstAttributes(head: Attribute[?], tail: Attribute[?]*): Config
 
     /**
       * Replaces the function used to derive producer-side `send` span setup from record metadata.
@@ -224,7 +224,7 @@ object KafkaTracer {
       override def withConstAttributes(attributes: Attributes): Config =
         copy(constAttributes = attributes)
 
-      override def addConstAttributes(head: Attribute[_], tail: Attribute[_]*): Config =
+      override def addConstAttributes(head: Attribute[?], tail: Attribute[?]*): Config =
         copy(constAttributes = constAttributes + head ++ tail)
 
       override def withSendSpanSetup(f: SendSpanContext => SpanSetup): Config =

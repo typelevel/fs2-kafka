@@ -16,7 +16,6 @@ import fs2.Stream
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.TopicPartition
 import org.typelevel.otel4s.context.propagation.TextMapGetter
-import org.typelevel.otel4s.oteljava.testkit.trace.SpanExpectation.producer
 
 final class KafkaSyntaxSuite extends KafkaTracingTestSupport {
 

@@ -49,7 +49,7 @@ object Main {
           "VULCAN_VERSION"                   -> vulcanVersion,
           "CONFLUENT_VERSION"                -> confluentVersion,
           "KAFKA_DOCS_VERSION"               -> kafkaDocsVersion,
-          "OTEL4S_TRACE_MODULE_NAME"         -> otel4sVersion,
+          "OTEL4S_VERSION"                   -> otel4sVersion,
           "SCALA_PUBLISH_VERSIONS"           -> minorVersionsString(crossScalaVersions),
           "API_BASE_URL"                     -> s"/fs2-kafka/api/fs2/kafka",
           "KAFKA_API_BASE_URL"               -> s"https://kafka.apache.org/$kafkaDocsVersion/javadoc"

@@ -28,7 +28,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-22.04]
-        scala: [2.12, 2.13, 3]
+        scala: [2.13]
         java: [temurin@21]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
@@ -57,10 +57,9 @@ jobs:
       - name: Check that workflows are up to date
         run: sbt githubWorkflowCheck
 
-      - run: sbt '++ ${{ matrix.scala }}' ci
+      - run: sbt ci
 
-      - if: matrix.scala == '2.13'
-        run: sbt '++ ${{ matrix.scala }}' docs/run
+      - run: sbt docs/run
 
   publish:
     name: Publish Artifacts

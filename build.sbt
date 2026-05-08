@@ -19,20 +19,35 @@ val scala3   = "3.3.7"
 
 ThisBuild / tlBaseVersion := "4.0"
 
+val allScalaVersions    = Seq(scala212, scala213, scala3)
+val otel4sScalaVersions = Seq(scala213, scala3)
+
+lazy val core213               = core.jvm(scala213)
+lazy val vulcan213             = vulcan.jvm(scala213)
+lazy val vulcanTestkitMunit213 = `vulcan-testkit-munit`.jvm(scala213)
+lazy val otel4sTrace213        = `otel4s-trace`.jvm(scala213)
+
+lazy val axesDefault = Seq(VirtualAxis.scalaABIVersion(scala213), VirtualAxis.jvm)
+
+lazy val projects =
+  core.projectRefs ++ vulcan.projectRefs ++ `vulcan-testkit-munit`.projectRefs ++
+    `otel4s-trace`.projectRefs
+
 lazy val root = project
   .in(file("."))
   .settings(
     noPublishSettings,
     scalaSettings,
     mimaPreviousArtifacts := Set.empty,
-    console               := (core / Compile / console).value,
-    Test / console        := (core / Test / console).value
+    console               := (core213 / Compile / console).value,
+    Test / console        := (core213 / Test / console).value
   )
   .enablePlugins(TypelevelMimaPlugin)
-  .aggregate(core, vulcan, `vulcan-testkit-munit`, `otel4s-trace`)
+  .aggregate(projects: _*)
 
-lazy val core = project
+lazy val core = projectMatrix
   .in(file("modules/core"))
+  .defaultAxes(axesDefault: _*)
   .settings(
     moduleName := "fs2-kafka",
     name       := moduleName.value,
@@ -48,13 +63,19 @@ lazy val core = project
         "org.typelevel"   %% "cats-kernel"        % catsVersion
       )
     ),
+    Test / scalacOptions ++= {
+      if (tlIsScala3.value) Seq("-language:implicitConversions")
+      else Seq.empty
+    },
     publishSettings,
     scalaSettings,
     testSettings
   )
+  .jvmPlatform(scalaVersions = allScalaVersions)
 
-lazy val vulcan = project
+lazy val vulcan = projectMatrix
   .in(file("modules/vulcan"))
+  .defaultAxes(axesDefault: _*)
   .settings(
     moduleName := "fs2-kafka-vulcan",
     name       := moduleName.value,
@@ -74,10 +95,12 @@ lazy val vulcan = project
     scalaSettings,
     testSettings
   )
+  .jvmPlatform(scalaVersions = allScalaVersions)
   .dependsOn(core)
 
-lazy val `vulcan-testkit-munit` = project
+lazy val `vulcan-testkit-munit` = projectMatrix
   .in(file("modules/vulcan-testkit-munit"))
+  .defaultAxes(axesDefault: _*)
   .settings(
     moduleName := "fs2-kafka-vulcan-testkit-munit",
     name       := moduleName.value,
@@ -96,10 +119,12 @@ lazy val `vulcan-testkit-munit` = project
     testSettings,
     versionIntroduced("2.2.0")
   )
+  .jvmPlatform(scalaVersions = allScalaVersions)
   .dependsOn(vulcan)
 
-lazy val `otel4s-trace` = project
+lazy val `otel4s-trace` = projectMatrix
   .in(file("modules/otel4s-trace"))
+  .defaultAxes(axesDefault: _*)
   .settings(
     moduleName := "fs2-kafka-otel4s-trace",
     name       := moduleName.value,
@@ -116,13 +141,12 @@ lazy val `otel4s-trace` = project
     publishSettings,
     scalaSettings,
     testSettings,
-    scalaVersion       := scala213,
-    crossScalaVersions := Seq(scala213, scala3),
-    versionIntroduced("4.1.0"),
+    versionIntroduced("4.1.0", otel4sScalaVersions),
     buildInfoPackage := "fs2.kafka",
     buildInfoKeys    := Seq[BuildInfoKey](version),
     buildInfoOptions += BuildInfoOption.PackagePrivate
   )
+  .jvmPlatform(scalaVersions = otel4sScalaVersions)
   .dependsOn(core % "compile->compile;test->test")
   .enablePlugins(BuildInfoPlugin)
 
@@ -137,7 +161,7 @@ lazy val docs = project
     mdocSettings,
     buildInfoSettings
   )
-  .dependsOn(core, vulcan, `vulcan-testkit-munit`, `otel4s-trace`)
+  .dependsOn(core213, vulcan213, vulcanTestkitMunit213, otel4sTrace213)
   .enablePlugins(BuildInfoPlugin, DocusaurusPlugin, MdocPlugin, ScalaUnidocPlugin)
 
 lazy val dependencySettings = Seq(
@@ -179,7 +203,7 @@ lazy val mdocSettings = Seq(
   mdoc                                       := (Compile / run).evaluated,
   scalacOptions                             --= Seq("-Xfatal-warnings", "-Ywarn-unused"),
   crossScalaVersions                         := Seq(scala213),
-  ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(core, vulcan),
+  ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(core213, vulcan213),
   ScalaUnidoc / unidoc / target              := (LocalRootProject / baseDirectory)
     .value / "website" / "static" / "api",
   cleanFiles           += (ScalaUnidoc / unidoc / target).value,
@@ -213,31 +237,27 @@ lazy val buildInfoSettings = Seq(
     BuildInfoKey.map(ThisBuild / version) { case (_, v) =>
       "latestSnapshotVersion" -> v
     },
-    BuildInfoKey.map(core / moduleName) { case (k, v) =>
+    BuildInfoKey.map(core213 / moduleName) { case (k, v) =>
       "core" ++ k.capitalize -> v
     },
-    BuildInfoKey.map(core / crossScalaVersions) { case (k, v) =>
-      "core" ++ k.capitalize -> v
-    },
-    BuildInfoKey.map(vulcan / moduleName) { case (k, v) =>
+    BuildInfoKey("coreCrossScalaVersions" -> allScalaVersions),
+    BuildInfoKey.map(vulcan213 / moduleName) { case (k, v) =>
       "vulcan" ++ k.capitalize -> v
     },
-    BuildInfoKey.map(vulcan / crossScalaVersions) { case (k, v) =>
-      "vulcan" ++ k.capitalize -> v
-    },
-    BuildInfoKey.map(`vulcan-testkit-munit` / moduleName) { case (k, v) =>
+    BuildInfoKey("vulcanCrossScalaVersions" -> allScalaVersions),
+    BuildInfoKey.map(vulcanTestkitMunit213 / moduleName) { case (k, v) =>
       "vulcanTestkitMunit" ++ k.capitalize -> v
     },
-    BuildInfoKey.map(`otel4s-trace` / moduleName) { case (k, v) =>
+    BuildInfoKey.map(otel4sTrace213 / moduleName) { case (k, v) =>
       "otel4s" ++ k.capitalize -> v
     },
     LocalRootProject / organization,
-    core / crossScalaVersions,
-    BuildInfoKey("fs2Version"       -> fs2Version),
-    BuildInfoKey("kafkaVersion"     -> kafkaVersion),
-    BuildInfoKey("vulcanVersion"    -> vulcanVersion),
-    BuildInfoKey("confluentVersion" -> confluentVersion),
-    BuildInfoKey("otel4sVersion"    -> otel4sVersion)
+    BuildInfoKey("crossScalaVersions" -> allScalaVersions),
+    BuildInfoKey("fs2Version"         -> fs2Version),
+    BuildInfoKey("kafkaVersion"       -> kafkaVersion),
+    BuildInfoKey("vulcanVersion"      -> vulcanVersion),
+    BuildInfoKey("confluentVersion"   -> confluentVersion),
+    BuildInfoKey("otel4sVersion"      -> otel4sVersion)
   )
 )
 
@@ -246,11 +266,8 @@ lazy val metadataSettings = Seq(
 )
 
 ThisBuild / githubWorkflowBuild := Seq(
-  WorkflowStep.Sbt(List("ci")),
-  WorkflowStep.Sbt(
-    List("docs/run"),
-    cond = Some(s"matrix.scala == '2.13'")
-  )
+  WorkflowStep.Run(List("sbt ci")),
+  WorkflowStep.Run(List("sbt docs/run"))
 )
 
 ThisBuild / githubWorkflowArtifactUpload := false
@@ -311,8 +328,7 @@ lazy val noPublishSettings =
     publishArtifact := false
   )
 
-ThisBuild / scalaVersion       := scala213
-ThisBuild / crossScalaVersions := Seq(scala212, scala213, scala3)
+ThisBuild / scalaVersion := scala213
 
 lazy val scalaSettings = Seq(
   Compile / doc / scalacOptions      += "-nowarn", // workaround for https://github.com/scala/bug/issues/12007 but also suppresses genunine problems
@@ -324,14 +340,18 @@ lazy val scalaSettings = Seq(
     if (tlIsScala3.value) Seq.empty else Seq("-Xsource:3")
   },
   Test / console / scalacOptions        := (Compile / console / scalacOptions).value,
-  Compile / unmanagedSourceDirectories ++=
+  Compile / unmanagedSourceDirectories ++= {
+    val projectBase =
+      projectMatrixBaseDirectory.?.value.getOrElse(baseDirectory.value).getAbsoluteFile
+
     Seq(
-      baseDirectory.value / "src" / "main" / {
+      projectBase / "src" / "main" / {
         if (scalaVersion.value.startsWith("2.12"))
           "scala-2.12"
         else "scala-2.13+"
       }
-    ),
+    )
+  },
   Test / fork := true
 )
 
@@ -362,11 +382,11 @@ ThisBuild / updateSiteVariables := {
   val variables =
     Map[String, String](
       "organization"          -> (LocalRootProject / organization).value,
-      "coreModuleName"        -> (core / moduleName).value,
-      "otel4sTraceModuleName" -> (`otel4s-trace` / moduleName).value,
+      "coreModuleName"        -> (core213 / moduleName).value,
+      "otel4sTraceModuleName" -> (otel4sTrace213 / moduleName).value,
       "latestVersion"         -> latestVersion.value,
       "scalaPublishVersions"  -> {
-        val minorVersions = (core / crossScalaVersions).value.map(minorVersion)
+        val minorVersions = allScalaVersions.map(minorVersion)
         if (minorVersions.size <= 2) minorVersions.mkString(" and ")
         else minorVersions.init.mkString(", ") ++ " and " ++ minorVersions.last
       }
@@ -385,8 +405,8 @@ ThisBuild / updateSiteVariables := {
   IO.write(file, fileContents)
 }
 
-def versionIntroduced(v: String) = Seq(
-  tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> v).toMap
+def versionIntroduced(v: String, scalaVersions: Seq[String] = allScalaVersions) = Seq(
+  tlVersionIntroduced := scalaVersions.map(minorVersion).map(_ -> v).toMap
 )
 
 def addCommandsAlias(name: String, values: List[String]) =
@@ -395,13 +415,13 @@ def addCommandsAlias(name: String, values: List[String]) =
 addCommandsAlias(
   "validate",
   List(
-    "+clean",
-    "+test",
-    "+mimaReportBinaryIssues",
-    "+scalafmtCheck",
+    "clean",
+    "test",
+    "mimaReportBinaryIssues",
+    "scalafmtCheckAll",
     "scalafmtSbtCheck",
-    "+headerCheck",
-    "+doc",
+    "headerCheckAll",
+    "doc",
     "docs/run"
   )
 )
@@ -412,9 +432,9 @@ addCommandsAlias(
     "clean",
     "test",
     "mimaReportBinaryIssues",
-    "scalafmtCheck",
+    "scalafmtCheckAll",
     "scalafmtSbtCheck",
-    "headerCheck",
+    "headerCheckAll",
     "doc"
   )
 )
