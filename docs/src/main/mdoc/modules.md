@@ -30,7 +30,7 @@ The main entry points are:
 - `fs2.kafka.otel4s.trace.TracedKafkaConsumer`
 - `fs2.kafka.otel4s.trace.syntax._`
 
-See the dedicated [otel4s Trace](otel4s-trace.md) guide for usage, configuration, span semantics,
+See the dedicated [otel4s trace](otel4s-trace.md) guide for usage, configuration, span semantics,
 and caveats.
 
 ## Vulcan

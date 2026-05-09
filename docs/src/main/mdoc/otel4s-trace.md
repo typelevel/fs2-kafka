@@ -1,6 +1,6 @@
 ---
 id: otel4s-trace
-title: OTel4s Trace
+title: otel4s trace
 ---
 
 The `@OTEL4S_TRACE_MODULE_NAME@` module adds tracing support for `fs2-kafka` using
