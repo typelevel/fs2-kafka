@@ -25,8 +25,11 @@ import org.typelevel.otel4s.trace.{SpanFinalizer, StatusCode, Tracer, TracerProv
   *
   * See the OpenTelemetry messaging and Kafka semantic conventions:
   *
-  *   - https://opentelemetry.io/docs/specs/semconv/messaging/messaging-spans/
-  *   - https://opentelemetry.io/docs/specs/semconv/messaging/kafka/
+  * @see
+  *   [[https://opentelemetry.io/docs/specs/semconv/messaging/messaging-spans/]]
+  *
+  * @see
+  *   [[https://opentelemetry.io/docs/specs/semconv/messaging/kafka/]]
   */
 trait KafkaTracer[F[_]] {
 
@@ -58,9 +61,6 @@ object KafkaTracer {
 
   /**
     * Configuration for [[KafkaTracer]].
-    *
-    * The implementation is intentionally hidden so the public API stays focused on configuration
-    * operations rather than construction details.
     *
     * Constant attributes configured here are attached to every span emitted by the library. Kafka
     * client metadata derived from `KafkaProducer` or `KafkaConsumer` is intentionally not

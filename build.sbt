@@ -364,7 +364,8 @@ lazy val testSettings = Seq(
 def minorVersion(version: String): String = {
   val (major, minor) =
     CrossVersion.partialVersion(version).get
-  s"$major.$minor"
+  if (major == 3) "3"
+  else s"$major.$minor"
 }
 
 val latestVersion = settingKey[String]("Latest stable released version")

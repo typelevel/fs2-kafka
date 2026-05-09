@@ -10,18 +10,11 @@ import fs2.kafka._
 import fs2.Chunk
 
 /**
-  * Producer-side syntax for the `fs2-kafka-otel4s` module.
-  *
   * This syntax operates on an implicit [[TracedKafkaProducer]].
   *
   * It is intended for cases where a traced producer has already been bound through
   * [[fs2.kafka.otel4s.KafkaTracer#producer]], and you want compact syntax for header propagation or
   * traced sends at the call site.
-  *
-  * See the OpenTelemetry messaging and Kafka semantic conventions:
-  *
-  *   - https://opentelemetry.io/docs/specs/semconv/messaging/messaging-spans/
-  *   - https://opentelemetry.io/docs/specs/semconv/messaging/kafka/
   */
 trait ProducerTracingSyntax {
 
@@ -75,19 +68,12 @@ trait ProducerTracingSyntax {
 }
 
 /**
-  * Consumer-side syntax for the `fs2-kafka-otel4s` module.
-  *
   * This syntax operates on an implicit [[TracedKafkaConsumer]] that should normally be derived once
   * from [[fs2.kafka.otel4s.KafkaTracer#consumer]] and then reused at record or chunk boundaries.
   *
   * Prefer the methods on [[TracedKafkaConsumer]] directly when that reads more clearly at the call
   * site. The syntax is mainly intended for stream code where `traceReceive` and `traceProcess`
   * improve local readability.
-  *
-  * See the OpenTelemetry messaging and Kafka semantic conventions:
-  *
-  *   - https://opentelemetry.io/docs/specs/semconv/messaging/messaging-spans/
-  *   - https://opentelemetry.io/docs/specs/semconv/messaging/kafka/
   */
 trait ConsumerTracingSyntax {
 

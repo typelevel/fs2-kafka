@@ -6,6 +6,8 @@
 
 package fs2.kafka.otel4s.trace
 
+import scala.util.chaining._
+
 import cats.effect.kernel.{Outcome, Resource}
 import cats.effect.MonadCancelThrow
 import cats.syntax.all._
@@ -200,19 +202,23 @@ object TracedKafkaProducer {
           val spanContext = Semconv.sendSpanContext(underlying.metadata, prepared.records)
           val spanSetup   = config.sendSpanSetup(spanContext)
 
-          val span =
-            addSendLinks(
-              Tracer[F]
-                .spanBuilder(spanSetup.spanName)
-                .withSpanKind(prepared.sendKind)
-                .withFinalizationStrategy(spanSetup.finalizationStrategy)
-                .addAttributes(
-                  Semconv.sendAttributes(spanContext, prepared.records) ++
-                    config.constAttributes ++
-                    spanSetup.attributes
-                ),
-              prepared.sendLinks
-            ).build
+          val span = Tracer[F]
+            .spanBuilder(spanSetup.spanName)
+            .withSpanKind(prepared.sendKind)
+            .withFinalizationStrategy(spanSetup.finalizationStrategy)
+            .addAttributes(
+              Semconv.sendAttributes(spanContext, prepared.records) ++
+                config.constAttributes ++
+                spanSetup.attributes
+            )
+            .pipe { builder =>
+              prepared
+                .sendLinks
+                .foldLeft(builder) { case (acc, (ctx, attributes)) =>
+                  acc.addLink(ctx, attributes)
+                }
+            }
+            .build
 
           MonadCancelThrow[F].uncancelable { poll =>
             span
@@ -257,70 +263,56 @@ object TracedKafkaProducer {
         }
       }
 
-    private def extractedCreationContext(headers: Headers): F[Option[SpanContext]] =
-      Tracer[F].joinOrRoot(headers)(Tracer[F].currentSpanContext)
-
-    private def addSendLinks(
-      builder: SpanBuilder[F],
-      links: List[(SpanContext, Attributes)]
-    ): SpanBuilder[F] =
-      links.foldLeft(builder) { case (acc, (ctx, attributes)) =>
-        acc.addLink(ctx, attributes)
-      }
-
-    private def createSpanResource(
-      record: ProducerRecord[K, V]
-    ): Resource[F, SpanOps.Res[F]] =
-      Tracer[F]
-        .spanBuilder(Semconv.createSpanName(record.topic))
-        .withSpanKind(SpanKind.Producer)
-        .addAttributes(
-          Semconv.createAttributes(underlying.metadata, record) ++ config.constAttributes
-        )
-        .build
-        .resource
-
     private def prepareRecord(
       record: ProducerRecord[K, V],
       createCreationContext: Boolean
     ): F[PreparedRecord] =
-      extractedCreationContext(record.headers).flatMap {
-        case Some(ctx) =>
-          MonadCancelThrow[F].pure(
-            PreparedRecord(
-              record = record,
-              usesSendSpanAsCreationContext = false,
-              sendLink = Some(ctx -> Semconv.sendLinkAttributes(record)),
-              releaseCreateSpan = None
+      Tracer[F]
+        .joinOrRoot(record.headers)(Tracer[F].currentSpanContext)
+        .flatMap {
+          case Some(ctx) =>
+            MonadCancelThrow[F].pure(
+              PreparedRecord(
+                record = record,
+                usesSendSpanAsCreationContext = false,
+                sendLink = Some(ctx -> Semconv.sendLinkAttributes(record)),
+                releaseCreateSpan = None
+              )
             )
-          )
 
-        case None if createCreationContext =>
-          createSpanResource(record)
-            .allocatedCase
-            .flatMap { case (res, release) =>
-              res
-                .trace(injectHeaders(record))
-                .map { injected =>
-                  PreparedRecord(
-                    record = injected,
-                    usesSendSpanAsCreationContext = false,
-                    sendLink = Some(res.span.context -> Semconv.sendLinkAttributes(record)),
-                    releaseCreateSpan = Some(release)
-                  )
-                }
-            }
+          case None if createCreationContext =>
+            Tracer[F]
+              .spanBuilder(Semconv.createSpanName(record.topic))
+              .withSpanKind(SpanKind.Producer)
+              .addAttributes(
+                Semconv.createAttributes(underlying.metadata, record) ++ config.constAttributes
+              )
+              .build
+              .resource
+              .allocatedCase
+              .flatMap { case (res, release) =>
+                res
+                  .trace(injectHeaders(record))
+                  .map { injected =>
+                    PreparedRecord(
+                      record = injected,
+                      usesSendSpanAsCreationContext = false,
+                      sendLink = Some(res.span.context -> Semconv.sendLinkAttributes(record)),
+                      releaseCreateSpan = Some(release)
+                    )
+                  }
+              }
 
-        case None =>
-          MonadCancelThrow[F].pure(
-            PreparedRecord(
-              record = record,
-              usesSendSpanAsCreationContext = true,
-              sendLink = None,
-              releaseCreateSpan = None
+          case None =>
+            MonadCancelThrow[F].pure(
+              PreparedRecord(
+                record = record,
+                usesSendSpanAsCreationContext = true,
+                sendLink = None,
+                releaseCreateSpan = None
+              )
             )
-          )
-      }
+        }
 
     private def prepareBatch(records: ProducerRecords[K, V]): F[PreparedBatch] = {
       val useCreateSpans = records.size > 1
