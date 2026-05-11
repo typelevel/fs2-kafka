@@ -265,7 +265,8 @@ lazy val publishSettings =
 ThisBuild / mimaBinaryIssueFilters ++= {
   import com.typesafe.tools.mima.core.*
   Seq(
-    ProblemFilters.exclude[Problem]("fs2.kafka.internal.*")
+    ProblemFilters.exclude[Problem]("fs2.kafka.internal.*"),
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("fs2.kafka.KafkaConsumer.settings")
   )
 }
 
