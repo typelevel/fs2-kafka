@@ -74,7 +74,13 @@ sealed abstract class KafkaConsumer[F[_], K, V]
     with KafkaTopics[F]
     with KafkaCommit[F]
     with KafkaMetrics[F]
-    with KafkaConsumerLifecycle[F]
+    with KafkaConsumerLifecycle[F] {
+
+  /**
+    * Returns the settings used to create the consumer instance.
+    */
+  def settings: ConsumerSettings[F, K, V]
+}
 
 object KafkaConsumer {
 
@@ -136,7 +142,8 @@ object KafkaConsumer {
     id: Int,
     withConsumer: WithConsumer[F],
     stopConsumingDeferred: Deferred[F, Unit]
-  )(implicit F: Async[F], logging: Logging[F]): KafkaConsumer[F, K, V] =
+  )(implicit F: Async[F], logging: Logging[F]): KafkaConsumer[F, K, V] = {
+    val _settings = settings
     new KafkaConsumer[F, K, V] {
 
       override def partitionsMapStream
@@ -575,7 +582,11 @@ object KafkaConsumer {
 
       override def groupMetadata: F[ConsumerGroupMetadata] =
         withConsumer.blocking(_.groupMetadata())
+
+      override def settings: ConsumerSettings[F, K, V] =
+        _settings
     }
+  }
 
   /**
     * Creates a new [[KafkaConsumer]] in the `Resource` context, using the specified
