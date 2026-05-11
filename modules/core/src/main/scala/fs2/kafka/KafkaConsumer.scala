@@ -65,7 +65,7 @@ import org.apache.kafka.common.{Metric, MetricName, PartitionInfo, TopicPartitio
   * per [[KafkaConsumer]], and if you want to start a new stream if the first one finishes, let the
   * [[KafkaConsumer]] shutdown and create a new one.
   */
-sealed abstract class KafkaConsumer[F[_], K, V]
+abstract class KafkaConsumer[F[_], K, V]
     extends KafkaConsume[F, K, V]
     with KafkaConsumeChunk[F, K, V]
     with KafkaAssignment[F]
