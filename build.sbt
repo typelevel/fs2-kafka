@@ -15,7 +15,7 @@ val scala212 = "2.12.21"
 val scala213 = "2.13.18"
 val scala3   = "3.3.7"
 
-ThisBuild / tlBaseVersion := "4.0"
+ThisBuild / tlBaseVersion := "4.1"
 
 lazy val root = project
   .in(file("."))
@@ -265,7 +265,8 @@ lazy val publishSettings =
 ThisBuild / mimaBinaryIssueFilters ++= {
   import com.typesafe.tools.mima.core.*
   Seq(
-    ProblemFilters.exclude[Problem]("fs2.kafka.internal.*")
+    ProblemFilters.exclude[Problem]("fs2.kafka.internal.*"),
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("fs2.kafka.KafkaConsumer.settings")
   )
 }
 
