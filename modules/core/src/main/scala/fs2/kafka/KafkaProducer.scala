@@ -151,6 +151,16 @@ object KafkaProducer {
       * Returns the settings used to create the producer instance.
       */
     def settings: ProducerSettings[F, K, V]
+
+    /**
+      * Returns a new [[KafkaProducer]] using the same underlying producer but with different key
+      * and value serializers.
+      */
+    def withSerializers[K2, V2](
+      keySerializer: KeySerializer[F, K2],
+      valueSerializer: ValueSerializer[F, V2]
+    ): KafkaProducer.WithSettings[F, K2, V2]
+
   }
 
   implicit class ProducerOps[F[_], K, V](private val producer: KafkaProducer[F, K, V])
@@ -432,7 +442,7 @@ object KafkaProducer {
       def withSerializers[K2, V2](
         k: KeySerializer[F, K2],
         v: ValueSerializer[F, V2]
-      ): KafkaProducer[F, K2, V2] =
+      ): KafkaProducer.WithSettings[F, K2, V2] =
         resourceInternal[F, K2, V2](
           settings = settings.withSerializers(Resource.pure(k), Resource.pure(v)),
           keySerializer = k,
