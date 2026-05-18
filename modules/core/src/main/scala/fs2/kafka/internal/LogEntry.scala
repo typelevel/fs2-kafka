@@ -7,18 +7,16 @@
 package fs2.kafka.internal
 
 import java.util.regex.Pattern
-
 import scala.collection.immutable.SortedSet
-
 import cats.data.{NonEmptyList, NonEmptySet}
 import cats.syntax.all.*
 import fs2.kafka.instances.*
 import fs2.kafka.internal.syntax.*
-import fs2.kafka.internal.KafkaConsumerActor.*
+import fs2.kafka.internal.actor.KafkaConsumerActor.*
 import fs2.kafka.internal.LogLevel.*
 import fs2.kafka.CommittableConsumerRecord
 import fs2.Chunk
-
+import fs2.kafka.internal.actor.{OnRebalance, PartitionState, Request, State}
 import org.apache.kafka.common.TopicPartition
 
 sealed abstract private[kafka] class LogEntry {
@@ -104,7 +102,7 @@ private[kafka] object LogEntry {
 
   final case class RevokedPartitions[F[_], K, V](
     partitions: Set[TopicPartition],
-    partitionState: Map[TopicPartition, PartitionState[F, K, V]],
+    partitionState: Map[Set[TopicPartition], PartitionState[F, K, V]],
     state: State[F, ?, ?]
   ) extends LogEntry {
 
