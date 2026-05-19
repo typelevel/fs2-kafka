@@ -108,16 +108,16 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
     */
   def consume(): Stream[F, Map[Set[TopicPartition], Stream[F, Chunk[CommittableConsumerRecord[F, K, V]]]]] =
     for {
-      initialDef   <- Stream.eval(Deferred[F, Unit])
+      initialDef   <- Stream.eval(Deferred[F, Either[Throwable, Unit]])
       initialWaiEnd = List.empty[Semaphore[F]]
       result       <- assignment
                         .discrete
-                        .mapAccumulate(initialDef -> initialWaiEnd) { case ((prevDeferred, prevSemaphores), assignment) =>
+                        .evalMapAccumulate(initialDef -> initialWaiEnd) { case ((prevDeferred, prevSemaphores), assignment) =>
                           for {
-                            _               <- Stream.eval(prevDeferred.complete(()))
-                            nextDeferred    <- Stream.eval(Deferred[F, Either[Throwable, Unit]])
-                            _               <- Stream.eval(prevSemaphores.traverse(_.acquire)) // prev semaphores are forever locked
-                            nextSemaphores  <- Stream.eval((0 to assignment.size).toList.traverse(_ => Semaphore[F](1)))
+                            _               <- prevDeferred.complete(().asRight)
+                            nextDeferred    <- Deferred[F, Either[Throwable, Unit]]
+                            _               <- prevSemaphores.traverse(_.acquire) // prev semaphores are forever locked
+                            nextSemaphores  <- (0 until assignment.size).toList.traverse(_ => Semaphore[F](1))
                             assignmentStream = assignment
                                                  .toList
                                                  .zipWithIndex
@@ -132,7 +132,7 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
                                                      result   <- if (acquired) Stream.fromQueueUnterminated(value)
                                                                  else Stream.empty.covary[F]
                                                    } yield result
-                                                   k -> recordStream
+                                                   k -> recordStream.interruptWhen(nextDeferred)
                                                  }
                                                  .toMap
                           } yield (nextDeferred -> nextSemaphores) -> assignmentStream
