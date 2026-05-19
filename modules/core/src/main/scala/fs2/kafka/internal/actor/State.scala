@@ -2,17 +2,16 @@ package fs2.kafka.internal.actor
 
 import scala.collection.immutable.SortedSet
 import scala.concurrent.duration.*
-
 import cats.data.Chain
 import cats.effect.syntax.all.*
 import cats.effect.Async
+import cats.effect.std.Semaphore
 import cats.syntax.all.*
 import fs2.kafka.internal.{LogEntry, Logging}
 import fs2.kafka.internal.actor.PartitionState.PartitionStateMap
 import fs2.kafka.internal.LogEntry.{AssignedPartitions, RevokedPartitions}
 import fs2.kafka.CommittableConsumerRecord
 import fs2.Chunk
-
 import org.apache.kafka.common.TopicPartition
 
 object State {

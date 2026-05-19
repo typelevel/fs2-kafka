@@ -42,9 +42,10 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
   settings:          ConsumerSettings[F, K, V],
   keyDeserializer:   KeyDeserializer[F, K],
   valueDeserializer: ValueDeserializer[F, V],
-  val ref:           Ref[F, State[F, K, V]],
+  state:             AtomicCell[F, State[F, K, V]],
   requests:          Queue[F, Request[F, K, V]],
-  val assignment:    SignallingRef[F, Map[Set[TopicPartition], Queue[F, Chunk[CommittableConsumerRecord[F, K, V]]]]],
+  assignment:        Queue[F, Option[Map[Set[TopicPartition], PartitionGroupState[F, K, V]]]],
+  state2:            AtomicCell[F, State2[F, K, V]],
   close:             SignallingRef[F, Boolean],
   withConsumer:      WithConsumer[F],
   maxParallel:       Int
@@ -66,12 +67,66 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
       }
     }
 
+  /** Method that will receive all group partition updates.
+    *
+    * Turns all new issued partition group state into a stream that will be interrupted whenever the group is revoked.
+    */
+  def consume(): Stream[F, Map[Set[TopicPartition], Stream[F, Chunk[CommittableConsumerRecord[F, K, V]]]]] =
+    Stream
+      .fromQueueNoneTerminated(assignment)
+      .map { assignment =>
+        assignment.view.mapValues { state =>
+          (for {
+            hasPermit <- Stream.resource(state.groupSemaphore.tryPermit)
+            result    <- if (hasPermit) Stream.fromQueueUnterminated(state.queue)
+                         else Stream.empty
+          } yield result).interruptWhen(state.interrupt)
+        }.toMap
+      }
+
   def handle(request: Request[F, K, V]): F[Unit] =
     request match {
       case Request.Poll()                           => poll
       case request @ Request.Commit(_, _)           => commit(request)
       case request @ Request.ManualCommitSync(_, _) => manualCommitSync(request)
       case Request.WithPermit(fa, cb)               => fa.attempt >>= cb
+    }
+
+  private def alignAssignment() =
+    state2.evalUpdate { state =>
+      for {
+        targetAssignment <- withConsumer.blocking(_.assignment()).map(_.asScala.toSet)
+        currentAssignment = state.partitionGroupState.keys.toSet
+        assignmentCalc    = ReassignmentCalculation.align(targetAssignment, currentAssignment, maxParallel)
+        toRevoke          = state.partitionGroupState.removedAll(assignmentCalc.groupGoal)
+        toKeep            = state.partitionGroupState.removedAll(toRevoke.keys)
+        spillover        <- toRevoke.toList.flatTraverse { case (_, state) =>
+                              for {
+                                _        <- state.interrupt.complete(().asRight)
+                                _        <- state.groupSemaphore.acquire
+                                queued   <- state.queue.tryTakeN(none)
+                                spillover = state.spillover
+                                records   = (queued ++ spillover)
+                                  .filter(_.filter(r => targetAssignment.contains(r.offset.topicPartition)))
+                                  .filter(_.nonEmpty)
+                              } yield records
+                            }
+        spilloverMap      = spillover
+                              .map(_.toList.groupByNel(_.offset.topicPartition).toMap)
+                              .foldMap(_.view.mapValues(List(_)).toMap)
+        needsAdding       = assignmentCalc.groupGoal.diff(currentAssignment)
+        newPartitions    <- needsAdding.toList.traverse { group =>
+                              for {
+                                semaphore <- Semaphore[F](1)
+                                deferred  <- Deferred[F, Either[Throwable, Unit]]
+                                queue     <- Queue.bounded[F, Chunk[CommittableConsumerRecord[F, K, V]]](1) // TODO: This should be the prefetch
+                                carryOver  = group.toList.foldMap(tp => spilloverMap.get(tp).toList.flatten)
+                                spillover <- queue.tryOfferN(carryOver.map(_.toList).map(Chunk.from))
+                              } yield group -> PartitionGroupState(semaphore, deferred, queue, spillover)
+                            }
+        newState          = newPartitions.toMap ++ toKeep
+        _                <- assignment.offer(newState.some)
+      } yield state.copy(partitionGroupState = newState)
     }
 
   private[this] def assigned(assigned: SortedSet[TopicPartition]): F[Unit] =
@@ -88,56 +143,6 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
     override def onPartitionsAssigned(partitions: util.Collection[TopicPartition]): Unit =
       dispatcher.unsafeRunSync(assigned(partitions.toSortedSet))
   }
-
-  /** Drives the partition assignment and record consumption based on the internal assignment state.
-    *
-    * Listens to the `assignment` [[cats.effect.std.MapRef]] for changes via `discrete`. Each time a new assignment map
-    * is emitted, the previous assignment's streams are canceled and finalized before the new map is produced
-    * downstream.
-    *
-    * The returned stream emits a `Map` where each key is a set of topic-partitions and each value is a stream of record
-    * chunks for that partition group.
-    *
-    * Coordination mechanism:
-    *   - A `Deferred` is threaded through the `mapAccumulate` fold so that each new assignment can signal the previous
-    *     one to stop.
-    *   - A list of `Semaphore`s (one per partition group) ensures that the previous assignment's per-partition streams
-    *     have fully finalized before the new assignment proceeds.
-    *   - Because finalization acquires the semaphore, any previous stream that has not yet started will find the permit
-    *     unavailable and will emit nothing (`Stream.empty`), preventing stale Streams from being used.
-    */
-  def consume(): Stream[F, Map[Set[TopicPartition], Stream[F, Chunk[CommittableConsumerRecord[F, K, V]]]]] =
-    for {
-      initialDef   <- Stream.eval(Deferred[F, Either[Throwable, Unit]])
-      initialWaiEnd = List.empty[Semaphore[F]]
-      result       <- assignment
-                        .discrete
-                        .evalMapAccumulate(initialDef -> initialWaiEnd) { case ((prevDeferred, prevSemaphores), assignment) =>
-                          for {
-                            _               <- prevDeferred.complete(().asRight)
-                            nextDeferred    <- Deferred[F, Either[Throwable, Unit]]
-                            _               <- prevSemaphores.traverse(_.acquire) // prev semaphores are forever locked
-                            nextSemaphores  <- (0 until assignment.size).toList.traverse(_ => Semaphore[F](1))
-                            assignmentStream = assignment
-                                                 .toList
-                                                 .zipWithIndex
-                                                 .map { case ((k, value), i) =>
-                                                   val mySemaphore  = nextSemaphores(i)
-                                                   // semaphore are allocated and released when stream is interrupted
-                                                   // if we can't acquire it's because the stream was already acquired
-                                                   // in that case we're better just not emitting anything since it signals
-                                                   // a new assignment was issued
-                                                   val recordStream = for {
-                                                     acquired <- Stream.resource(mySemaphore.tryPermit)
-                                                     result   <- if (acquired) Stream.fromQueueUnterminated(value)
-                                                                 else Stream.empty.covary[F]
-                                                   } yield result
-                                                   k -> recordStream.interruptWhen(nextDeferred)
-                                                 }
-                                                 .toMap
-                          } yield (nextDeferred -> nextSemaphores) -> assignmentStream
-                        }
-    } yield result._2
 
   private def poll: F[Unit] =
     for {
@@ -202,32 +207,6 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
           }
         }
     }
-
-  private def updateState(state: State[F, K, V], target: Set[TopicPartition]) = {
-    val currentAssignment             = state.partitionState.keys.toSet
-    val assignmentCalc                = ReassignmentCalculation.align(target, currentAssignment, maxParallel)
-    val (stateToKeep, stateToDiscard) = state
-      .partitionState
-      .partition { case (tps, _) => assignmentCalc.groupGoal.contains(tps) }
-    val revokeF                       = stateToDiscard
-      .toList
-      .parTraverse { case (group, state) =>
-        for {
-          _                  <- state.closeSignal.complete(())
-          hasPartitionsToKeep = group.exists(assignmentCalc.targetAssignment.contains)
-          stateToEnqueue     <- if (hasPartitionsToKeep) {
-                                  drainRecordsToKeep(state, assignmentCalc.targetAssignment)
-                                } else List.empty.pure[F]
-        } yield stateToEnqueue
-      }
-      .map(_.flatten)
-      .flatTap { _ =>
-        val revoked = assignmentCalc.groupRevoke.flatten.diff(assignmentCalc.targetAssignment)
-        logging.log(RevokedPartitions(revoked, ???, ???))
-      }
-      .map(recordsToKeep => recordsToKeep -> assignmentCalc)
-    state.copy(partitionState = stateToKeep) -> revokeF.map(_.some)
-  }
 
   private def drainRecordsToKeep(
     partitionState: PartitionState[F, K, V],

@@ -46,39 +46,48 @@ object ReassignmentCalculation {
     existingAssignment: Set[Set[TopicPartition]],
     maxParallelism:     Int
   ): ReassignmentCalculation = {
-    val totalGroupCount     = Math.min(targetAssignment.size, maxParallelism)
-    val spilloverGroupCount = targetAssignment.size % totalGroupCount
+    if(targetAssignment.diff(existingAssignment.flatten).isEmpty) {
+      ReassignmentCalculation(
+        existingAssignment,
+        Set.empty,
+        targetAssignment
+      )
+    } else {
+      val totalGroupCount     = Math.min(targetAssignment.size, maxParallelism)
+      val spilloverGroupCount = targetAssignment.size % totalGroupCount
 
-    val defaultGroupSize   = targetAssignment.size / totalGroupCount
-    val oversizedGroupSize = defaultGroupSize + 1
+      val defaultGroupSize   = targetAssignment.size / totalGroupCount
+      val oversizedGroupSize = defaultGroupSize + 1
 
-    val (stillAssigned, unassignDueToPartitionRevoked) =
-      existingAssignment.partition(_.forall(targetAssignment.contains))
+      val (stillAssigned, unassignDueToPartitionRevoked) =
+        existingAssignment.partition(_.forall(targetAssignment.contains))
 
-    val groupsToKeepWSpillover = stillAssigned
-      .filter(_.size == oversizedGroupSize)
-      .take(spilloverGroupCount)
+      val groupsToKeepWSpillover = stillAssigned
+        .filter(_.size == oversizedGroupSize)
+        .take(spilloverGroupCount)
 
-    val (groupsToKeepRegularSize, toRevokeDueToSize) = stillAssigned
-      .diff(groupsToKeepWSpillover)
-      .partition(_.size == defaultGroupSize)
+      val (groupsToKeepRegularSize, toRevokeDueToSize) = stillAssigned
+        .diff(groupsToKeepWSpillover)
+        .partition(_.size == defaultGroupSize)
 
-    val leftUnassigned =
-      targetAssignment -- (groupsToKeepWSpillover.flatten ++ groupsToKeepRegularSize.flatten)
+      val leftUnassigned =
+        targetAssignment -- (groupsToKeepWSpillover.flatten ++ groupsToKeepRegularSize.flatten)
 
-    val oversizedGroups = leftUnassigned
-      .grouped(oversizedGroupSize)
-      .take(spilloverGroupCount - groupsToKeepWSpillover.size)
-      .toList
+      val oversizedGroups = leftUnassigned
+        .grouped(oversizedGroupSize)
+        .take(spilloverGroupCount - groupsToKeepWSpillover.size)
+        .toList
 
-    val defaultSizeGroups = (leftUnassigned -- oversizedGroups.flatten)
-      .grouped(defaultGroupSize)
-      .toSet
+      val defaultSizeGroups = (leftUnassigned -- oversizedGroups.flatten)
+        .grouped(defaultGroupSize)
+        .toSet
 
-    ReassignmentCalculation(
-      groupGoal        = defaultSizeGroups ++ oversizedGroups,
-      groupRevoke      = unassignDueToPartitionRevoked ++ toRevokeDueToSize,
-      targetAssignment = targetAssignment
-    )
+      ReassignmentCalculation(
+        groupGoal        = defaultSizeGroups ++ oversizedGroups,
+        groupRevoke      = unassignDueToPartitionRevoked ++ toRevokeDueToSize,
+        targetAssignment = targetAssignment
+      )
+    }
+
   }
 }
