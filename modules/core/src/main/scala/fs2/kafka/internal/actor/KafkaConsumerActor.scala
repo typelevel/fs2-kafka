@@ -8,7 +8,6 @@ package fs2.kafka.internal.actor
 
 import java.time.Duration
 import java.util
-import scala.collection.immutable.SortedSet
 import cats.effect.*
 import cats.effect.implicits.*
 import cats.effect.std.*
@@ -24,9 +23,7 @@ import fs2.Chunk
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.TopicPartition
-import PartitionState.PartitionStateMap
 import fs2.Stream
-import fs2.concurrent.SignallingRef
 
 /** [[KafkaConsumerActor]] wraps a Java `KafkaConsumer` and works similar to a traditional actor, in the sense that it
   * receives requests one at-a-time via a queue, which are received as calls to the `handle` function. `Poll` requests
@@ -42,11 +39,9 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
   settings:          ConsumerSettings[F, K, V],
   keyDeserializer:   KeyDeserializer[F, K],
   valueDeserializer: ValueDeserializer[F, V],
-  state:             AtomicCell[F, State[F, K, V]],
   requests:          Queue[F, Request[F, K, V]],
   assignment:        Queue[F, Option[Map[Set[TopicPartition], PartitionGroupState[F, K, V]]]],
   state2:            AtomicCell[F, State2[F, K, V]],
-  close:             SignallingRef[F, Boolean],
   withConsumer:      WithConsumer[F],
   maxParallel:       Int
 )(implicit
@@ -56,171 +51,153 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
   jitter:            Jitter[F]
 ) {
 
-  private[this] type ConsumerRecords = Map[Set[TopicPartition], Chunk[CommittableConsumerRecord[F, K, V]]]
-  private[this] type ConsumerQueue   = Queue[F, Chunk[CommittableConsumerRecord[F, K, V]]]
+  private[this] type ConsumerRecords = Map[TopicPartition, Chunk[CommittableConsumerRecord[F, K, V]]]
+  private type GroupState            = Map[Set[TopicPartition], PartitionGroupState[F, K, V]]
+  private[this] val pollTimeout: Duration = settings.pollTimeout.toJava
+  private[this] val maxPrefetch: Int      = settings.maxPrefetchBatches
 
-  def getQueueAndStopSignalFor(partition: Set[TopicPartition]): F[(ConsumerQueue, F[Unit])] =
-    ensurePartitionStateFor(Set(partition)).flatMap { partitionState =>
-      partitionState.get(partition) match {
-        case Some(ps) => F.pure((ps.queue, ps.closeSignal.get))
-        case None     => new IllegalStateException(s"PartitionState not added for $partition").raiseError
+  val consumerRebalanceListener: ConsumerRebalanceListener = new ConsumerRebalanceListener {
+    override def onPartitionsRevoked(partitions: util.Collection[TopicPartition]): Unit = {
+      dispatcher.unsafeRunSync {
+        state2.evalUpdate { state =>
+          val currentAssignment = state.partitionGroupState.keys.toList.flatten.toSet
+          val targetAssignment  = currentAssignment -- partitions.asScala
+          alignPartitionState(targetAssignment, state.partitionGroupState)
+            .map(state.withGroupState)
+        }
       }
     }
+
+    override def onPartitionsAssigned(partitions: util.Collection[TopicPartition]): Unit =
+      dispatcher.unsafeRunSync {
+        state2.evalUpdate { state =>
+          val currentAssignment = state.partitionGroupState.keys.toList.flatten.toSet
+          val targetAssignment  = currentAssignment ++ partitions.asScala
+          alignPartitionState(targetAssignment, state.partitionGroupState).map(state.withGroupState)
+        }
+      }
+  }
 
   /** Method that will receive all group partition updates.
     *
     * Turns all new issued partition group state into a stream that will be interrupted whenever the group is revoked.
     */
   def consume(): Stream[F, Map[Set[TopicPartition], Stream[F, Chunk[CommittableConsumerRecord[F, K, V]]]]] =
-    Stream
-      .fromQueueNoneTerminated(assignment)
-      .map { assignment =>
-        assignment.view.mapValues { state =>
-          (for {
-            hasPermit <- Stream.resource(state.groupSemaphore.tryPermit)
-            result    <- if (hasPermit) Stream.fromQueueUnterminated(state.queue)
-                         else Stream.empty
-          } yield result).interruptWhen(state.interrupt)
-        }.toMap
-      }
+    for {
+      _          <- Stream.resource(Resource.make(state2.update(_.withStreaming()))(_ => state2.update(_.withNotStreaming())))
+      assignment <- Stream
+                      .fromQueueNoneTerminated(assignment)
+                      .map { assignment =>
+                        assignment.view.mapValues { state =>
+                          (for {
+                            hasPermit <- Stream.resource(state.groupSemaphore.tryPermit)
+                            result    <- if (hasPermit) Stream.fromQueueUnterminated(state.queue)
+                                         else Stream.empty
+                          } yield result).interruptWhen(state.interrupt)
+                        }.toMap
+                      }
+    } yield assignment
+
+
+
 
   def handle(request: Request[F, K, V]): F[Unit] =
     request match {
-      case Request.Poll()                           => poll
+      case Request.Poll()                           =>
+        for {
+          records <- pollRecords
+          _       <- state2.evalUpdate { s =>
+                       for {
+                         targetAssignment  <- withConsumer.blocking(_.assignment()).map(_.asScala.toSet)
+                         alignedGroups     <- alignPartitionState(targetAssignment, s.partitionGroupState)
+                         enqueuedRecords   <- enqueueRecords(records, alignedGroups)
+                         spillOverEnqueued <- enqueueSpillOver(enqueuedRecords)
+                       } yield s.withGroupState(spillOverEnqueued)
+                     }
+        } yield ()
       case request @ Request.Commit(_, _)           => commit(request)
       case request @ Request.ManualCommitSync(_, _) => manualCommitSync(request)
       case Request.WithPermit(fa, cb)               => fa.attempt >>= cb
     }
 
-  private def alignAssignment() =
-    state2.evalUpdate { state =>
+  def unsubscribe(): F[Unit] = state2.evalUpdate { state =>
+    for {
+      _ <- assignment.offer(None)
+      _ <- state
+             .partitionGroupState
+             .values
+             .toList
+             .parTraverse(group => group.interrupt.complete(().asRight) *> group.groupSemaphore.acquire)
+    } yield state.withUnsubscribed()
+  }
+
+  def subscribed(): F[Unit] = state2.update(state => state.withSubscribed())
+
+  private def alignPartitionState(targetAssignment: Set[TopicPartition], state: GroupState): F[GroupState] = {
+    val currentAssignment = state.keys.toSet
+    if (targetAssignment == currentAssignment) {
+      state.pure[F]
+    } else {
       for {
-        targetAssignment <- withConsumer.blocking(_.assignment()).map(_.asScala.toSet)
-        currentAssignment = state.partitionGroupState.keys.toSet
-        assignmentCalc    = ReassignmentCalculation.align(targetAssignment, currentAssignment, maxParallel)
-        toRevoke          = state.partitionGroupState.removedAll(assignmentCalc.groupGoal)
-        toKeep            = state.partitionGroupState.removedAll(toRevoke.keys)
-        spillover        <- toRevoke.toList.flatTraverse { case (_, state) =>
-                              for {
-                                _        <- state.interrupt.complete(().asRight)
-                                _        <- state.groupSemaphore.acquire
-                                queued   <- state.queue.tryTakeN(none)
-                                spillover = state.spillover
-                                records   = (queued ++ spillover)
-                                  .filter(_.filter(r => targetAssignment.contains(r.offset.topicPartition)))
-                                  .filter(_.nonEmpty)
-                              } yield records
-                            }
-        spilloverMap      = spillover
-                              .map(_.toList.groupByNel(_.offset.topicPartition).toMap)
-                              .foldMap(_.view.mapValues(List(_)).toMap)
-        needsAdding       = assignmentCalc.groupGoal.diff(currentAssignment)
-        newPartitions    <- needsAdding.toList.traverse { group =>
-                              for {
-                                semaphore <- Semaphore[F](1)
-                                deferred  <- Deferred[F, Either[Throwable, Unit]]
-                                queue     <- Queue.bounded[F, Chunk[CommittableConsumerRecord[F, K, V]]](1) // TODO: This should be the prefetch
-                                carryOver  = group.toList.foldMap(tp => spilloverMap.get(tp).toList.flatten)
-                                spillover <- queue.tryOfferN(carryOver.map(_.toList).map(Chunk.from))
-                              } yield group -> PartitionGroupState(semaphore, deferred, queue, spillover)
-                            }
-        newState          = newPartitions.toMap ++ toKeep
-        _                <- assignment.offer(newState.some)
-      } yield state.copy(partitionGroupState = newState)
+        assignmentCalc <- PartitionGroupingCalculator.align(targetAssignment, currentAssignment, maxParallel).pure[F]
+        toRevoke        = state.removedAll(assignmentCalc.groupGoal)
+        toKeep          = state.removedAll(toRevoke.keys)
+        spillover      <- toRevoke.toList.flatTraverse { case (_, state) =>
+                            for {
+                              _        <- state.interrupt.complete(().asRight)
+                              _        <- state.groupSemaphore.acquire
+                              queued   <- state.queue.tryTakeN(none) // safe since we acquired the semaphore beforehand
+                              spillover = state.spillover
+                              records   = (queued ++ spillover)
+                                .map(_.filter(r => targetAssignment.contains(r.offset.topicPartition)))
+                                .filter(_.nonEmpty)
+                            } yield records
+                          }
+        spilloverMap    = spillover
+                            .map(_.toList.groupByNel(_.offset.topicPartition).toMap)
+                            .foldMap(_.view.mapValues(List(_)).toMap)
+        needsAdding     = assignmentCalc.groupGoal.diff(currentAssignment)
+        newPartitions  <- needsAdding.toList.traverse { group =>
+                            for {
+                              semaphore <- Semaphore[F](1)
+                              deferred  <- Deferred[F, Either[Throwable, Unit]]
+                              queue     <- Queue.bounded[F, Chunk[CommittableConsumerRecord[F, K, V]]](maxPrefetch)
+                              carryOver  = group.toList.foldMap(tp => spilloverMap.get(tp).toList.flatten)
+                              spillover <- queue.tryOfferN(carryOver.map(_.toList).map(Chunk.from))
+                            } yield group -> PartitionGroupState(semaphore, deferred, queue, spillover)
+                          }
+        newState        = newPartitions.toMap ++ toKeep
+        _              <- assignment.offer(newState.some)
+      } yield newState
     }
-
-  private[this] def assigned(assigned: SortedSet[TopicPartition]): F[Unit] =
-    ref.flatModify(_.withAssignedPartitions(assigned)).flatten
-
-  private[this] def revoked(revoked: SortedSet[TopicPartition]): F[Unit] = {
-    calcPartitionDistribution(???, ???, maxParallel)
-    ref.flatModify(_.withRevokedPartitions(settings.sessionTimeout, revoked)).flatten
   }
 
-  val consumerRebalanceListener: ConsumerRebalanceListener = new ConsumerRebalanceListener {
-    override def onPartitionsRevoked(partitions: util.Collection[TopicPartition]):  Unit =
-      dispatcher.unsafeRunSync(revoked(partitions.toSortedSet))
-    override def onPartitionsAssigned(partitions: util.Collection[TopicPartition]): Unit =
-      dispatcher.unsafeRunSync(assigned(partitions.toSortedSet))
+  private def enqueueSpillOver(groupState: GroupState): F[GroupState] =
+    groupState.toList.traverse { case (group, state) =>
+      for {
+        newSpillover <- state.queue.tryOfferN(state.spillover)
+        newState      = state.copy(spillover = newSpillover)
+      } yield group -> newState
+    }.map(_.toMap)
+
+  private def enqueueRecords(records: ConsumerRecords, groupState: GroupState): F[GroupState] = {
+    val groupMap = groupState.keys.flatMap(set => set.map(tp => tp -> set)).toMap
+    for {
+      enqueueResult <- records.toList.traverse { case (tp, records) =>
+                         groupMap
+                           .get(tp)
+                           .flatMap(g => groupState.get(g).tupleLeft(g))
+                           .traverse { case (group, gState) =>
+                             gState
+                               .queue
+                               .tryOffer(records)
+                               .ifF(gState, gState.withSpillover(records))
+                               .tupleLeft(group)
+                           }
+                       }
+      toOverride     = enqueueResult.flatten.toMap
+    } yield groupState ++ toOverride
   }
-
-  private def poll: F[Unit] =
-    for {
-      targetAssignment <- withConsumer.blocking(_.assignment()).map(_.asScala.toSet)
-      stateUpdate      <- ref.flatModify {
-                            case state if state.subscribed && state.streaming =>
-                              val currentAssignment = state.partitionState.keys.flatten
-                              val requiresUpdate    = currentAssignment.toSet.diff(targetAssignment).nonEmpty
-                              if (requiresUpdate) updateState(state, targetAssignment)
-                              else state -> none.pure[F]
-                            case state                                        => state -> none.pure[F]
-                          }
-      _                <- stateUpdate.traverse { case (_, newAssignment) =>
-                            ensurePartitionStateFor(newAssignment.groupGoal)
-                          }
-      _                <- stateUpdate match { // add all records as spill over
-                            case Some((spillover, _)) => addAsSpillOver(spillover).whenA(spillover.nonEmpty)
-                            case None                 => ().pure[F]
-                          }
-      _                <- enqueueSpillOver
-      records          <- pollRecords
-      newState         <- enqueueRecords(records).flatMap(stateAndReset => ref.flatModify(_ => stateAndReset))
-    } yield ()
-
-  private def enqueueSpillOver: F[State[F, K, V]] =
-    for {
-      state    <- ref.get
-      newState <- state
-                    .partitionState
-                    .toList
-                    .parTraverse { case (tp, state) =>
-                      for {
-                        spillover <- state.queue.tryOfferN(state.spillover)
-                      } yield tp -> state.copy(spillover = spillover)
-                    }
-                    .map(_.toMap)
-                    .map(newState => state.copy(partitionState = newState))
-      _        <- ref.set(newState)
-    } yield ()
-
-  private def addAsSpillOver(
-    spillOver: List[Chunk[CommittableConsumerRecord[F, K, V]]]
-  ): F[Unit] =
-    // TODO: we can create the map of chunks from the spill over in a bit of a better way but for now let's do it this way
-    ref.update { state =>
-      val stateKeyMap = state
-        .partitionState
-        .keys
-        .toList
-        .flatMap(group => group.map(tp => tp -> group))
-        .toMap
-      spillOver
-        .groupBy(_.head.get.offset.topicPartition)
-        .toList
-        .foldLeft(state) { case (state, (tp, chunks)) =>
-          stateKeyMap.get(tp) match {
-            case None        => state // should never happen
-            case Some(group) =>
-              val groupState    = state.partitionState.get(group).get // improve
-              val newGroupState = groupState.copy(spillover = groupState.spillover ++ chunks)
-              state.copy(partitionState = state.partitionState.updated(group, newGroupState))
-          }
-        }
-    }
-
-  private def drainRecordsToKeep(
-    partitionState: PartitionState[F, K, V],
-    target:         Set[TopicPartition]
-  ): F[List[Chunk[CommittableConsumerRecord[F, K, V]]]] =
-    partitionState
-      .queue
-      .tryTakeN(none)
-      .map(_ ++ partitionState.spillover)
-      .map(recordChunks =>
-        recordChunks
-          .map(chunk => chunk.filter(r => target.contains(r.offset.topicPartition)))
-          .filter(_.nonEmpty)
-      )
 
   private[this] val committer: KafkaCommitter[F] =
     KafkaCommitter(
@@ -249,29 +226,26 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
       .handleErrorWith(e => F.delay(callback(Left(e))))
 
   private[this] def commit(request: Request.Commit[F]): F[Unit] =
-    ref.flatModify { state =>
-      val commitF = commitAsync(request.offsets, request.callback)
-      if (state.rebalancing || state.pendingCommits.nonEmpty) {
-        val newState =
-          state.withPendingCommit(commitF >> logging.log(CommittedPendingCommit(request)))
-        (newState, logging.log(StoredPendingCommit(request, newState)))
-      } else
-        (state, commitF)
-    }
+    state2.modify { state =>
+      val isRebalanceOrHasPending = state.rebalancing || state.pendingCommits.nonEmpty
+      val commitAsyncF            = commitAsync(request.offsets, request.callback)
+      if (isRebalanceOrHasPending) {
+        val newState = state.withPendingCommit(commitAsyncF)
+        newState -> logging.log(CommittedPendingCommit(request))
+      } else (state, commitAsyncF)
+    }.flatten
 
   private[this] def manualCommitSync(request: Request.ManualCommitSync[F]): F[Unit] = {
-    val commit =
-      withConsumer.blocking(_.commitSync(request.offsets.asJava, settings.commitTimeout.toJava))
+    val commit = withConsumer.blocking(_.commitSync(request.offsets.asJava, settings.commitTimeout.toJava))
     commit.attempt >>= request.callback
   }
 
-  private[this] def runCommitAsync(
-    offsets: Map[TopicPartition, OffsetAndMetadata]
-  )(k:       (Either[Throwable, Unit] => Unit) => F[Unit]
-  ): F[Unit] =
-    F.async[Unit] { (cb: Either[Throwable, Unit] => Unit) =>
-      k(cb).as(Some(F.unit))
-    }
+  def offsetCommitAsync(offsets: Map[TopicPartition, OffsetAndMetadata]): F[Unit] =
+    runCommitAsync(offsets)(cb => requests.offer(Request.Commit(offsets, cb)))
+
+  private[this] def runCommitAsync(offsets: Map[TopicPartition, OffsetAndMetadata])(k: (Either[Throwable, Unit] => Unit) => F[Unit]): F[Unit] =
+    Async[F]
+      .async((cb: Either[Throwable, Unit] => Unit) => k(cb).as(Some(F.unit)))
       .timeoutTo(
         settings.commitTimeout,
         F.defer(F.raiseError[Unit] {
@@ -282,13 +256,7 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
         })
       )
 
-  def offsetCommitAsync(offsets: Map[TopicPartition, OffsetAndMetadata]): F[Unit] =
-    runCommitAsync(offsets)(cb => requests.offer(Request.Commit(offsets, cb)))
-
-  private[this] def committableConsumerRecord(
-    record:    ConsumerRecord[K, V],
-    partition: TopicPartition
-  ): CommittableConsumerRecord[F, K, V] =
+  private[this] def committableConsumerRecord(record: ConsumerRecord[K, V], partition: TopicPartition): CommittableConsumerRecord[F, K, V] =
     CommittableConsumerRecord(
       record = record,
       offset = CommittableOffset(
@@ -318,77 +286,21 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
       }
       .map(_.toMap)
 
-  private[this] val pollTimeout: Duration =
-    settings.pollTimeout.toJava
-
-  def enqueueRecords(records: ConsumerRecords) =
-    for {
-      state              <- ref.get
-      groupsMap           = state.partitionState.keys.toList.flatMap(tps => tps.map(tp => tp -> tps).toSet).toMap
-      newPartitionsState <- records.toList.traverse { case (tp, records) =>
-                              val group          = groupsMap.get(tp).get
-                              val partitionState = state
-                                .partitionState
-                                .get(group)
-                                .get
-                              val toEnqueue      = partitionState.spillover :+ records
-                              partitionState
-                                .queue
-                                .tryOfferN(toEnqueue)
-                                .map(spillover => group -> partitionState.copy(spillover = spillover))
-                            }.map(_.toMap)
-    } yield state.copy(partitionState = newPartitionsState)
-
-  def pollRecords =
-    for {
-      state           <- ref.get
-      partitions       = state.partitionState.partition { case (_, state) => state.isQueueFull }
-      pausePartitions  = partitions._1
-      resumePartitions = partitions._2
-      batch           <- withConsumer.blocking { consumer =>
-                           if (pausePartitions.nonEmpty) consumer.pause(pausePartitions.keys.toSet.flatten.asJava)
-                           if (resumePartitions.nonEmpty) consumer.resume(resumePartitions.keys.toSet.flatten.asJava)
-                           consumer.poll(pollTimeout)
-                         }
-      result          <- records(batch)
-    } yield result
-
-  /** Ensures the state holds a PartitionState for each requested partition, and returns the map of all partition states
-    * (including at least the requested partitions).
-    *
-    * At the cost of additional synchronization on the internal state `ref`, this method optimistically assumes there is
-    * already an entry for the requested partition. The intent is to avoid over-provisioning `PartitionState` instances.
-    * New instances are then created as necessary, and atomically added to the state.
-    *
-    * This may still create and discard duplicate `PartitionState` instances. Any previously added to the state will be
-    * returned and not overwritten.
-    *
-    * Called by `poll`, and `getQueueAndStopSignalFor` (for `KafkaConsumer`).
-    */
-  private[this] def ensurePartitionStateFor(
-    partitions: Set[Set[TopicPartition]]
-  ): F[PartitionStateMap[F, K, V]] =
-    ref
-      .get
-      .flatMap { state =>
-        (partitions -- state.partitionState.keys.toSet).toList match {
-          case Nil     => F.pure(state.partitionState)
-          case missing =>
-            missing
-              .traverse { partition =>
-                (
-                  Queue.bounded[F, Chunk[CommittableConsumerRecord[F, K, V]]](
-                    settings.maxPrefetchBatches
-                  ),
-                  F.pure(Chunk.empty[CommittableConsumerRecord[F, K, V]]),
-                  F.deferred[Unit]
-                ).parMapN(partition -> PartitionState(_, _, _))
-              }
-              .flatMap { newPartitionState =>
-                val newPartitionStateMap = newPartitionState.toMap
-                ref.modify(_.addPartitionStates(newPartitionStateMap))
-              }
-        }
-      }
+  def pollRecords: F[ConsumerRecords] =
+    state2.get.flatMap {
+      case state if state.subscribed && state.streaming =>
+        for {
+          partition <- state.partitionGroupState.partition { case (k, state) => state.spillover.isEmpty }.pure[F]
+          toResume   = partition._1.keys
+          toPause    = partition._2.keys
+          batch     <- withConsumer.blocking { consumer =>
+                         if (toPause.nonEmpty) consumer.pause(toPause.flatten.toList.asJava)
+                         if (toResume.nonEmpty) consumer.resume(toResume.flatten.toList.asJava)
+                         consumer.poll(pollTimeout)
+                       }
+          records   <- records(batch)
+        } yield records
+      case _                                            => Map.empty.pure[F]
+    }
 
 }

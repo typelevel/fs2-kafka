@@ -95,19 +95,7 @@ final case class State[F[_], K, V](
   def withRevokedPartitions(
     sessionTimeout: FiniteDuration,
     revoked: SortedSet[TopicPartition]
-  )(implicit logging: Logging[F]): (State[F, K, V], F[F[Unit]]) = {
-    val (revokedToClose, stillAssigned) = partitionState.partition(e => revoked.contains(e._1))
-    val newState: State[F, K, V] = copy(partitionState = stillAssigned, rebalancing = true)
-    (
-      newState,
-      for {
-        _ <- logging.log(RevokedPartitions(revoked, revokedToClose, newState))
-        _ <- revokedToClose.values.toList.traverse_(_.close)
-      } yield onRebalances
-        .traverse_(_.onRevoked(revoked))
-        .timeoutTo(sessionTimeout, logging.log(LogEntry.RevokeTimeoutOccurred(revoked, newState)))
-    )
-  }
+  )(implicit logging: Logging[F]): (State[F, K, V], F[F[Unit]]) = ???
 
   /**
     * Updates the state based on the current set of assigned partitions.
@@ -119,45 +107,14 @@ final case class State[F[_], K, V](
     */
   def dropUnassignedPartitions(
     assignment: Set[TopicPartition]
-  )(implicit logging: Logging[F]): (State[F, K, V], F[List[TopicPartition]]) = {
-    val (assigned, revoked) = partitionState.partition(e => assignment.contains(e._1))
-
-    val newState: State[F, K, V] = copy(partitionState = assigned)
-    val queueIsFull              = assigned.filter(_._2.isQueueFull).keys.toList
-
-    (
-      newState,
-      (for {
-        _ <- revoked.values.toList.traverse_(_.close)
-        _ <- logging.log(RevokedPartitions(revoked.keySet, revoked, newState))
-      } yield ()).whenA(revoked.nonEmpty).as(queueIsFull)
-    )
-  }
+  )(implicit logging: Logging[F]): (State[F, K, V], F[List[TopicPartition]]) = ???
 
   /**
     * Resets partition states with a new set of spillover records after a poll operation.
     */
   def resetSpilloverAfterPoll(
     spillover: Map[TopicPartition, Chunk[CommittableConsumerRecord[F, K, V]]]
-  ): State[F, K, V] = {
-    require(spillover.forall(kv => partitionState.contains(kv._1)))
-
-    val newPartitionState: PartitionStateMap[F, K, V] = partitionState.map {
-      case (partition, partitionState) =>
-        (
-          partition,
-          spillover
-            .get(partition)
-            .map(spillover => partitionState.copy(spillover = spillover))
-            .getOrElse(
-              if (partitionState.spillover.isEmpty) partitionState
-              else partitionState.copy(spillover = Chunk.empty)
-            )
-        )
-    }
-
-    copy(partitionState = newPartitionState)
-  }
+  ): State[F, K, V] = ???
 
   /**
     * Resets pending commits after a poll operation.

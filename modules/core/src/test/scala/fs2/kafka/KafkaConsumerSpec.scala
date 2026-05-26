@@ -557,7 +557,7 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
                 .filter(_.nonEmpty)
                 .evalMap { assignment =>
                   assignedPartitionsRef
-                    .update(_ :+ assignment.keySet.map(_.partition()))
+                    .update(_ :+ assignment.keySet.flatten.map(_.partition()))
                     .as {
                       Stream
                         .emits(
@@ -652,7 +652,7 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
                 .filter(_.nonEmpty)
                 .evalMap { assignment =>
                   assignedPartitionsRef
-                    .update(_ :+ assignment.keySet.map(_.partition()))
+                    .update(_ :+ assignment.keySet.flatten.map(_.partition()))
                     .as {
                       Stream
                         .emits(
@@ -736,9 +736,9 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
                          Stream
                            .emits(
                              assignment
-                               .map { case (partition, partitionStream) =>
+                               .map { case (partitions, partitionStream) =>
                                  partitionStream.onFinalize {
-                                   closedStreamsRef.update(_ :+ partition.partition())
+                                   partitions.toList.traverse_(partition => closedStreamsRef.update(_ :+ partition.partition()))
                                  }
                                }
                                .toList
@@ -780,7 +780,7 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
             .flatMap(_.partitionsMapStream)
             .flatMap { assignment =>
               Stream.eval(allAssignments.update { current =>
-                current.updated(instance, assignment.keySet.map(_.partition()))
+                current.updated(instance, assignment.keySet.flatten.map(_.partition()))
               }) >> Stream
                 .emits(
                   assignment

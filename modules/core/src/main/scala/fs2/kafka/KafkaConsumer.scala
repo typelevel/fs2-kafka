@@ -7,12 +7,11 @@
 package fs2.kafka
 
 import java.util
-
 import scala.annotation.nowarn
 import scala.collection.immutable.SortedSet
 import scala.concurrent.duration.FiniteDuration
 import scala.util.matching.Regex
-
+import fs2.kafka.instances.*
 import cats.Applicative
 import cats.Foldable
 import cats.Reducible
@@ -22,18 +21,18 @@ import cats.effect.*
 import cats.effect.implicits.*
 import cats.effect.std.*
 import cats.syntax.all.*
+import cats.instances.all.*
 import fs2.Chunk
 import fs2.Stream
 import fs2.kafka.consumer.*
 import fs2.kafka.consumer.KafkaConsumeChunk.CommitNow
-import fs2.kafka.instances.*
 import fs2.kafka.internal.*
 import fs2.kafka.internal.actor.KafkaConsumerActor
-import fs2.kafka.internal.actor.OnRebalance
+import fs2.kafka.internal.actor.PartitionGroupState
 import fs2.kafka.internal.actor.Request
+import fs2.kafka.internal.actor.State2
 import fs2.kafka.internal.converters.collection.*
 import fs2.kafka.internal.syntax.*
-
 import org.apache.kafka.clients.consumer.ConsumerGroupMetadata
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.clients.consumer.OffsetAndTimestamp
@@ -129,7 +128,6 @@ object KafkaConsumer {
 
   private def createKafkaConsumer[F[_], K, V](
     requests:              QueueSink[F, Request[F, K, V]],
-    settings:              ConsumerSettings[F, K, V],
     actor:                 KafkaConsumerActor[F, K, V],
     fiber:                 Fiber[F, Throwable, Unit],
     id:                    Int,
@@ -140,125 +138,16 @@ object KafkaConsumer {
     logging:               Logging[F]
   ): KafkaConsumer[F, K, V] =
     new KafkaConsumer[F, K, V] {
-      type PartitionsMap      = Map[TopicPartition, Stream[F, CommittableConsumerRecord[F, K, V]]]
-      type PartitionsMapQueue = Queue[F, Option[PartitionsMap]]
 
-      private def enqueueAssignment(
-        assigned:           Map[TopicPartition, AssignmentSignals[F]],
-        partitionsMapQueue: PartitionsMapQueue
-      ): F[Unit] =
-        stopConsumingDeferred
-          .tryGet
-          .flatMap {
-            case None     =>
-              val assignment: PartitionsMap = assigned.map { case (partition, signals) =>
-                partition -> partitionStream(partition, signals.signalStreamFinished.void)
-              }
-              partitionsMapQueue.offer(Some(assignment))
-            case Some(()) => F.unit
-          }
+      override def partitionsMapStream: Stream[F, Map[Set[TopicPartition], Stream[F, CommittableConsumerRecord[F, K, V]]]] =
+        actor
+          .consume()
+          .map(_.view.mapValues(_.unchunks).toMap)
 
-      private def partitionStream(
-        partition:        TopicPartition,
-        signalCompletion: F[Unit]
-      ): Stream[F, CommittableConsumerRecord[F, K, V]] =
-        Stream.force {
-          actor
-            .getQueueAndStopSignalFor(partition)
-            .map { case (chunksQueue, partitionStop) =>
-              val stopStream: F[Either[Throwable, Unit]] = {
-                F.race(partitionStop.race(awaitTermination.attempt).race, F.race(, ))
-                  .void
-                  .attempt
-              }
-
-              Stream
-                .fromQueueUnterminated(chunksQueue, 1)
-                .unchunks
-                .interruptWhen(stopStream)
-                .onFinalize(signalCompletion)
-            }
-        }
-
-      private def onRebalance(
-        assignmentRef:       Ref[F, Map[TopicPartition, AssignmentSignals[F]]],
-        partitionsMapQueue:  PartitionsMapQueue
-      ): OnRebalance[F] =
-        OnRebalance(
-          onRevoked  = revoked =>
-            for {
-              assignment <- assignmentRef.get
-              _          <- revoked.toVector.flatMap(assignment.get).traverse_(_.awaitStreamFinishedSignal)
-            } yield (),
-          onAssigned = assigned =>
-            for {
-              assignment <- buildAssignment(assigned)
-              _          <- assignmentRef.update(_ ++ assignment)
-              _          <- enqueueAssignment(assignment, partitionsMapQueue)
-            } yield ()
-        )
-
-      private def buildAssignment(
-        assignedPartitions: SortedSet[TopicPartition]
-      ): F[Map[TopicPartition, AssignmentSignals[F]]] =
-        assignedPartitions
-          .toVector
-          .traverse { partition =>
-            settings.rebalanceRevokeMode match {
-              case RebalanceRevokeMode.EagerMode    =>
-                (partition -> AssignmentSignals.eager[F]).pure[F]
-              case RebalanceRevokeMode.GracefulMode =>
-                Deferred[F, Unit].map(revokeFinisher =>
-                  partition -> AssignmentSignals.graceful(revokeFinisher)
-                )
-            }
-          }
-          .map(_.toMap)
-
-      private def requestAssignment(
-        assignmentRef:      Ref[F, Map[TopicPartition, AssignmentSignals[F]]],
-        partitionsMapQueue: PartitionsMapQueue
-      ): F[Map[TopicPartition, AssignmentSignals[F]]] = {
-        val assignment = this.assignment(Some(onRebalance(assignmentRef, partitionsMapQueue)))
-        F.race(awaitTermination.attempt, assignment)
-          .flatMap {
-            case Left(_)         => F.pure(Map.empty)
-            case Right(assigned) => buildAssignment(assigned).flatTap(assignmentRef.set)
-          }
-      }
-
-      private def initialEnqueue(
-        assignmentRef:      Ref[F, Map[TopicPartition, AssignmentSignals[F]]],
-        partitionsMapQueue: PartitionsMapQueue
-      ): F[Unit] =
-        for {
-          assigned <- requestAssignment(assignmentRef, partitionsMapQueue)
-          _        <- enqueueAssignment(assigned, partitionsMapQueue)
-        } yield ()
-
-      override def partitionsMapStream: Stream[F, Map[TopicPartition, Stream[F, CommittableConsumerRecord[F, K, V]]]] =
-        Stream
-          .eval(stopConsumingDeferred.tryGet)
-          .flatMap {
-            case None     =>
-              for {
-                partitionsMapQueue <- Stream.eval(Queue.unbounded[F, Option[PartitionsMap]])
-                assignmentRef      <-
-                  Stream.eval(Ref[F].of(Map.empty[TopicPartition, AssignmentSignals[F]]))
-                _                  <- Stream.eval(initialEnqueue(assignmentRef, partitionsMapQueue))
-                out                <- Stream
-                                        .fromQueueNoneTerminated(partitionsMapQueue)
-                                        .interruptWhen(awaitTermination.attempt)
-                                        .concurrently(
-                                          Stream.eval(stopConsumingDeferred.get >> partitionsMapQueue.offer(None))
-                                        )
-              } yield out
-            case Some(()) =>
-              Stream.empty.covaryAll[F, PartitionsMap]
-          }
 
       override def partitionedStream: Stream[F, Stream[F, CommittableConsumerRecord[F, K, V]]] =
-        partitionsMapStream.flatMap(partitionsMap => Stream.iterable(partitionsMap.values))
+        partitionsMapStream
+          .flatMap(partitionsMap => Stream.iterable(partitionsMap.values))
 
       override def stream: Stream[F, CommittableConsumerRecord[F, K, V]] =
         partitionedStream.parJoinUnbounded
@@ -284,76 +173,14 @@ object KafkaConsumer {
           }
           .rethrow
 
-      override def assignment: F[SortedSet[TopicPartition]] =
-        assignment(Option.empty)
-
-      private def assignment(onRebalance: Option[OnRebalance[F]]): F[SortedSet[TopicPartition]] =
-        withPermit {
-          onRebalance
-            .fold(actor.ref.updateAndGet(_.asStreaming)) { on =>
-              actor
-                .ref
-                .flatModify { state =>
-                  val newState = state.withOnRebalance(on).asStreaming
-                  newState -> logging.log(LogEntry.StoredOnRebalance(on, newState)).as(newState)
-                }
-            }
-            .ensure(NotSubscribedException())(_.subscribed) >>
-            withConsumer.blocking(_.assignment.toSortedSet)
-        }
-
-      override def assignmentStream: Stream[F, SortedSet[TopicPartition]] = {
-        // NOTE: `initialAssignmentDone` is needed here to guard against the
-        // race condition when a rebalance triggers after the listeners are
-        // registered but before `assignmentRef` can be updated with initial
-        // assignments.
-        def onRebalanceWith(
-          updateQueue:           Queue[F, SortedSet[TopicPartition]],
-          assignmentRef:         Ref[F, SortedSet[TopicPartition]],
-          initialAssignmentDone: F[Unit]
-        ): OnRebalance[F] =
-          OnRebalance(
-            onAssigned = assigned =>
-              initialAssignmentDone >>
-                assignmentRef.flatModify { oldAssignment =>
-                  val newAssignment = oldAssignment ++ assigned
-                  newAssignment -> updateQueue.offer(newAssignment)
-                },
-            onRevoked  = revoked =>
-              initialAssignmentDone >>
-                assignmentRef.flatModify { oldAssignment =>
-                  val newAssignment = oldAssignment -- revoked
-                  newAssignment -> updateQueue.offer(newAssignment)
-                }
-          )
-
-        Stream
-          .eval {
-            (
-              Queue.unbounded[F, SortedSet[TopicPartition]],
-              Ref[F].of(SortedSet.empty[TopicPartition]),
-              Deferred[F, Unit]
-            ).tupled
-              .flatMap[Stream[F, SortedSet[TopicPartition]]] {
-                case (updateQueue, assignmentRef, initialAssignmentDeferred) =>
-                  val onRebalance =
-                    onRebalanceWith(
-                      updateQueue           = updateQueue,
-                      assignmentRef         = assignmentRef,
-                      initialAssignmentDone = initialAssignmentDeferred.get
-                    )
-
-                  assignment(Some(onRebalance))
-                    .flatMap { initialAssignment =>
-                      assignmentRef.set(initialAssignment) >>
-                        updateQueue.offer(initialAssignment) >>
-                        initialAssignmentDeferred.complete(())
-                    }
-                    .as(Stream.fromQueueUnterminated(updateQueue).changes)
-              }
-          }
-          .flatten
+      override def assignment: F[SortedSet[TopicPartition]] = {
+        withConsumer
+          .blocking(_.assignment().asScala)
+          .flatTap(_ => actor.subscribed()) //TODO: move this to the actor
+          .map(s => SortedSet.from(s.toList))
       }
+
+      override def assignmentStream: Stream[F, SortedSet[TopicPartition]] = ???
 
       override def seek(partition: TopicPartition, offset: Long): F[Unit] =
         withConsumer.blocking(_.seek(partition, offset))
@@ -411,25 +238,17 @@ object KafkaConsumer {
         withPermit {
           F.uncancelable { _ =>
             withConsumer.blocking {
-              _.subscribe(
-                topics.toList.asJava,
-                actor.consumerRebalanceListener
-              )
-            } >>
-              actor
-                .ref
-                .updateAndGet(_.asSubscribed)
-                .log(LogEntry.SubscribedTopics(topics.toNonEmptyList, _))
+              _.subscribe(topics.toList.asJava, actor.consumerRebalanceListener)
+            }.flatTap(_ => actor.subscribed())
           }
         }
 
       private def withPermit[A](fa: F[A]): F[A] =
-        F.deferred[Either[Throwable, A]]
-          .flatMap { deferred =>
-            requests.offer(
-              Request.WithPermit(fa, deferred.complete(_: Either[Throwable, A]).void)
-            ) >> deferred.get.rethrow
-          }
+        F.deferred[Either[Throwable, A]].flatMap { deferred =>
+          requests.offer(
+            Request.WithPermit(fa, deferred.complete(_: Either[Throwable, A]).void)
+          ) >> deferred.get.rethrow
+        }
 
       override def subscribe(regex: Regex): F[Unit] =
         withPermit {
@@ -439,24 +258,12 @@ object KafkaConsumer {
                 regex.pattern,
                 actor.consumerRebalanceListener
               )
-            } >>
-              actor
-                .ref
-                .updateAndGet(_.asSubscribed)
-                .log(LogEntry.SubscribedPattern(regex.pattern, _))
+            }
           }
         }
 
       override def unsubscribe: F[Unit] =
-        withPermit {
-          F.uncancelable { _ =>
-            withConsumer.blocking(_.unsubscribe()) >>
-              actor
-                .ref
-                .updateAndGet(_.asUnsubscribed)
-                .log(LogEntry.Unsubscribed(_))
-          }
-        }
+        withPermit(F.uncancelable(_ => unsubscribe))
 
       override def stopConsuming: F[Unit] =
         stopConsumingDeferred.complete(()).attempt.void
@@ -464,17 +271,9 @@ object KafkaConsumer {
       override def assign(partitions: NonEmptySet[TopicPartition]): F[Unit] =
         withPermit {
           F.uncancelable { _ =>
-            withConsumer.blocking {
-              _.assign(
-                partitions.toList.asJava
-              )
-            } >>
-              actor
-                .ref
-                .updateAndGet(_.asSubscribed)
-                .log(LogEntry.ManuallyAssignedPartitions(partitions, _))
+            withConsumer.blocking(_.assign(partitions.toSortedSet.toList.asJava))
           }
-        }
+        } *> actor.subscribed()
 
       override def assign(topic: String): F[Unit] =
         for {
@@ -590,10 +389,11 @@ object KafkaConsumer {
       logging               <- Resource.eval(Logging.default[F](id))
       requests              <- Resource.eval(Queue.unbounded[F, Request[F, K, V]])
       polls                 <- Resource.eval(Queue.bounded[F, Request.Poll[F]](1))
-      ref                   <- Resource.eval(Ref.of[F, State[F, K, V]](State.empty))
+      stateRef              <- Resource.eval(AtomicCell[F].of[State2[F, K, V]](State2.empty))
       dispatcher            <- Dispatcher.sequential[F]
       stopConsumingDeferred <- Resource.eval(Deferred[F, Unit])
       withConsumer          <- WithConsumer(mk, settings)
+      assignment            <- Resource.eval(Queue.unbounded[F, Option[Map[Set[TopicPartition], PartitionGroupState[F, K, V]]]])
       actor                  = {
         implicit val jitter0:     Jitter[F]     = jitter
         implicit val logging0:    Logging[F]    = logging
@@ -603,15 +403,16 @@ object KafkaConsumer {
           settings          = settings,
           keyDeserializer   = keyDeserializer,
           valueDeserializer = valueDeserializer,
-          ref               = ref,
           requests          = requests,
-          withConsumer      = withConsumer
+          assignment        = assignment,
+          state2            = stateRef,
+          withConsumer      = withConsumer,
+          maxParallel       = settings.maxParallelism
         )
       }
       fiber                 <- startBackgroundConsumer(requests, polls, actor, settings.pollInterval)
     } yield createKafkaConsumer(
       requests,
-      settings,
       actor,
       fiber,
       id,

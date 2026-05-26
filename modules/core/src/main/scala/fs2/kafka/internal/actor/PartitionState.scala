@@ -18,9 +18,10 @@ final case class PartitionState[F[_]: Async, K, V](
   def close: F[Unit] = closeSignal.complete(()).void
 
   override def toString: String =
-    spillover.head match {
+    spillover.headOption match {
       case None         => "()"
-      case Some(record) => s"(offset = ${record.offset}, size = ${spillover.size})"
+      case Some(_) => "" //TODO: fix
+        //s"(offset = ${record.offset}, size = ${spillover.size})"
     }
 
 }

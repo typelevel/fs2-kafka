@@ -84,7 +84,7 @@ trait KafkaConsume[F[_], K, V] {
     *   [[partitionedRecords]]
     */
   def partitionsMapStream
-    : Stream[F, Map[TopicPartition, Stream[F, CommittableConsumerRecord[F, K, V]]]]
+    : Stream[F, Map[Set[TopicPartition], Stream[F, CommittableConsumerRecord[F, K, V]]]]
 
   /**
     * Stops consuming new messages from Kafka. This method could be used to implement a graceful

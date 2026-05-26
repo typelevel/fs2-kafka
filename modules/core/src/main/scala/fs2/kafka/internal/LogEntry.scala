@@ -12,7 +12,6 @@ import cats.data.{NonEmptyList, NonEmptySet}
 import cats.syntax.all.*
 import fs2.kafka.instances.*
 import fs2.kafka.internal.syntax.*
-import fs2.kafka.internal.actor.KafkaConsumerActor.*
 import fs2.kafka.internal.LogLevel.*
 import fs2.kafka.CommittableConsumerRecord
 import fs2.Chunk
@@ -48,8 +47,8 @@ private[kafka] object LogEntry {
 
     override def level: LogLevel = Debug
 
-    override def message: String =
-      s"Consumer manually assigned partitions [${partitions.toList.mkString(", ")}]. Current state [$state]."
+    override def message: String = ""
+      /*s"Consumer manually assigned partitions [${partitions.toList.mkString(", ")}]. Current state [$state]."*/
 
   }
 
@@ -116,8 +115,8 @@ private[kafka] object LogEntry {
           partitionState.view.filter(_._2.isQueueFull).map(kv => kv._1 -> kv._2.spillover).toMap
 
         message += s", dropped record queues [${partitionState.keys.mkString(", ")}]"
-        if (withSpillover.nonEmpty)
-          message += s", dropped spillover records [${recordsString(withSpillover)}]"
+        /*if (withSpillover.nonEmpty)
+          message += s", dropped spillover records [${recordsString(withSpillover)}]"*/
       }
 
       message += s". Current state [$state]"

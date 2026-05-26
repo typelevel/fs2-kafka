@@ -10,13 +10,13 @@ import org.apache.kafka.common.TopicPartition
   * @param revokeFull
   * @param revokePartially
   */
-final case class ReassignmentCalculation(
+final case class PartitionGroupingCalculator(
   groupGoal:        Set[Set[TopicPartition]],
   groupRevoke:      Set[Set[TopicPartition]],
   targetAssignment: Set[TopicPartition]
 )
 
-object ReassignmentCalculation {
+object PartitionGroupingCalculator {
 
   /** On rebalance, we want to guarantee that we correctly revoke unassigned partitions and correctly stream newly
     * allocated ones.
@@ -45,9 +45,9 @@ object ReassignmentCalculation {
     targetAssignment:   Set[TopicPartition],
     existingAssignment: Set[Set[TopicPartition]],
     maxParallelism:     Int
-  ): ReassignmentCalculation = {
+  ): PartitionGroupingCalculator = {
     if(targetAssignment.diff(existingAssignment.flatten).isEmpty) {
-      ReassignmentCalculation(
+      PartitionGroupingCalculator(
         existingAssignment,
         Set.empty,
         targetAssignment
@@ -82,7 +82,7 @@ object ReassignmentCalculation {
         .grouped(defaultGroupSize)
         .toSet
 
-      ReassignmentCalculation(
+      PartitionGroupingCalculator(
         groupGoal        = defaultSizeGroups ++ oversizedGroups,
         groupRevoke      = unassignDueToPartitionRevoked ++ toRevokeDueToSize,
         targetAssignment = targetAssignment
