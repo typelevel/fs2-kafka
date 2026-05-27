@@ -40,6 +40,8 @@ import org.apache.kafka.common.Metric
 import org.apache.kafka.common.MetricName
 import org.apache.kafka.common.PartitionInfo
 import org.apache.kafka.common.TopicPartition
+import fs2.concurrent.Signal
+import fs2.concurrent.SignallingRef
 
 /** [[KafkaConsumer]] represents a consumer of Kafka records, with the ability to `subscribe` to topics, start a single
   * top-level stream, and optionally control it via the provided [[fiber]] instance.<br><br>
@@ -140,10 +142,16 @@ object KafkaConsumer {
     new KafkaConsumer[F, K, V] {
 
       override def partitionsMapStream: Stream[F, Map[Set[TopicPartition], Stream[F, CommittableConsumerRecord[F, K, V]]]] =
-        actor
-          .consume()
-          .map(_.view.mapValues(_.unchunks).toMap)
-
+        for {
+          signal    <- Stream.eval(SignallingRef[F].of(false))
+          resultS    = actor.consume().map(_.view.mapValues(_.unchunks.interruptWhen(signal)).toMap).scope
+          terminateS = Stream
+                         .eval(fiber.join.flatMap(_.embedError))
+                         .attempt
+                         .evalTap(_ => signal.set(true))
+                         .rethrow.drain
+          result    <- resultS.mergeHaltBoth(terminateS).interruptWhen(Stream.eval(stopConsumingDeferred.get).as(true))
+        } yield result
 
       override def partitionedStream: Stream[F, Stream[F, CommittableConsumerRecord[F, K, V]]] =
         partitionsMapStream
@@ -173,12 +181,11 @@ object KafkaConsumer {
           }
           .rethrow
 
-      override def assignment: F[SortedSet[TopicPartition]] = {
+      override def assignment: F[SortedSet[TopicPartition]] =
         withConsumer
           .blocking(_.assignment().asScala)
-          .flatTap(_ => actor.subscribed()) //TODO: move this to the actor
+          .flatTap(_ => actor.subscribed()) // TODO: move this to the actor
           .map(s => SortedSet.from(s.toList))
-      }
 
       override def assignmentStream: Stream[F, SortedSet[TopicPartition]] = ???
 

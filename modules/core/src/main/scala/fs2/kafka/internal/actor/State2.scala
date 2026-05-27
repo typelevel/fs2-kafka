@@ -2,6 +2,7 @@ package fs2.kafka.internal.actor
 
 import cats.data.Chain
 import cats.effect.Async
+import cats.syntax.all.*
 import cats.effect.Deferred
 import cats.effect.std.Queue
 import cats.effect.std.Semaphore
@@ -16,7 +17,6 @@ object State2 {
       Chain.empty,
       false,
       false,
-      false
     )
 }
 
@@ -33,16 +33,16 @@ case class PartitionGroupState[F[_], K, V](
 final case class State2[F[_], K, V](
   partitionGroupState: Map[Set[TopicPartition], PartitionGroupState[F, K, V]],
   pendingCommits:      Chain[F[Unit]],
-  rebalancing:         Boolean,
   subscribed:          Boolean,
   streaming:           Boolean
+)(implicit
+  F: Async[F]
 ) {
 
   def withPendingCommit(pendingCommit: F[Unit]): State2[F, K, V] =
     copy(pendingCommits = pendingCommits.append(pendingCommit))
   def withGroupState(s: Map[Set[TopicPartition], PartitionGroupState[F, K, V]]) =
     copy(partitionGroupState = s)
-
   def withUnsubscribed():  State2[F, K, V] = copy(partitionGroupState = Map.empty, subscribed = false, streaming = false)
   def withSubscribed():   State2[F, K, V] = copy(subscribed = true)
   def withStreaming():    State2[F, K, V] = {

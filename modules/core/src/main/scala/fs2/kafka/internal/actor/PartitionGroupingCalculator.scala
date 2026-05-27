@@ -11,46 +11,47 @@ import org.apache.kafka.common.TopicPartition
   * @param revokePartially
   */
 final case class PartitionGroupingCalculator(
-  groupGoal:        Set[Set[TopicPartition]],
-  groupRevoke:      Set[Set[TopicPartition]],
-  targetAssignment: Set[TopicPartition]
+  groupGoal:   Set[Set[TopicPartition]],
+  groupRevoke: Set[Set[TopicPartition]]
 )
 
 object PartitionGroupingCalculator {
 
-  /** On rebalance, we want to guarantee that we correctly revoke unassigned partitions and correctly stream newly
-    * allocated ones.
+  /** Computes the partition groups for `targetAssignment`.
     *
-    * To achieve max parallelization within the specified bounds, we want to make sure we group partitions in as many
-    * groups as possible while being bellow the maxParallelism
+    * Returns `groupGoal` (groups that should exist after alignment) and `groupRevoke` (existing groups that must be
+    * removed).
     *
-    * When the number of partitions is not divisible by maxParallelism, we want to distribute the remaining partitions
-    * evenly through the groups.
+    * Grouping policy
     *
-    * This means we want to guarantee all groups have either the same size or differ by at most one partition (the
-    * result of distributing the division remainder).
+    * Partitions are split into as many groups as the specified parallelism allows keeping group sizes evenly
+    * distributed.
     *
-    * Rather than creating a new grouping on every call, the method includes an optimization that will maintain
-    * groups composed of assigned partitions that already have the correct size.
+    * Stable groups
     *
-    * Groups are classified as revoked if:
-    *   - one of their partitions was unassigned
-    *   - the count is bellow/above the optimal group sizing
+    * An existing group is left out of `groupRevoke` when all of its partitions are still in `targetAssignment` and its
+    * size matches the target default or oversized size.
     *
-    * Groups are kept if:
-    *   - they are part of the assignment AND
-    *   - they are part of the group with an appropriate number of partitions
+    * Revocation
+    *
+    * `groupRevoke` contains existing groups where:
+    *   - at least one partition is no longer assigned, or
+    *   - the group's size no longer matches the target layout
     */
-  def align(
+  private[actor] def align(
     targetAssignment:   Set[TopicPartition],
     existingAssignment: Set[Set[TopicPartition]],
     maxParallelism:     Int
-  ): PartitionGroupingCalculator = {
-    if(targetAssignment.diff(existingAssignment.flatten).isEmpty) {
+  ): PartitionGroupingCalculator =
+    if (targetAssignment == existingAssignment.flatten) {
       PartitionGroupingCalculator(
         existingAssignment,
+        Set.empty
+      )
+    } else if (targetAssignment.isEmpty) {
+      PartitionGroupingCalculator(
         Set.empty,
-        targetAssignment
+        existingAssignment
       )
     } else {
       val totalGroupCount     = Math.min(targetAssignment.size, maxParallelism)
@@ -76,18 +77,15 @@ object PartitionGroupingCalculator {
       val oversizedGroups = leftUnassigned
         .grouped(oversizedGroupSize)
         .take(spilloverGroupCount - groupsToKeepWSpillover.size)
-        .toList
-
-      val defaultSizeGroups = (leftUnassigned -- oversizedGroups.flatten)
-        .grouped(defaultGroupSize)
         .toSet
 
+      val defaultSizeGroups   = (leftUnassigned -- oversizedGroups.flatten)
+        .grouped(defaultGroupSize)
+        .toSet
       PartitionGroupingCalculator(
-        groupGoal        = defaultSizeGroups ++ oversizedGroups,
-        groupRevoke      = unassignDueToPartitionRevoked ++ toRevokeDueToSize,
-        targetAssignment = targetAssignment
+        groupGoal   = defaultSizeGroups ++ (oversizedGroups.toSet),
+        groupRevoke = unassignDueToPartitionRevoked ++ toRevokeDueToSize
       )
     }
 
-  }
 }

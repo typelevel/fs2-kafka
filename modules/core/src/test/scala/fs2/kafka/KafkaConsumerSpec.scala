@@ -495,41 +495,36 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
       val produced = (0L until numRecords).map(n => s"key-$n" -> s"value->$n")
       publishToKafka(topic, produced)
 
-      val consumed =
-        KafkaConsumer
-          .stream(consumerSettings[IO])
-          .flatMap { consumer =>
-            val validSeekParams =
-              consumer
-                .records
-                .take(Math.max(readOffset, 1))
-                .map(_.offset)
-                .compile
-                .toList
-                .map(_.last)
-                .map(co => (co.topicPartition, co.offsetAndMetadata.offset()))
-
-            val seekParams =
-              validSeekParams.map { case (topicPartition, offset) =>
-                val p = partition.map(new TopicPartition(topic, _)).getOrElse(topicPartition)
-                val o = Math.min(readOffset, offset)
-
-                (p, o)
-              }
-
-            val setOffset =
-              seekParams.flatMap { case (tp, o) => consumer.seek(tp, o) }
-
-            val consume = consumer.records.take(numRecords - readOffset)
-
-            Stream.eval(consumer.subscribeTo(topic)).drain ++
-              (Stream.exec(setOffset) ++ consume)
-                .map(_.record)
-                .map(record => record.key -> record.value)
-          }
-          .compile
-          .toVector
-          .unsafeRunSync()
+      val consumed = (for {
+        consumer <- KafkaConsumer.stream(consumerSettings[IO])
+        _        <- Stream.eval(consumer.subscribeTo(topic))
+        _         = println("Will seek done")
+        _        <- Stream.eval {
+               consumer
+                 .records
+                 .take(Math.max(readOffset, 1))
+                 .map(_.offset)
+                 .compile
+                 .toList
+                 .map(_.last)
+                 .map { co =>
+                   (co.topicPartition, co.offsetAndMetadata.offset())
+                 }
+                 .map { case (topicPartition, offset) =>
+                   val p = partition.map(new TopicPartition(topic, _)).getOrElse(topicPartition)
+                   val o = Math.min(readOffset, offset)
+                   (p, o)
+                 }
+                 .flatMap { case (tp, o) =>
+                   consumer.seek(tp, o)
+                 }
+             }
+        result <- consumer
+                    .records
+                    .take(numRecords - readOffset)
+                    .map(_.record)
+                    .map(record => record.key -> record.value)
+      } yield result).compile.toVector.unsafeRunSync()
 
       consumed should contain theSameElementsAs produced.drop(readOffset.toInt)
     }
@@ -606,21 +601,18 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
           consumer2assignments <- fiber2.joinWithNever
           keys                 <- ref.get
         } yield {
-          assert {
-            keys.size.toLong == producedTotal && {
-              keys == (0 until 200)
-                .map { n =>
-                  s"key-$n" -> (if (n < 100) 2 else 1)
-                }
-                .toMap
-            } &&
-            consumer1assignments.size == 2 &&
-            consumer1assignments(0) == Set(0, 1, 2) &&
-            consumer1assignments(1).size < 3 &&
-            consumer2assignments.size == 1 &&
-            consumer2assignments(0).size < 3 &&
-            consumer1assignments(1) ++ consumer2assignments(0) == Set(0, 1, 2)
-          }
+          assert(keys.size.toLong == producedTotal)
+          assert(keys == (0 until 200)
+            .map { n =>
+              s"key-$n" -> (if (n < 100) 2 else 1)
+            }
+            .toMap)
+          assert(consumer1assignments.size == 2)
+          assert(consumer1assignments(0) == Set(0, 1, 2))
+          assert(consumer1assignments(1).size < 3)
+          assert(consumer2assignments.size == 1)
+          assert(consumer2assignments(0).size < 3)
+          assert(consumer1assignments(1) ++ consumer2assignments(0) == Set(0, 1, 2))
         }).unsafeRunSync()
       }
     }
@@ -738,7 +730,11 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
                              assignment
                                .map { case (partitions, partitionStream) =>
                                  partitionStream.onFinalize {
-                                   partitions.toList.traverse_(partition => closedStreamsRef.update(_ :+ partition.partition()))
+                                   partitions
+                                     .toList
+                                     .traverse_(partition =>
+                                       closedStreamsRef.update(_ :+ partition.partition())
+                                     )
                                  }
                                }
                                .toList
