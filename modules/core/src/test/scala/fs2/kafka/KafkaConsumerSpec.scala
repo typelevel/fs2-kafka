@@ -498,7 +498,7 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
       val consumed = (for {
         consumer <- KafkaConsumer.stream(consumerSettings[IO])
         _        <- Stream.eval(consumer.subscribeTo(topic))
-        _         = println("Will seek done")
+        _ = println("HERE 001")
         _        <- Stream.eval {
                consumer
                  .records
@@ -519,8 +519,10 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
                    consumer.seek(tp, o)
                  }
              }
+        _ = println(s"HERE 002 ${numRecords - readOffset}")
         result <- consumer
                     .records
+          .evalTap(IO.println)
                     .take(numRecords - readOffset)
                     .map(_.record)
                     .map(record => record.key -> record.value)
@@ -602,11 +604,13 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
           keys                 <- ref.get
         } yield {
           assert(keys.size.toLong == producedTotal)
-          assert(keys == (0 until 200)
-            .map { n =>
-              s"key-$n" -> (if (n < 100) 2 else 1)
-            }
-            .toMap)
+          assert(
+            keys == (0 until 200)
+              .map { n =>
+                s"key-$n" -> (if (n < 100) 2 else 1)
+              }
+              .toMap
+          )
           assert(consumer1assignments.size == 2)
           assert(consumer1assignments(0) == Set(0, 1, 2))
           assert(consumer1assignments(1).size < 3)
@@ -839,8 +843,11 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
                    .subscribeTo(topic)
                    .evalMap { consumer =>
                      consumer
-                       .assignmentStream
-                       .evalMap(as => queue.offer(Some(as)))
+                       .stream
+                       .drain
+                       .mergeHaltBoth(
+                         consumer.assignmentStream.evalMap(as => queue.offer(Some(as)))
+                       )
                        .compile
                        .drain
                        .start
@@ -861,21 +868,20 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
           consumer2Updates <- Stream.eval(
                                 Stream.fromQueueNoneTerminated(queue2).compile.toList
                               )
-          _ <- Stream.eval(IO(assert {
-                 // Startup assignments (zero), initial assignments (all topics),
-                 // revoke all on 2nd joining (zero), assign rebalanced set (< 3)
-                 consumer1Updates.length == 4 &&
-                 consumer1Updates.head.isEmpty &&
-                 consumer1Updates(1).size == 3 &&
-                 consumer1Updates(2).isEmpty &&
-                 consumer1Updates(3).size < 3 &&
-                 // Startup assignments (zero), initial assignments (< 3)
-                 consumer2Updates.length == 2 &&
-                 consumer2Updates.head.isEmpty &&
-                 consumer2Updates(1).size < 3 &&
-                 (consumer1Updates(3) ++ consumer2Updates(1)) == consumer1Updates(1)
-               }))
-        } yield ()).compile.drain.unsafeRunSync()
+        } yield {
+          // Startup assignments (zero), initial assignments (all topics),
+          // revoke all on 2nd joining (zero), assign rebalanced set (< 3)
+          assert(consumer1Updates.length == 4)
+          assert(consumer1Updates.head.isEmpty)
+          assert(consumer1Updates(1).size == 3)
+          assert(consumer1Updates(2).isEmpty)
+          assert(consumer1Updates(3).size < 3)
+          // Startup assignments (zero), initial assignments (< 3)
+          assert(consumer2Updates.length == 2)
+          assert(consumer2Updates.head.isEmpty)
+          assert(consumer2Updates(1).size < 3)
+          assert((consumer1Updates(3) ++ consumer2Updates(1)) == consumer1Updates(1))
+        }).compile.drain.unsafeRunSync()
       }
     }
 
@@ -897,8 +903,11 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
                    .subscribeTo(topic)
                    .evalMap { consumer =>
                      consumer
-                       .assignmentStream
-                       .evalMap(as => queue.offer(Some(as)))
+                       .stream
+                       .drain
+                       .mergeHaltBoth(
+                         consumer.assignmentStream.evalMap(as => queue.offer(Some(as)))
+                       )
                        .compile
                        .drain
                        .start
@@ -985,14 +994,15 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
                                 .flatMap { prevConsumed =>
                                   if (prevConsumed.isEmpty) {
                                     // stop consuming right after the first message was received and publish a new batch
-                                    consumer.stopConsuming >> IO(publishToKafka(topic, produced2))
+                                    consumer.stopConsuming *> IO.println("called stop consuming")  >> IO(publishToKafka(topic, produced2))
                                   } else IO.unit
-                                } >> msg.offset.commit
+                                } >>  msg.offset.commit
                             }
                             .compile
                             .drain
                    } yield ()
                  }
+          _ = println("Here 0010")
           consumed <- consumedRef.get
         } yield consumed
 
