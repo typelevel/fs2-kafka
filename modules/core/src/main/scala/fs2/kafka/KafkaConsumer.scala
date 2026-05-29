@@ -25,7 +25,6 @@ import cats.instances.all.*
 import fs2.Chunk
 import fs2.Stream
 import fs2.kafka.consumer.*
-import fs2.kafka.instances.*
 import fs2.kafka.consumer.KafkaConsumeChunk.CommitNow
 import fs2.kafka.internal.*
 import fs2.kafka.internal.actor.KafkaConsumerActor
