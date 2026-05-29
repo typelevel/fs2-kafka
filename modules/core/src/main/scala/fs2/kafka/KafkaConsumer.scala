@@ -41,7 +41,6 @@ import org.apache.kafka.common.Metric
 import org.apache.kafka.common.MetricName
 import org.apache.kafka.common.PartitionInfo
 import org.apache.kafka.common.TopicPartition
-import fs2.concurrent.Signal
 import fs2.concurrent.SignallingRef
 
 /** [[KafkaConsumer]] represents a consumer of Kafka records, with the ability to `subscribe` to topics, start a single
@@ -141,6 +140,7 @@ object KafkaConsumer {
     logging:               Logging[F]
   ): KafkaConsumer[F, K, V] =
     new KafkaConsumer[F, K, V] {
+      identity(logging)
 
       override def partitionsMapStream: Stream[F, Map[Set[TopicPartition], Stream[F, CommittableConsumerRecord[F, K, V]]]] =
         for {
@@ -151,7 +151,7 @@ object KafkaConsumer {
                                      .attempt
                                      .evalTap(_ => signal.set(true))
                                      .rethrow.drain
-          resultS                = actor.consume().map(_.view.mapValues(_.unchunks.interruptWhen(signal).interruptWhen(waitOnStopConsumingF)).toMap)
+          resultS                = actor.consume().map(_.view.map { case (k, v) => k -> v.unchunks.interruptWhen(signal).interruptWhen(waitOnStopConsumingF) }.toMap)
           result                <- resultS.mergeHaltBoth(waitOnFiberTermination).interruptWhen(waitOnStopConsumingF)
         } yield result
 
@@ -186,13 +186,12 @@ object KafkaConsumer {
       override def assignment: F[SortedSet[TopicPartition]] =
         withConsumer
           .blocking(_.assignment().asScala)
-          .map(s => SortedSet.from(s.toList))
+          .map(s => SortedSet(s.toList: _*))
 
       override def assignmentStream: Stream[F, SortedSet[TopicPartition]] =
         actor.assignments
 
       override def seek(partition: TopicPartition, offset: Long): F[Unit] = {
-        println("Seek now bitch")
         withConsumer
           .blocking(_.seek(partition, offset))
       }

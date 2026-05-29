@@ -498,7 +498,6 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
       val consumed = (for {
         consumer <- KafkaConsumer.stream(consumerSettings[IO])
         _        <- Stream.eval(consumer.subscribeTo(topic))
-        _ = println("HERE 001")
         _        <- Stream.eval {
                consumer
                  .records
@@ -519,10 +518,8 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
                    consumer.seek(tp, o)
                  }
              }
-        _ = println(s"HERE 002 ${numRecords - readOffset}")
         result <- consumer
                     .records
-          .evalTap(IO.println)
                     .take(numRecords - readOffset)
                     .map(_.record)
                     .map(record => record.key -> record.value)
@@ -700,8 +697,9 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
           assert {
             keys.size.toLong == producedTotal &&
             keys.values.sum == 236 &&
-            consumer1assignments.size == 1 &&
+            consumer1assignments.size == 2 &&
             consumer1assignments(0) == Set(0, 1, 2) &&
+            consumer1assignments(1) == Set(0, 1) &&
             consumer2assignments.size == 1 &&
             consumer2assignments(0) == Set(2)
           }
@@ -834,7 +832,6 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
     it("should stream assignment updates to listeners") {
       withTopic { topic =>
         createCustomTopic(topic, partitions = 3)
-
         val consumer =
           for {
             queue <- Stream.eval(Queue.unbounded[IO, Option[SortedSet[TopicPartition]]])
@@ -994,15 +991,14 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
                                 .flatMap { prevConsumed =>
                                   if (prevConsumed.isEmpty) {
                                     // stop consuming right after the first message was received and publish a new batch
-                                    consumer.stopConsuming *> IO.println("called stop consuming")  >> IO(publishToKafka(topic, produced2))
+                                    consumer.stopConsuming  >> IO(publishToKafka(topic, produced2))
                                   } else IO.unit
-                                } >>  msg.offset.commit
+                                } >> msg.offset.commit
                             }
                             .compile
                             .drain
                    } yield ()
                  }
-          _ = println("Here 0010")
           consumed <- consumedRef.get
         } yield consumed
 

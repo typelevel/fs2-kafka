@@ -83,7 +83,7 @@ object PartitionGroupingCalculator {
         .grouped(defaultGroupSize)
         .toSet
       PartitionGroupingCalculator(
-        groupGoal   = groupsToKeepWSpillover ++ groupsToKeepRegularSize ++  defaultSizeGroups ++ (oversizedGroups),
+        groupGoal   = groupsToKeepWSpillover ++ groupsToKeepRegularSize ++ defaultSizeGroups ++ oversizedGroups,
         groupRevoke = unassignDueToPartitionRevoked ++ toRevokeDueToSize
       )
     }

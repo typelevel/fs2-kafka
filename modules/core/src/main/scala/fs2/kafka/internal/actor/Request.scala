@@ -19,12 +19,12 @@ object Request {
     pollInstance.asInstanceOf[Poll[F]]
 
   final case class Commit[F[_]](
-    offsets: Map[TopicPartition, OffsetAndMetadata],
+    offsets:  Map[TopicPartition, OffsetAndMetadata],
     callback: Either[Throwable, Unit] => Unit
   ) extends Request[F, Any, Any]
 
   final case class ManualCommitSync[F[_]](
-    offsets: Map[TopicPartition, OffsetAndMetadata],
+    offsets:  Map[TopicPartition, OffsetAndMetadata],
     callback: Either[Throwable, Unit] => F[Unit]
   ) extends Request[F, Any, Any]
 

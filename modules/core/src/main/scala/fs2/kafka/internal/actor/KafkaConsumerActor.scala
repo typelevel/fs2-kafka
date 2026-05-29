@@ -57,9 +57,10 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
   logging:              Logging[F],
   jitter:               Jitter[F]
 ) {
-
-  private[this] type ConsumerRecords = Map[TopicPartition, Chunk[CommittableConsumerRecord[F, K, V]]]
-  private type GroupState            = Map[Set[TopicPartition], PartitionGroupState[F, K, V]]
+  identity(logging)
+  private[this] type ConsumerRecords    = Chunk[CommittableConsumerRecord[F, K, V]]
+  private[this] type ConsumerRecordsMap = Map[TopicPartition, Chunk[CommittableConsumerRecord[F, K, V]]]
+  private type GroupState               = Map[Set[TopicPartition], PartitionGroupState[F, K, V]]
   private[this] val pollTimeout: Duration = settings.pollTimeout.toJava
   private[this] val maxPrefetch: Int      = settings.maxPrefetchBatches
   val consumerID = java.util.UUID.randomUUID()
@@ -67,7 +68,6 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
     override def onPartitionsRevoked(partitions: util.Collection[TopicPartition]): Unit =
       dispatcher.unsafeRunSync {
         state2.evalUpdate { state =>
-          println(s"[$consumerID] Revoked ${partitions}")
           val currentAssignment = state.partitionGroupState.keys.toList.flatten.toSet
           val targetAssignment  = currentAssignment -- partitions.asScala
           alignPartitionState(targetAssignment, state.partitionGroupState)
@@ -122,16 +122,16 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
       _          <- Stream.eval(state2.get.map(_.subscribed).ifM(().pure[F], NotSubscribedException().raiseError[F, Unit]))
       _          <- Stream.resource(Resource.make(state2.update(_.withStreaming()))(_ => state2.update(_.withNotStreaming())))
       assignment <- (Stream.eval(state2.get.map(_.partitionGroupState)).filter(_.nonEmpty) ++ Stream.fromQueueNoneTerminated(assignment))
-        .onFinalize(currentAssignmentRef.set(None)) // TODO: the assignment does not change here no ?
-        .evalTap(assignment => currentAssignmentRef.set(SortedSet.from(assignment.keys.toList.flatten).some))
+        .evalTap(assignment => currentAssignmentRef.set(SortedSet(assignment.keys.toList.flatten: _*).some))
         .map { assignment =>
-          assignment.view.mapValues { state =>
-            (for {
-              hasPermit <- Stream.resource(state.groupSemaphore.tryPermit)
-              result    <- if (hasPermit) Stream.fromQueueUnterminated(state.queue)
-                           else Stream.empty
-            } yield result).interruptWhen(state.interrupt)
-          }.toMap
+          assignment.map { case (k, state) =>
+            k ->
+              (for {
+                hasPermit <- Stream.resource(state.groupSemaphore.tryPermit)
+                result    <- if (hasPermit) Stream.fromQueueUnterminated(state.queue)
+                             else Stream.empty
+              } yield result).interruptWhen(state.interrupt)
+          }
         }
     } yield assignment
 
@@ -174,7 +174,6 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
           _       <- state2.evalUpdate { s =>
                        for {
                          // targetAssignment   <- withConsumer.blocking(_.assignment()).map(_.asScala.toSet)
-                         // _                   = println(s"[$consumerID] Consumer assignment: [$targetAssignment]")
                          // alignedGroups      <- alignPartitionState(targetAssignment, s.partitionGroupState)
                          stateAfterEnqueued <- enqueueRecords(records, s.partitionGroupState)
                          spillOverEnqueued  <- enqueueSpillOver(stateAfterEnqueued)
@@ -225,8 +224,8 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
     } else {
       for {
         assignmentCalc <- PartitionGroupingCalculator.align(targetAssignment, currentAssignment, maxParallel).pure[F]
-        toRevoke        = state.removedAll(assignmentCalc.groupGoal)
-        toKeep          = state.removedAll(toRevoke.keys)
+        toRevoke        = state -- (assignmentCalc.groupGoal)
+        toKeep          = state -- (toRevoke.keys)
         spillover      <- toRevoke.toList.flatTraverse { case (_, state) =>
                             for {
                               _        <- state.interrupt.complete(().asRight)
@@ -239,8 +238,14 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
                             } yield records
                           }
         spilloverMap    = spillover
-                            .map(_.toList.groupByNel(_.offset.topicPartition).toMap)
-                            .foldMap(_.view.mapValues(List(_)).toMap)
+                            .map(_.toList)
+                            .map(_.groupByNel(_.offset.topicPartition).toMap)
+                            .map(_.map { case (k, v) => k -> Chunk.from(v.toList) })
+                            .foldLeft(Map.empty[TopicPartition, List[ConsumerRecords]]) { case (acc, elem) =>
+                              elem.toList.foldLeft(acc) { case (acc, (tp, records)) =>
+                                acc.updated(tp, acc.getOrElse(tp, List.empty) ++ List(records))
+                              }
+                            }
         needsAdding     = assignmentCalc.groupGoal.diff(currentAssignment)
         newPartitions  <- needsAdding.toList.traverse { group =>
                             for {
@@ -252,14 +257,7 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
                             } yield group -> PartitionGroupState(semaphore, deferred, queue, spillover)
                           }
         newState        = newPartitions.toMap ++ toKeep
-        _               = println(s"[$consumerID] targetAssignment: ${targetAssignment}")
-        _               = println(s"[$consumerID] currentAssignment: ${currentAssignment}")
-        _               = println(s"[$consumerID] Revoke: ${assignmentCalc.groupRevoke}")
-        _               = println(s"[$consumerID] Goal: ${assignmentCalc.groupGoal}")
-        _               = println(s"[$consumerID] CurrentState: ${state.keys}")
-        _               = println(s"[$consumerID] Emmit if not empty ${newState.keys}")
-        _               = println(s"[$consumerID]--------------------------------------")
-        _              <- assignment.offer(newPartitions.toMap.some).whenA(newPartitions.nonEmpty)
+        _              <- assignment.offer(newState.some).whenA(newState.keys.flatten != state.keys.flatten)
       } yield newState
     }
   }
@@ -272,7 +270,7 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
       } yield group -> newState
     }.map(_.toMap)
 
-  private def enqueueRecords(records: ConsumerRecords, groupState: GroupState): F[GroupState] = {
+  private def enqueueRecords(records: ConsumerRecordsMap, groupState: GroupState): F[GroupState] = {
     val groupMap = groupState.keys.flatMap(set => set.map(tp => tp -> set)).toMap
     for {
       enqueueResult <- records.toList.traverse { case (tp, records) =>
@@ -357,7 +355,7 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
       )
     )
 
-  private def pollRecords: F[ConsumerRecords] =
+  private def pollRecords: F[ConsumerRecordsMap] =
     state2.get.flatMap {
       case state if state.subscribed =>
         for {
@@ -375,7 +373,7 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
       case _                         => Map.empty.pure[F]
     }
 
-  private[this] def records(batch: KafkaByteConsumerRecords): F[ConsumerRecords] =
+  private[this] def records(batch: KafkaByteConsumerRecords): F[ConsumerRecordsMap] =
     batch
       .partitions
       .toVector

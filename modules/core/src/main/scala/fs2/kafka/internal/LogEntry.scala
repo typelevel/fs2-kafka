@@ -7,15 +7,17 @@
 package fs2.kafka.internal
 
 import java.util.regex.Pattern
+
 import scala.collection.immutable.SortedSet
+
 import cats.data.{NonEmptyList, NonEmptySet}
 import cats.syntax.all.*
 import fs2.kafka.instances.*
+import fs2.kafka.internal.actor.{OnRebalance, PartitionState, Request, State}
 import fs2.kafka.internal.syntax.*
 import fs2.kafka.internal.LogLevel.*
 import fs2.kafka.CommittableConsumerRecord
-import fs2.Chunk
-import fs2.kafka.internal.actor.{OnRebalance, PartitionState, Request, State}
+
 import org.apache.kafka.common.TopicPartition
 
 sealed abstract private[kafka] class LogEntry {
@@ -48,7 +50,7 @@ private[kafka] object LogEntry {
     override def level: LogLevel = Debug
 
     override def message: String = ""
-      /*s"Consumer manually assigned partitions [${partitions.toList.mkString(", ")}]. Current state [$state]."*/
+    /*s"Consumer manually assigned partitions [${partitions.toList.mkString(", ")}]. Current state [$state]."*/
 
   }
 
@@ -101,7 +103,7 @@ private[kafka] object LogEntry {
 
   final case class RevokedPartitions[F[_], K, V](
     partitions: Set[TopicPartition],
-    partitionState: Map[Set[TopicPartition], PartitionState[F, K, V]],
+    partitionState: Map[TopicPartition, PartitionState[F, K, V]],
     state: State[F, ?, ?]
   ) extends LogEntry {
 
@@ -111,12 +113,15 @@ private[kafka] object LogEntry {
       var message = s"Revoked partitions [${partitions.mkString(", ")}]"
 
       if (partitionState.nonEmpty) {
-        val withSpillover =
-          partitionState.view.filter(_._2.isQueueFull).map(kv => kv._1 -> kv._2.spillover).toMap
+        val withSpillover = partitionState
+          .view
+          .filter(_._2.isQueueFull)
+          .map(kv => kv._1 -> kv._2.spillover.flatMap(_.toList))
+          .toMap
 
         message += s", dropped record queues [${partitionState.keys.mkString(", ")}]"
-        /*if (withSpillover.nonEmpty)
-          message += s", dropped spillover records [${recordsString(withSpillover)}]"*/
+        if (withSpillover.nonEmpty)
+          message += s", dropped spillover records [${recordsString(withSpillover)}]"
       }
 
       message += s". Current state [$state]"
@@ -159,7 +164,7 @@ private[kafka] object LogEntry {
   }
 
   def recordsString[F[_]](
-    records: Map[TopicPartition, Chunk[CommittableConsumerRecord[F, ?, ?]]]
+    records: Map[TopicPartition, List[CommittableConsumerRecord[F, ?, ?]]]
   ): String =
     records
       .toList
@@ -167,9 +172,9 @@ private[kafka] object LogEntry {
       .mkStringAppend { case (append, (tp, chunk)) =>
         append(tp.show)
         append(" -> { first: ")
-        append(chunk.head.get.offset.show)
+        append(chunk.head.offset.show)
         append(", last: ")
-        append(chunk.last.get.offset.show)
+        append(chunk.last.offset.show)
         append(" }")
       }("", ", ", "")
 

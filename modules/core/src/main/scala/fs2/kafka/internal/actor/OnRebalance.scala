@@ -6,7 +6,7 @@ import org.apache.kafka.common.TopicPartition
 
 final case class OnRebalance[F[_]](
   onAssigned: SortedSet[TopicPartition] => F[Unit],
-  onRevoked: SortedSet[TopicPartition] => F[Unit]
+  onRevoked:  SortedSet[TopicPartition] => F[Unit]
 ) {
 
   override def toString: String =
