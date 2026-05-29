@@ -96,6 +96,7 @@ Deserializer
     new KafkaDeserializer[String] {
 
       def deserialize(topic: String, data: Array[Byte]): String = {
+        println(s"deserializing record on topic $topic")
         new String(data)
       }
 
