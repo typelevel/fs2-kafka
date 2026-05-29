@@ -190,10 +190,9 @@ object KafkaConsumer {
       override def assignmentStream: Stream[F, SortedSet[TopicPartition]] =
         actor.assignments
 
-      override def seek(partition: TopicPartition, offset: Long): F[Unit] = {
+      override def seek(partition: TopicPartition, offset: Long): F[Unit] =
         withConsumer
           .blocking(_.seek(partition, offset))
-      }
 
       override def seekToBeginning[G[_]](
         partitions: G[TopicPartition]

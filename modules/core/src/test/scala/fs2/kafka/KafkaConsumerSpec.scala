@@ -991,7 +991,7 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
                                 .flatMap { prevConsumed =>
                                   if (prevConsumed.isEmpty) {
                                     // stop consuming right after the first message was received and publish a new batch
-                                    consumer.stopConsuming  >> IO(publishToKafka(topic, produced2))
+                                    consumer.stopConsuming >> IO(publishToKafka(topic, produced2))
                                   } else IO.unit
                                 } >> msg.offset.commit
                             }
