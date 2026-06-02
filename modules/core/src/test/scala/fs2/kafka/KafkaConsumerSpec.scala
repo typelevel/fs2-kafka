@@ -10,7 +10,7 @@ import scala.collection.immutable.SortedSet
 import scala.concurrent.duration.*
 
 import cats.data.NonEmptySet
-import cats.effect.{Fiber, IO, Ref}
+import cats.effect.{Fiber, FiberIO, IO, Ref}
 import cats.effect.std.{Queue, Semaphore}
 import cats.effect.unsafe.implicits.global
 import cats.syntax.all.*
@@ -615,6 +615,44 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
           assert(consumer2assignments(0).size < 3)
           assert(consumer1assignments(1) ++ consumer2assignments(0) == Set(0, 1, 2))
         }).unsafeRunSync()
+      }
+    }
+    it("should handle limited parallelization") {
+      withTopic { topic =>
+        val partitionCount = 9
+        createCustomTopic(topic, partitions = partitionCount)
+        def recordsGen(topic: String, partition: Int, from: Int, to: Int) =
+          (from until to)
+            .map(n => ProducerRecord(topic, s"$n", s"$n").withPartition(partition))
+            .toList
+        def startConsumer(
+          stopSignal: SignallingRef[IO, Boolean]
+        ): IO[FiberIO[List[Set[Set[TopicPartition]]]]] =
+          KafkaConsumer
+            .stream(consumerSettings[IO].withMaxParallelism(2))
+            .subscribeTo(topic)
+            .flatMap(_.partitionsMapStream)
+            .interruptWhen(stopSignal)
+            .map(_.keys.toSet)
+            .compile
+            .toList
+            .start
+
+        (for {
+          stopSignal           <- SignallingRef[IO, Boolean](false)
+          records01             = (0 until partitionCount).toList.flatMap(recordsGen(topic, _, 0, 10))
+          records02             = (0 until partitionCount).toList.flatMap(recordsGen(topic, _, 10, 20))
+          //_                     = publishToKafka(records01)
+          fiber1               <- startConsumer(stopSignal)
+          _                    <- IO.sleep(5.seconds)
+          fiber2               <- startConsumer(stopSignal)
+          _                    <- IO.sleep(5.seconds)
+          //_                     = publishToKafka(records02)
+          _                    <- stopSignal.set(true)
+          consumer1assignments <- fiber1.joinWith(IO(fail("Did not expect cancellation")))
+          consumer2assignments <- fiber2.joinWith(IO(fail("Did not expect cancellation")))
+        } yield (consumer1assignments.flatMap(_.toList) ++ consumer2assignments.flatMap(_.toList))
+          .foreach(group => assert(group.size > 1))).unsafeRunSync()
       }
     }
 

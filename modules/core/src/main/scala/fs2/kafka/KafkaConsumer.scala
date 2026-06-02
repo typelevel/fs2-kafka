@@ -257,7 +257,7 @@ object KafkaConsumer {
         withPermit(actor.subscribe(regex))
 
       override def unsubscribe: F[Unit] =
-        withPermit(F.uncancelable(_ => unsubscribe))
+        withPermit(F.uncancelable(_ => actor.unsubscribe()))
 
       override def stopConsuming: F[Unit] =
         stopConsumingDeferred.complete(()).attempt.void
