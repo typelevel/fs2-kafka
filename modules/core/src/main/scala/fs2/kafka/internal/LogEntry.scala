@@ -13,7 +13,7 @@ import scala.collection.immutable.SortedSet
 import cats.data.{NonEmptyList, NonEmptySet}
 import cats.syntax.all.*
 import fs2.kafka.instances.*
-import fs2.kafka.internal.actor.{PartitionState, Request, State2}
+import fs2.kafka.internal.actor.{PartitionGroupState, Request, State2}
 import fs2.kafka.internal.syntax.*
 import fs2.kafka.internal.LogLevel.*
 import fs2.kafka.CommittableConsumerRecord
@@ -87,8 +87,7 @@ private[kafka] object LogEntry {
 
   final case class RevokedPartitions[F[_], K, V](
     partitions: Set[Set[TopicPartition]],
-    partitionState: Map[Set[TopicPartition], PartitionState[F, K, V]],
-    state: State2[F, ?, ?]
+    partitionState: Map[Set[TopicPartition], PartitionGroupState[F, K, V]]
   ) extends LogEntry {
 
     override def level: LogLevel = Debug
@@ -99,7 +98,7 @@ private[kafka] object LogEntry {
       if (partitionState.nonEmpty) {
         val withSpillover = partitionState
           .view
-          .filter(_._2.isQueueFull)
+          .filter(_._2.spillover.nonEmpty)
           .map(kv => kv._1 -> kv._2.spillover.flatMap(_.toList))
           .toMap
 
@@ -107,7 +106,7 @@ private[kafka] object LogEntry {
         if (withSpillover.nonEmpty)
           message += s", dropped spillover records [${recordsString(withSpillover)}]"
       }
-      message += s". Current state [$state]"
+
       message
     }
 
@@ -159,7 +158,7 @@ private[kafka] object LogEntry {
         append(" -> { first: ")
         append(chunk.head.offset.show)
         append(", last: ")
-        append(chunk.head.offset.show)
+        append(chunk.last.offset.show)
         append(" }")
       }("", ", ", "")
 

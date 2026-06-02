@@ -7,6 +7,7 @@
 package fs2.kafka.internal.actor
 
 import cats.Reducible
+import cats.data.NonEmptyList
 import cats.data.NonEmptySet
 
 import java.time.Duration
@@ -17,6 +18,7 @@ import cats.effect.std.*
 import cats.syntax.all.*
 import fs2.kafka.*
 import fs2.kafka.instances.*
+import fs2.kafka.internal.LogEntry.*
 import fs2.kafka.internal.Logging
 import fs2.kafka.internal.WithConsumer
 import fs2.kafka.internal.converters.collection.*
@@ -57,13 +59,12 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
   logging:              Logging[F],
   jitter:               Jitter[F]
 ) {
-  identity(logging)
   private[this] type ConsumerRecords    = Chunk[CommittableConsumerRecord[F, K, V]]
   private[this] type ConsumerRecordsMap = Map[TopicPartition, Chunk[CommittableConsumerRecord[F, K, V]]]
   private type GroupState               = Map[Set[TopicPartition], PartitionGroupState[F, K, V]]
   private[this] val pollTimeout: Duration = settings.pollTimeout.toJava
   private[this] val maxPrefetch: Int      = settings.maxPrefetchBatches
-  val consumerID = java.util.UUID.randomUUID()
+
   val consumerRebalanceListener: ConsumerRebalanceListener = new ConsumerRebalanceListener {
     override def onPartitionsRevoked(partitions: util.Collection[TopicPartition]): Unit =
       dispatcher.unsafeRunSync {
@@ -77,11 +78,15 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
 
     override def onPartitionsAssigned(partitions: util.Collection[TopicPartition]): Unit =
       dispatcher.unsafeRunSync {
+        val assigned = SortedSet.from(partitions.asScala)
         state2.evalUpdate { state =>
           val currentAssignment = state.partitionGroupState.keys.toList.flatten.toSet
-          val targetAssignment  = currentAssignment ++ partitions.asScala
-          alignPartitionState(targetAssignment, state.partitionGroupState)
-            .map(state.withGroupState)
+          val targetAssignment  = currentAssignment ++ assigned
+          for {
+            groups  <- alignPartitionState(targetAssignment, state.partitionGroupState)
+            newState = state.withGroupState(groups)
+            _       <- logging.log(AssignedPartitions(assigned, newState))
+          } yield newState
         }
       }
   }
@@ -144,27 +149,31 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
   def assign(partitions: NonEmptySet[TopicPartition]): F[Unit] =
     F.uncancelable { _ =>
       withConsumer.blocking(_.assign(partitions.toSortedSet.toList.asJava))
-    } *> state2.evalUpdate(s =>
-      alignPartitionState(partitions.toSortedSet, Map.empty)
-        .map(s.withGroupState(_).withSubscribed())
-    )
+    } *> state2.evalUpdate { s =>
+      for {
+        groups <- alignPartitionState(partitions.toSortedSet, Map.empty)
+        next    = s.withGroupState(groups).withSubscribed()
+        _      <- logging.log(ManuallyAssignedPartitions(partitions, next))
+      } yield next
+    }
 
-  def subscribe(regex: Regex) =
-    F.uncancelable { _ =>
-      withConsumer.blocking {
-        _.subscribe(
-          regex.pattern,
-          consumerRebalanceListener
-        )
-      }
-    } *> state2.update(s => s.withSubscribed())
+  def subscribe(regex: Regex): F[Unit] =
+    for {
+      _        <- withConsumer.blocking {
+                    _.subscribe(regex.pattern, consumerRebalanceListener)
+                  }.uncancelable
+      newState <- state2.updateAndGet(_.withSubscribed())
+      _        <- logging.log(SubscribedPattern(regex.pattern, newState))
+    } yield ()
 
-  def subscribe[G[_]](topics: G[String])(implicit G: Reducible[G]) =
-    F.uncancelable { _ =>
-      withConsumer.blocking {
-        _.subscribe(topics.toList.asJava, consumerRebalanceListener)
-      }
-    } *> state2.update(s => s.withSubscribed())
+  def subscribe[G[_]](topics: G[String])(implicit G: Reducible[G]): F[Unit] =
+    for {
+      _        <- withConsumer.blocking {
+                    _.subscribe(topics.toList.asJava, consumerRebalanceListener)
+                  }.uncancelable
+      newState <- state2.updateAndGet(_.withSubscribed())
+      _        <- logging.log(SubscribedTopics(NonEmptyList.fromListUnsafe(topics.toList), newState))
+    } yield ()
 
   def handle(request: Request[F, K, V]): F[Unit] =
     request match {
@@ -188,16 +197,19 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
         fa.attempt >>= cb
     }
 
-  def unsubscribe(): F[Unit] = state2.evalUpdate { state =>
-    for {
-      _ <- assignment.offer(None)
-      _ <- state
-             .partitionGroupState
-             .values
-             .toList
-             .parTraverse(group => group.interrupt.complete(().asRight) *> group.groupSemaphore.acquire)
-    } yield state.withUnsubscribed()
-  }
+  def unsubscribe(): F[Unit] =
+    state2.evalUpdate { state =>
+      for {
+        _       <- assignment.offer(None)
+        _       <- state
+                     .partitionGroupState
+                     .values
+                     .toList
+                     .parTraverse(group => group.interrupt.complete(().asRight) *> group.groupSemaphore.acquire)
+        newState = state.withUnsubscribed()
+        _       <- logging.log(Unsubscribed(newState))
+      } yield newState
+    }
 
   /** Realigns partition-group state with `targetAssignment`.
     *
@@ -217,7 +229,10 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
     * When several revoked groups contribute records to the same new group, that group's `spillover` list may
     * temporarily hold more than one chunk until the queue accepts them.
     */
-  private def alignPartitionState(targetAssignment: Set[TopicPartition], state: GroupState): F[GroupState] = {
+  private def alignPartitionState(
+    targetAssignment: Set[TopicPartition],
+    state:            GroupState
+  ): F[GroupState] = {
     val currentAssignment = state.keys.toSet
     if (targetAssignment == currentAssignment.flatten) {
       state.pure[F]
@@ -226,6 +241,7 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
         assignmentCalc <- PartitionGroupingCalculator.align(targetAssignment, currentAssignment, maxParallel).pure[F]
         toRevoke        = state -- (assignmentCalc.groupGoal)
         toKeep          = state -- (toRevoke.keys)
+        _              <- logging.log(RevokedPartitions(toRevoke.keySet, toRevoke)).whenA(toRevoke.nonEmpty)
         spillover      <- toRevoke.toList.flatTraverse { case (_, state) =>
                             for {
                               _        <- state.interrupt.complete(().asRight)
@@ -316,14 +332,9 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
       }
       .handleErrorWith(e => F.delay(callback(Left(e))))
 
-  private[this] def commit(request: Request.Commit[F]): F[Unit] =
-    state2.get.flatMap { state =>
-      val commitF = commitAsync(request.offsets, request.callback)
-      if (state.pendingCommits.nonEmpty)
-        state2.update(_.withPendingCommit(commitF)) // TODO: validate: this is never called AFAIK
-      else
-        commitF
-    }
+  private[this] def commit(request: Request.Commit[F]): F[Unit] = {
+    commitAsync(request.offsets, request.callback)
+  }
 
   private[this] def manualCommitSync(request: Request.ManualCommitSync[F]): F[Unit] = {
     val commit = withConsumer.blocking(_.commitSync(request.offsets.asJava, settings.commitTimeout.toJava))

@@ -1,6 +1,5 @@
 package fs2.kafka.internal.actor
 
-import cats.data.Chain
 import cats.effect.Async
 import cats.effect.Deferred
 import cats.effect.std.Queue
@@ -13,7 +12,6 @@ object State2 {
   def empty[F[_]: Async, K, V] =
     State2[F, K, V](
       Map.empty,
-      Chain.empty,
       false,
       false
     )
@@ -31,16 +29,13 @@ case class PartitionGroupState[F[_], K, V](
 
 final case class State2[F[_], K, V](
   partitionGroupState: Map[Set[TopicPartition], PartitionGroupState[F, K, V]],
-  pendingCommits:      Chain[F[Unit]],
   subscribed:          Boolean,
   streaming:           Boolean
 )(implicit
   F:                   Async[F]
 ) {
 
-  def withPendingCommit(pendingCommit: F[Unit]): State2[F, K, V] =
-    copy(pendingCommits = pendingCommits.append(pendingCommit))
-  def withGroupState(s: Map[Set[TopicPartition], PartitionGroupState[F, K, V]]) =
+    def withGroupState(s: Map[Set[TopicPartition], PartitionGroupState[F, K, V]]) =
     copy(partitionGroupState = s)
   def withUnsubscribed():                        State2[F, K, V] = copy(partitionGroupState = Map.empty, subscribed = false, streaming = false)
   def withSubscribed():                          State2[F, K, V] = copy(subscribed = true)
@@ -48,6 +43,7 @@ final case class State2[F[_], K, V](
     copy(streaming = true)
   def withNotStreaming():                        State2[F, K, V] = copy(streaming = false)
 
-  override def toString: String = ???
+  override def toString: String =
+    s"State2(partitionGroupState = $partitionGroupState, subscribed = $subscribed, streaming = $streaming)"
 
 }
