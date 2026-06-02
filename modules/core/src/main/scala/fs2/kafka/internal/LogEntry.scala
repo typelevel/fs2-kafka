@@ -13,7 +13,7 @@ import scala.collection.immutable.SortedSet
 import cats.data.{NonEmptyList, NonEmptySet}
 import cats.syntax.all.*
 import fs2.kafka.instances.*
-import fs2.kafka.internal.actor.{OnRebalance, PartitionState, Request, State}
+import fs2.kafka.internal.actor.{PartitionState, Request, State2}
 import fs2.kafka.internal.syntax.*
 import fs2.kafka.internal.LogLevel.*
 import fs2.kafka.CommittableConsumerRecord
@@ -30,10 +30,8 @@ sealed abstract private[kafka] class LogEntry {
 
 private[kafka] object LogEntry {
 
-  final case class SubscribedTopics[F[_]](
-    topics: NonEmptyList[String],
-    state: State[F, ?, ?]
-  ) extends LogEntry {
+  final case class SubscribedTopics[F[_]](topics: NonEmptyList[String], state: State2[F, ?, ?])
+      extends LogEntry {
 
     override def level: LogLevel = Debug
 
@@ -44,19 +42,19 @@ private[kafka] object LogEntry {
 
   final case class ManuallyAssignedPartitions[F[_]](
     partitions: NonEmptySet[TopicPartition],
-    state: State[F, ?, ?]
+    state: State2[F, ?, ?]
   ) extends LogEntry {
 
     override def level: LogLevel = Debug
 
-    override def message: String = ""
-    /*s"Consumer manually assigned partitions [${partitions.toList.mkString(", ")}]. Current state [$state]."*/
+    override def message: String =
+      s"Consumer manually assigned partitions [${partitions.toSortedSet.toList.mkString(", ")}]. Current state [$state]."
 
   }
 
   final case class SubscribedPattern[F[_]](
     pattern: Pattern,
-    state: State[F, ?, ?]
+    state: State2[F, ?, ?]
   ) extends LogEntry {
 
     override def level: LogLevel = Debug
@@ -66,9 +64,7 @@ private[kafka] object LogEntry {
 
   }
 
-  final case class Unsubscribed[F[_]](
-    state: State[F, ?, ?]
-  ) extends LogEntry {
+  final case class Unsubscribed[F[_]](state: State2[F, ?, ?]) extends LogEntry {
 
     override def level: LogLevel = Debug
 
@@ -77,21 +73,9 @@ private[kafka] object LogEntry {
 
   }
 
-  final case class StoredOnRebalance[F[_]](
-    onRebalance: OnRebalance[F],
-    state: State[F, ?, ?]
-  ) extends LogEntry {
-
-    override def level: LogLevel = Debug
-
-    override def message: String =
-      s"Stored OnRebalance [$onRebalance]. Current state [$state]."
-
-  }
-
   final case class AssignedPartitions[F[_]](
     partitions: SortedSet[TopicPartition],
-    state: State[F, ?, ?]
+    state: State2[F, ?, ?]
   ) extends LogEntry {
 
     override def level: LogLevel = Debug
@@ -102,15 +86,15 @@ private[kafka] object LogEntry {
   }
 
   final case class RevokedPartitions[F[_], K, V](
-    partitions: Set[TopicPartition],
-    partitionState: Map[TopicPartition, PartitionState[F, K, V]],
-    state: State[F, ?, ?]
+    partitions: Set[Set[TopicPartition]],
+    partitionState: Map[Set[TopicPartition], PartitionState[F, K, V]],
+    state: State2[F, ?, ?]
   ) extends LogEntry {
 
     override def level: LogLevel = Debug
 
     override def message: String = {
-      var message = s"Revoked partitions [${partitions.mkString(", ")}]"
+      var message = s"Revoked partition groups [${partitions.map(_.mkString(", ")).mkString(", ")}]"
 
       if (partitionState.nonEmpty) {
         val withSpillover = partitionState
@@ -123,9 +107,7 @@ private[kafka] object LogEntry {
         if (withSpillover.nonEmpty)
           message += s", dropped spillover records [${recordsString(withSpillover)}]"
       }
-
       message += s". Current state [$state]"
-
       message
     }
 
@@ -133,7 +115,7 @@ private[kafka] object LogEntry {
 
   final case class StoredPendingCommit[F[_]](
     commit: Request.Commit[F],
-    state: State[F, ?, ?]
+    state: State2[F, ?, ?]
   ) extends LogEntry {
 
     override def level: LogLevel = Debug
@@ -153,7 +135,7 @@ private[kafka] object LogEntry {
 
   final case class RevokeTimeoutOccurred[F[_]](
     revoked: Set[TopicPartition],
-    state: State[F, ?, ?]
+    state: State2[F, ?, ?]
   ) extends LogEntry {
 
     override def level: LogLevel = Info
@@ -164,9 +146,12 @@ private[kafka] object LogEntry {
   }
 
   def recordsString[F[_]](
-    records: Map[TopicPartition, List[CommittableConsumerRecord[F, ?, ?]]]
+    records: Map[Set[TopicPartition], List[CommittableConsumerRecord[F, ?, ?]]]
   ): String =
     records
+      .values
+      .flatten
+      .groupBy(_.offset.topicPartition)
       .toList
       .sortBy { case (tp, _) => tp }
       .mkStringAppend { case (append, (tp, chunk)) =>
@@ -174,7 +159,7 @@ private[kafka] object LogEntry {
         append(" -> { first: ")
         append(chunk.head.offset.show)
         append(", last: ")
-        append(chunk.last.offset.show)
+        append(chunk.head.offset.show)
         append(" }")
       }("", ", ", "")
 
