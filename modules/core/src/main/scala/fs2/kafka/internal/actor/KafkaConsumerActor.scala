@@ -48,15 +48,15 @@ import org.apache.kafka.common.TopicPartition
   * demand.
   */
 final private[kafka] class KafkaConsumerActor[F[_], K, V](
-                                                           settings: ConsumerSettings[F, K, V],
-                                                           keyDeserializer: KeyDeserializer[F, K],
-                                                           valueDeserializer: ValueDeserializer[F, V],
-                                                           requests: Queue[F, Request[F, K, V]],
-                                                           assignment: Queue[F, Option[Map[Set[TopicPartition], PartitionGroupState[F, K, V]]]],
-                                                           currentAssignmentRef: SignallingRef[F, Option[SortedSet[TopicPartition]]],
-                                                           state: AtomicCell[F, State[F, K, V]],
-                                                           withConsumer: WithConsumer[F],
-                                                           maxParallel: Int
+  settings: ConsumerSettings[F, K, V],
+  keyDeserializer: KeyDeserializer[F, K],
+  valueDeserializer: ValueDeserializer[F, V],
+  requests: Queue[F, Request[F, K, V]],
+  assignment: Queue[F, Option[Map[Set[TopicPartition], PartitionGroupState[F, K, V]]]],
+  currentAssignmentRef: SignallingRef[F, Option[SortedSet[TopicPartition]]],
+  state: AtomicCell[F, State[F, K, V]],
+  withConsumer: WithConsumer[F],
+  maxParallel: Int
 )(implicit
   F: Async[F],
   dispatcher: Dispatcher[F],
@@ -203,8 +203,6 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
           records <- pollRecords
           _       <- state.evalUpdate { s =>
                  for {
-                   // targetAssignment   <- withConsumer.blocking(_.assignment()).map(_.asScala.toSet)
-                   // alignedGroups      <- alignPartitionState(targetAssignment, s.partitionGroupState)
                    stateAfterEnqueued <- enqueueRecords(records, s.partitionGroupState)
                    spillOverEnqueued  <- enqueueSpillOver(stateAfterEnqueued)
                  } yield s.withGroupState(spillOverEnqueued)
@@ -230,6 +228,7 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
                  group.interrupt.complete(().asRight) *> group.groupSemaphore.acquire
                )
         newState = state.withUnsubscribed()
+        _       <- withConsumer.blocking(_.unsubscribe())
         _       <- logging.log(Unsubscribed(newState))
       } yield newState
     }
@@ -308,7 +307,7 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
                              )
                            }
         newState = newPartitions.toMap ++ toKeep
-        _       <- assignment.offer(newState.some).whenA(newState.keys.flatten != state.keys.flatten)
+        _       <- assignment.offer(newState.some).whenA(newState.keys.toSet != state.keys.toSet)
       } yield newState
     }
   }

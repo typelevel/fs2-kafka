@@ -112,26 +112,6 @@ private[kafka] object LogEntry {
 
   }
 
-  final case class StoredPendingCommit[F[_]](
-    commit: Request.Commit[F],
-    state: State[F, ?, ?]
-  ) extends LogEntry {
-
-    override def level: LogLevel = Debug
-
-    override def message: String =
-      s"Stored pending commit [$commit] as rebalance is in-progress. Current state [$state]."
-
-  }
-
-  final case class CommittedPendingCommit[F[_]](pendingCommit: Request.Commit[F]) extends LogEntry {
-
-    override def level: LogLevel = Debug
-
-    override def message: String = s"Committed pending commit [$pendingCommit]."
-
-  }
-
   final case class RevokeTimeoutOccurred[F[_]](
     revoked: Set[TopicPartition],
     state: State[F, ?, ?]
