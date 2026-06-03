@@ -1,8 +1,15 @@
+/*
+ * Copyright 2018 OVO Energy Limited
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package fs2.kafka.internal.actor
 
 import org.apache.kafka.common.TopicPartition
 
-/** When a rebalance happens, Fs2-Kafka will calculate the
+/**
+  * When a rebalance happens, Fs2-Kafka will calculate the
   *
   * Note: goal and revoke might have overlapping partitions.
   *
@@ -11,26 +18,27 @@ import org.apache.kafka.common.TopicPartition
   * @param revokePartially
   */
 final case class PartitionGroupingCalculator(
-  groupGoal:   Set[Set[TopicPartition]],
+  groupGoal: Set[Set[TopicPartition]],
   groupRevoke: Set[Set[TopicPartition]]
 )
 
 object PartitionGroupingCalculator {
 
-  /** Computes the partition groups for `targetAssignment`.
+  /**
+    * Computes the partition groups for `targetAssignment`.
     *
-    * Returns `groupGoal` (groups that should exist after alignment) and `groupRevoke` (existing groups that must be
-    * removed).
+    * Returns `groupGoal` (groups that should exist after alignment) and `groupRevoke` (existing
+    * groups that must be removed).
     *
     * Grouping policy
     *
-    * Partitions are split into as many groups as the specified parallelism allows keeping group sizes evenly
-    * distributed.
+    * Partitions are split into as many groups as the specified parallelism allows keeping group
+    * sizes evenly distributed.
     *
     * Stable groups
     *
-    * An existing group is left out of `groupRevoke` when all of its partitions are still in `targetAssignment` and its
-    * size matches the target default or oversized size.
+    * An existing group is left out of `groupRevoke` when all of its partitions are still in
+    * `targetAssignment` and its size matches the target default or oversized size.
     *
     * Revocation
     *
@@ -39,9 +47,9 @@ object PartitionGroupingCalculator {
     *   - the group's size no longer matches the target layout
     */
   private[actor] def align(
-    targetAssignment:   Set[TopicPartition],
+    targetAssignment: Set[TopicPartition],
     existingAssignment: Set[Set[TopicPartition]],
-    maxParallelism:     Int
+    maxParallelism: Int
   ): PartitionGroupingCalculator =
     if (targetAssignment == existingAssignment.flatten) {
       PartitionGroupingCalculator(
@@ -79,11 +87,12 @@ object PartitionGroupingCalculator {
         .take(spilloverGroupCount - groupsToKeepWSpillover.size)
         .toSet
 
-      val defaultSizeGroups   = (leftUnassigned -- oversizedGroups.flatten)
+      val defaultSizeGroups = (leftUnassigned -- oversizedGroups.flatten)
         .grouped(defaultGroupSize)
         .toSet
       PartitionGroupingCalculator(
-        groupGoal   = groupsToKeepWSpillover ++ groupsToKeepRegularSize ++ defaultSizeGroups ++ oversizedGroups,
+        groupGoal =
+          groupsToKeepWSpillover ++ groupsToKeepRegularSize ++ defaultSizeGroups ++ oversizedGroups,
         groupRevoke = unassignDueToPartitionRevoked ++ toRevokeDueToSize
       )
     }

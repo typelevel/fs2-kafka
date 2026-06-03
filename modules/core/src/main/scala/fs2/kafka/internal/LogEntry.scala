@@ -13,7 +13,7 @@ import scala.collection.immutable.SortedSet
 import cats.data.{NonEmptyList, NonEmptySet}
 import cats.syntax.all.*
 import fs2.kafka.instances.*
-import fs2.kafka.internal.actor.{PartitionGroupState, Request, State2}
+import fs2.kafka.internal.actor.{PartitionGroupState, Request, State}
 import fs2.kafka.internal.syntax.*
 import fs2.kafka.internal.LogLevel.*
 import fs2.kafka.CommittableConsumerRecord
@@ -30,7 +30,7 @@ sealed abstract private[kafka] class LogEntry {
 
 private[kafka] object LogEntry {
 
-  final case class SubscribedTopics[F[_]](topics: NonEmptyList[String], state: State2[F, ?, ?])
+  final case class SubscribedTopics[F[_]](topics: NonEmptyList[String], state: State[F, ?, ?])
       extends LogEntry {
 
     override def level: LogLevel = Debug
@@ -42,7 +42,7 @@ private[kafka] object LogEntry {
 
   final case class ManuallyAssignedPartitions[F[_]](
     partitions: NonEmptySet[TopicPartition],
-    state: State2[F, ?, ?]
+    state: State[F, ?, ?]
   ) extends LogEntry {
 
     override def level: LogLevel = Debug
@@ -54,7 +54,7 @@ private[kafka] object LogEntry {
 
   final case class SubscribedPattern[F[_]](
     pattern: Pattern,
-    state: State2[F, ?, ?]
+    state: State[F, ?, ?]
   ) extends LogEntry {
 
     override def level: LogLevel = Debug
@@ -64,7 +64,7 @@ private[kafka] object LogEntry {
 
   }
 
-  final case class Unsubscribed[F[_]](state: State2[F, ?, ?]) extends LogEntry {
+  final case class Unsubscribed[F[_]](state: State[F, ?, ?]) extends LogEntry {
 
     override def level: LogLevel = Debug
 
@@ -75,7 +75,7 @@ private[kafka] object LogEntry {
 
   final case class AssignedPartitions[F[_]](
     partitions: SortedSet[TopicPartition],
-    state: State2[F, ?, ?]
+    state: State[F, ?, ?]
   ) extends LogEntry {
 
     override def level: LogLevel = Debug
@@ -114,7 +114,7 @@ private[kafka] object LogEntry {
 
   final case class StoredPendingCommit[F[_]](
     commit: Request.Commit[F],
-    state: State2[F, ?, ?]
+    state: State[F, ?, ?]
   ) extends LogEntry {
 
     override def level: LogLevel = Debug
@@ -134,7 +134,7 @@ private[kafka] object LogEntry {
 
   final case class RevokeTimeoutOccurred[F[_]](
     revoked: Set[TopicPartition],
-    state: State2[F, ?, ?]
+    state: State[F, ?, ?]
   ) extends LogEntry {
 
     override def level: LogLevel = Info

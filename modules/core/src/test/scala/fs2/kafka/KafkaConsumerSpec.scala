@@ -506,9 +506,7 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
                  .compile
                  .toList
                  .map(_.last)
-                 .map { co =>
-                   (co.topicPartition, co.offsetAndMetadata.offset())
-                 }
+                 .map(co => (co.topicPartition, co.offsetAndMetadata.offset()))
                  .map { case (topicPartition, offset) =>
                    val p = partition.map(new TopicPartition(topic, _)).getOrElse(topicPartition)
                    val o = Math.min(readOffset, offset)
@@ -627,32 +625,61 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
             .toList
         def startConsumer(
           stopSignal: SignallingRef[IO, Boolean]
-        ): IO[FiberIO[List[Set[Set[TopicPartition]]]]] =
-          KafkaConsumer
-            .stream(consumerSettings[IO].withMaxParallelism(2))
-            .subscribeTo(topic)
-            .flatMap(_.partitionsMapStream)
-            .interruptWhen(stopSignal)
-            .map(_.keys.toSet)
-            .compile
-            .toList
-            .start
+        ): IO[FiberIO[(List[Set[Set[TopicPartition]]], Vector[(Set[Int], Int)])]] =
+          for {
+            assignmentsRef         <- Ref.of[IO, List[Set[Set[TopicPartition]]]](Nil)
+            deliveredPartitionsRef <- Ref.of[IO, Vector[(Set[Int], Int)]](Vector.empty)
+            fiber                  <- (
+                       for {
+                         consumer <- KafkaConsumer
+                                       .stream(consumerSettings[IO].withMaxParallelism(2))
+                                       .subscribeTo(topic)
+                         assignment <- consumer.partitionsMapStream
+                         _          <- Stream.eval(assignmentsRef.update(_ :+ assignment.keySet))
+                       } yield Stream.emits(
+                         for {
+                           (partitions, partitionStream) <- assignment.toList
+                           partitionIds                   = partitions.map(_.partition())
+                         } yield partitionStream.evalMap { committable =>
+                           deliveredPartitionsRef.update(
+                             _ :+ (partitionIds, committable.record.partition)
+                           )
+                         }
+                       )
+                     ).flatten
+                       .parJoinUnbounded
+                       .interruptWhen(stopSignal)
+                       .compile
+                       .drain
+                       .flatMap(_ => (assignmentsRef.get, deliveredPartitionsRef.get).mapN((_, _)))
+                       .start
+          } yield fiber
 
         (for {
-          stopSignal           <- SignallingRef[IO, Boolean](false)
-          //records01             = (0 until partitionCount).toList.flatMap(recordsGen(topic, _, 0, 10))
-          //records02             = (0 until partitionCount).toList.flatMap(recordsGen(topic, _, 10, 20))
-          //_                     = publishToKafka(records01)
-          fiber1               <- startConsumer(stopSignal)
-          _                    <- IO.sleep(5.seconds)
-          fiber2               <- startConsumer(stopSignal)
-          _                    <- IO.sleep(5.seconds)
-          //_                     = publishToKafka(records02)
-          _                    <- stopSignal.set(true)
-          consumer1assignments <- fiber1.joinWith(IO(fail("Did not expect cancellation")))
-          consumer2assignments <- fiber2.joinWith(IO(fail("Did not expect cancellation")))
-        } yield (consumer1assignments.flatMap(_.toList) ++ consumer2assignments.flatMap(_.toList))
-          .foreach(group => assert(group.size > 1))).unsafeRunSync()
+          stopSignal                                 <- SignallingRef[IO, Boolean](false)
+          records02                                   = (0 until partitionCount).toList.flatMap(recordsGen(topic, _, 10, 20))
+          fiber1                                     <- startConsumer(stopSignal)
+          _                                          <- IO.sleep(5.seconds)
+          fiber2                                     <- startConsumer(stopSignal)
+          _                                          <- IO.sleep(5.seconds)
+          _                                           = publishToKafka(records02)
+          _                                          <- IO.sleep(5.seconds)
+          _                                          <- stopSignal.set(true)
+          (consumer1assignments, consumer1delivered) <- fiber1.joinWith(
+                                                          IO(fail("Did not expect cancellation"))
+                                                        )
+          (consumer2assignments, consumer2delivered) <- fiber2.joinWith(
+                                                          IO(fail("Did not expect cancellation"))
+                                                        )
+        } yield {
+          val assignments =
+            consumer1assignments.flatMap(_.toList) ++ consumer2assignments.flatMap(_.toList)
+          val delivered = consumer1delivered ++ consumer2delivered
+          assignments.foreach(group => assert(group.size > 1))
+          delivered.foreach { case (groupPartitions, recordPartition) =>
+            assert(groupPartitions.contains(recordPartition))
+          }
+        }).unsafeRunSync()
       }
     }
 
