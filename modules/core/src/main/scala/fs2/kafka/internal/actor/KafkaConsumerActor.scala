@@ -242,16 +242,8 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
         toRevoke        = state -- (assignmentCalc.groupGoal)
         toKeep          = state -- (toRevoke.keys)
         _              <- logging.log(RevokedPartitions(toRevoke.keySet, toRevoke)).whenA(toRevoke.nonEmpty)
-        spillover      <- toRevoke.toList.flatTraverse { case (_, state) =>
-                            for {
-                              _        <- state.interrupt.complete(().asRight)
-                              _        <- state.groupSemaphore.acquire
-                              queued   <- state.queue.tryTakeN(none) // safe since we acquired the semaphore beforehand
-                              spillover = state.spillover
-                              records   = (queued ++ spillover)
-                                .map(_.filter(r => targetAssignment.contains(r.offset.topicPartition)))
-                                .filter(_.nonEmpty)
-                            } yield records
+        spillover      <- toRevoke.toList.flatTraverse { case (group, state) =>
+                            revokePartitionGroup(targetAssignment, group, state)
                           }
         spilloverMap    = spillover
                             .map(_.toList)
@@ -277,6 +269,26 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
       } yield newState
     }
   }
+
+  private def revokePartitionGroup(
+    targetAssignment: Set[TopicPartition],
+    group:            Set[TopicPartition],
+    state:            PartitionGroupState[F, K, V]
+  ): F[List[ConsumerRecords]] =
+    for {
+      _        <- state.interrupt.complete(().asRight)
+      canEager  = group.forall(!targetAssignment.contains(_))
+      isEager   = settings.rebalanceRevokeMode == RebalanceRevokeMode.EagerMode
+      _        <- state
+                    .groupSemaphore
+                    .acquire
+                    .whenA(!(isEager && canEager))
+      queued   <- state.queue.tryTakeN(none) // safe since we acquired the semaphore beforehand
+      spillover = state.spillover
+      records   = (queued ++ spillover)
+        .map(_.filter(r => targetAssignment.contains(r.offset.topicPartition)))
+        .filter(_.nonEmpty)
+    } yield records
 
   private def enqueueSpillOver(groupState: GroupState): F[GroupState] =
     groupState.toList.traverse { case (group, state) =>
@@ -332,9 +344,8 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
       }
       .handleErrorWith(e => F.delay(callback(Left(e))))
 
-  private[this] def commit(request: Request.Commit[F]): F[Unit] = {
+  private[this] def commit(request: Request.Commit[F]): F[Unit] =
     commitAsync(request.offsets, request.callback)
-  }
 
   private[this] def manualCommitSync(request: Request.ManualCommitSync[F]): F[Unit] = {
     val commit = withConsumer.blocking(_.commitSync(request.offsets.asJava, settings.commitTimeout.toJava))

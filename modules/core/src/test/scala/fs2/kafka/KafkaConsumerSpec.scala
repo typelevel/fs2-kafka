@@ -640,8 +640,8 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
 
         (for {
           stopSignal           <- SignallingRef[IO, Boolean](false)
-          records01             = (0 until partitionCount).toList.flatMap(recordsGen(topic, _, 0, 10))
-          records02             = (0 until partitionCount).toList.flatMap(recordsGen(topic, _, 10, 20))
+          //records01             = (0 until partitionCount).toList.flatMap(recordsGen(topic, _, 0, 10))
+          //records02             = (0 until partitionCount).toList.flatMap(recordsGen(topic, _, 10, 20))
           //_                     = publishToKafka(records01)
           fiber1               <- startConsumer(stopSignal)
           _                    <- IO.sleep(5.seconds)

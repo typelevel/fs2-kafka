@@ -12,7 +12,6 @@ import scala.collection.immutable.SortedSet
 import scala.concurrent.duration.FiniteDuration
 import scala.util.matching.Regex
 import fs2.kafka.instances.*
-import cats.Applicative
 import cats.Foldable
 import cats.Reducible
 import cats.data.NonEmptySet
@@ -519,46 +518,6 @@ object KafkaConsumer {
     )(implicit
       F:         Concurrent[F]
     ): F[Nothing] = self.evalMap(_.consumeChunk(processor)).compile.onlyOrError
-
-  }
-
-  /** Utility class to provide clarity for internals. Goal is to make [[RebalanceRevokeMode]] transparent to the rest of
-    * implementation internals.
-    * @tparam F
-    *   effect used
-    */
-  sealed abstract private class AssignmentSignals[F[_]] {
-
-    def signalStreamFinished:      F[Boolean]
-    def awaitStreamFinishedSignal: F[Unit]
-
-  }
-
-  private object AssignmentSignals {
-
-    def eager[F[_]: Applicative]: AssignmentSignals[F] =
-      EagerSignals()
-
-    def graceful[F[_]](
-      revokeFinisher: Deferred[F, Unit]
-    ): AssignmentSignals[F] =
-      GracefulSignals[F](revokeFinisher)
-
-    final private case class EagerSignals[F[_]: Applicative]() extends AssignmentSignals[F] {
-
-      override def signalStreamFinished:      F[Boolean] = true.pure[F]
-      override def awaitStreamFinishedSignal: F[Unit]    = ().pure[F]
-
-    }
-
-    final private case class GracefulSignals[F[_]](
-      revokeFinisher: Deferred[F, Unit]
-    ) extends AssignmentSignals[F] {
-
-      override def signalStreamFinished:      F[Boolean] = revokeFinisher.complete(())
-      override def awaitStreamFinishedSignal: F[Unit]    = revokeFinisher.get
-
-    }
 
   }
 
