@@ -22,11 +22,10 @@ import cats.Reducible
 import fs2.concurrent.SignallingRef
 import fs2.kafka.*
 import fs2.kafka.instances.*
+import fs2.kafka.internal.{LogEntry, Logging, WithConsumer}
 import fs2.kafka.internal.converters.collection.*
 import fs2.kafka.internal.syntax.*
 import fs2.kafka.internal.LogEntry.*
-import fs2.kafka.internal.Logging
-import fs2.kafka.internal.WithConsumer
 import fs2.Chunk
 import fs2.Stream
 
@@ -263,10 +262,10 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
       state.pure[F]
     } else {
       for {
-        assignmentCalc <- PartitionGroupingCalculator
-                            .align(targetAssignment, currentAssignment, maxParallel)
-                            .pure[F]
-        toRevoke   = state -- (assignmentCalc.groupGoal)
+        groupGoal <- PartitionGroupingCalculator
+                       .align(targetAssignment, currentAssignment, maxParallel)
+                       .pure[F]
+        toRevoke   = state -- groupGoal
         toKeep     = state -- (toRevoke.keys)
         _         <- logging.log(RevokedPartitions(toRevoke.keySet, toRevoke)).whenA(toRevoke.nonEmpty)
         spillover <- toRevoke
@@ -286,7 +285,7 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
                                  acc.updated(tp, acc.getOrElse(tp, List.empty) ++ List(records))
                                }
                          }
-        needsAdding    = assignmentCalc.groupGoal.diff(currentAssignment)
+        needsAdding    = groupGoal.diff(currentAssignment)
         newPartitions <- needsAdding
                            .toList
                            .traverse { group =>
@@ -318,16 +317,28 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
     state: PartitionGroupState[F, K, V]
   ): F[List[ConsumerRecords]] =
     for {
-      _        <- state.interrupt.complete(().asRight)
-      canEager  = group.forall(!targetAssignment.contains(_))
-      isEager   = settings.rebalanceRevokeMode == RebalanceRevokeMode.EagerMode
-      _        <- state.groupSemaphore.acquire.whenA(!(isEager && canEager))
-      queued   <- state.queue.tryTakeN(none) // safe since we acquired the semaphore beforehand
-      spillover = state.spillover
-      records   = (queued ++ spillover)
-                  .map(_.filter(r => targetAssignment.contains(r.offset.topicPartition)))
-                  .filter(_.nonEmpty)
-    } yield records
+      _                    <- state.interrupt.complete(().asRight)
+      safeToDiscard         = group.forall(!targetAssignment.contains(_))
+      isEager               = settings.rebalanceRevokeMode == RebalanceRevokeMode.EagerMode
+      skipWaitForCompletion = isEager && safeToDiscard
+      result               <- if (!skipWaitForCompletion) {
+                  for {
+                    _ <- state
+                           .groupSemaphore
+                           .acquire
+                           .timeoutTo(
+                             settings.sessionTimeout,
+                             logging.log(LogEntry.RevokeTimeoutOccurred(group, state))
+                           )
+                    queued   <- state.queue.tryTakeN(none)
+                    spillover = state.spillover
+                    records   =
+                      (queued ++ spillover)
+                        .map(_.filter(r => targetAssignment.contains(r.offset.topicPartition)))
+                        .filter(_.nonEmpty)
+                  } yield records
+                } else Nil.pure[F]
+    } yield result
 
   private def enqueueSpillOver(groupState: GroupState): F[GroupState] =
     groupState

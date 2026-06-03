@@ -18,8 +18,7 @@ import org.apache.kafka.common.TopicPartition
   * @param revokePartially
   */
 final case class PartitionGroupingCalculator(
-  groupGoal: Set[Set[TopicPartition]],
-  groupRevoke: Set[Set[TopicPartition]]
+  groupGoal: Set[Set[TopicPartition]]
 )
 
 object PartitionGroupingCalculator {
@@ -50,17 +49,11 @@ object PartitionGroupingCalculator {
     targetAssignment: Set[TopicPartition],
     existingAssignment: Set[Set[TopicPartition]],
     maxParallelism: Int
-  ): PartitionGroupingCalculator =
+  ): Set[Set[TopicPartition]] =
     if (targetAssignment == existingAssignment.flatten) {
-      PartitionGroupingCalculator(
-        existingAssignment,
-        Set.empty
-      )
+      existingAssignment
     } else if (targetAssignment.isEmpty) {
-      PartitionGroupingCalculator(
-        Set.empty,
-        existingAssignment
-      )
+      Set.empty
     } else {
       val totalGroupCount     = Math.min(targetAssignment.size, maxParallelism)
       val spilloverGroupCount = targetAssignment.size % totalGroupCount
@@ -90,11 +83,7 @@ object PartitionGroupingCalculator {
       val defaultSizeGroups = (leftUnassigned -- oversizedGroups.flatten)
         .grouped(defaultGroupSize)
         .toSet
-      PartitionGroupingCalculator(
-        groupGoal =
-          groupsToKeepWSpillover ++ groupsToKeepRegularSize ++ defaultSizeGroups ++ oversizedGroups,
-        groupRevoke = unassignDueToPartitionRevoked ++ toRevokeDueToSize
-      )
+      groupsToKeepWSpillover ++ groupsToKeepRegularSize ++ defaultSizeGroups ++ oversizedGroups
     }
 
 }

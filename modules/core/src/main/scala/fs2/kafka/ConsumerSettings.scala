@@ -397,7 +397,7 @@ sealed abstract class ConsumerSettings[F[_], K, V] {
   def withRebalanceRevokeMode(rebalanceRevokeMode: RebalanceRevokeMode): ConsumerSettings[F, K, V]
 
   /**
-    * Sets the maximum number of ....
+    * Sets the maximum number of parallel consumption streams.
     */
   def withMaxParallelism(maxParallelism: Int): ConsumerSettings[F, K, V]
 

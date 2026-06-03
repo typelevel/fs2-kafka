@@ -13,7 +13,7 @@ import scala.collection.immutable.SortedSet
 import cats.data.{NonEmptyList, NonEmptySet}
 import cats.syntax.all.*
 import fs2.kafka.instances.*
-import fs2.kafka.internal.actor.{PartitionGroupState, Request, State}
+import fs2.kafka.internal.actor.{PartitionGroupState, State}
 import fs2.kafka.internal.syntax.*
 import fs2.kafka.internal.LogLevel.*
 import fs2.kafka.CommittableConsumerRecord
@@ -112,15 +112,15 @@ private[kafka] object LogEntry {
 
   }
 
-  final case class RevokeTimeoutOccurred[F[_]](
-    revoked: Set[TopicPartition],
-    state: State[F, ?, ?]
+  final case class RevokeTimeoutOccurred[F[_], K, V](
+    group: Set[TopicPartition],
+    groupState: PartitionGroupState[F, K, V]
   ) extends LogEntry {
 
     override def level: LogLevel = Info
 
     override def message: String =
-      s"Consuming streams did not signal processing completion of [$revoked]. Current state [$state]."
+      s"Consuming streams did not signal processing completion of [$group]. Current state [$groupState]."
 
   }
 
