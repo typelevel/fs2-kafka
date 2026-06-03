@@ -61,16 +61,16 @@ object PartitionGroupingCalculator {
       val defaultGroupSize   = targetAssignment.size / totalGroupCount
       val oversizedGroupSize = defaultGroupSize + 1
 
-      val (stillAssigned, unassignDueToPartitionRevoked) =
-        existingAssignment.partition(_.forall(targetAssignment.contains))
+      val stillAssigned =
+        existingAssignment.filter(_.forall(targetAssignment.contains))
 
       val groupsToKeepWSpillover = stillAssigned
         .filter(_.size == oversizedGroupSize)
         .take(spilloverGroupCount)
 
-      val (groupsToKeepRegularSize, toRevokeDueToSize) = stillAssigned
+      val groupsToKeepRegularSize = stillAssigned
         .diff(groupsToKeepWSpillover)
-        .partition(_.size == defaultGroupSize)
+        .filter(_.size == defaultGroupSize)
 
       val leftUnassigned =
         targetAssignment -- (groupsToKeepWSpillover.flatten ++ groupsToKeepRegularSize.flatten)
