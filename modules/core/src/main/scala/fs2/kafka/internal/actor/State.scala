@@ -60,6 +60,6 @@ final case class State[F[_], K, V](
   def withNotStreaming(): State[F, K, V] = copy(streaming = false)
 
   override def toString: String =
-    s"State2(partitionGroupState = $partitionGroupState, subscribed = $subscribed, streaming = $streaming)"
+    s"State(partitionGroupState = $partitionGroupState, subscribed = $subscribed, streaming = $streaming)"
 
 }

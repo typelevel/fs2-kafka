@@ -263,7 +263,7 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
         _         <- logging.log(RevokedPartitions(toRevoke.keySet, toRevoke)).whenA(toRevoke.nonEmpty)
         spillover <- toRevoke
                        .toList
-                       .flatTraverse { case (group, state) =>
+                       .parFlatTraverse { case (group, state) =>
                          revokePartitionGroup(targetAssignment, group, state)
                        }
         spilloverMap = spillover
