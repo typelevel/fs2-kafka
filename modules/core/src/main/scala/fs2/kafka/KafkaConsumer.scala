@@ -145,37 +145,39 @@ object KafkaConsumer {
     withConsumer: WithConsumer[F],
     stopConsumingDeferred: Deferred[F, Unit]
   )(implicit
-    F: Async[F],
-    logging: Logging[F]
+    F: Async[F]
   ): KafkaConsumer[F, K, V] =
     new KafkaConsumer[F, K, V] {
-      identity(logging)
 
       override def partitionsMapStream
         : Stream[F, Map[Set[TopicPartition], Stream[F, CommittableConsumerRecord[F, K, V]]]] =
         for {
-          signal                <- Stream.eval(SignallingRef[F].of(false))
-          waitOnStopConsumingF   = Stream.eval(stopConsumingDeferred.get).as(true)
-          waitOnFiberTermination = Stream
-                                     .eval(fiber.join.flatMap(_.embed(().pure[F])))
-                                     .attempt
-                                     .evalTap(_ => signal.set(true))
-                                     .rethrow
-                                     .drain
+          interruptConsumption <- Stream.eval(SignallingRef[F].of(false))
+          waitOnGlobalStop      = for {
+                               _ <- stopConsumingDeferred.get
+                               _ <- interruptConsumption.set(true)
+                             } yield ()
+          waitOnPollFiber = Stream
+                              .eval(fiber.join.flatMap(_.embed(().pure[F])))
+                              .attempt
+                              .evalTap(_ => interruptConsumption.set(true))
+                              .rethrow
+                              .drain
           resultS = actor
                       .consume()
-                      .map(
-                        _.view
+                      .map(assignment =>
+                        assignment
+                          .view
                           .map { case (k, v) =>
-                            k -> v
-                              .unchunks
-                              .interruptWhen(signal)
-                              .interruptWhen(waitOnStopConsumingF)
+                            k -> v.unchunks.interruptWhen(interruptConsumption)
                           }
                           .toMap
                       )
           result <-
-            resultS.mergeHaltBoth(waitOnFiberTermination).interruptWhen(waitOnStopConsumingF)
+            resultS
+              .mergeHaltBoth(waitOnPollFiber)
+              .mergeHaltBoth(Stream.eval(waitOnGlobalStop).drain)
+              .interruptWhen(interruptConsumption)
         } yield result
 
       override def partitionedStream: Stream[F, Stream[F, CommittableConsumerRecord[F, K, V]]] =
@@ -438,7 +440,7 @@ object KafkaConsumer {
       id,
       withConsumer,
       stopConsumingDeferred
-    )(F, logging)
+    )(F)
 
   /**
     * Creates a new [[KafkaConsumer]] in the `Stream` context, using the specified

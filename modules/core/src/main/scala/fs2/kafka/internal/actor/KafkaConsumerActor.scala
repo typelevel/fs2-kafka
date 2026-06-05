@@ -34,17 +34,35 @@ import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.TopicPartition
 
 /**
-  * [[KafkaConsumerActor]] wraps a Java `KafkaConsumer` and works similar to a traditional actor, in
-  * the sense that it receives requests one at-a-time via a queue, which are received as calls to
-  * the `handle` function. `Poll` requests are scheduled at a fixed interval and, when handled,
-  * calls the `KafkaConsumer#poll` function, allowing the Java consumer to perform necessary
-  * background functions, and to return fetched records.<br><br>
+  * [[KafkaConsumerActor]] wraps a Java `KafkaConsumer` and works like a traditional actor: it
+  * receives requests one-at-a-time via a queue, handled by `handle`.
   *
-  * The actor receives `Fetch` requests for topic-partitions for which there is demand. The actor
-  * then attempts to fetch records for topic-partitions where there is a `Fetch` request. For
-  * topic-partitions where there is no request, no attempt to fetch records is made. This
-  * effectively enables backpressure, as long as `Fetch` requests are only issued when there is more
-  * demand.
+  * Its goal is to stream records for a topic(s) as fast as possible while keeping parallelism
+  * bounded: partitions are bundled into at most `maxParallel` groups (see
+  * [[PartitionGroupingCalculator]]), and each group is drained by its own stream.
+  *
+  * ==Consumption flow==
+  *
+  * With `subscribe` (topic or pattern) the call simply proxies the underlying consumer, and the
+  * actual partitions are discovered later through the rebalance listener. With `assign` the call is
+  * also proxied, but we additionally seed the internal state so it already reflects the manual
+  * assignment.
+  *
+  * Once the user starts consuming, scheduled `Poll` requests drive everything. On each poll we
+  * first apply backpressure: partitions whose group queue is backed up (has spillover) are paused,
+  * and the rest are resumed. Then `KafkaConsumer#poll` is called. If we got here via `subscribe`,
+  * that poll is what fires the rebalance listeners, so the internal state ends up with the queues
+  * it needs; if we got here via `assign`, the state was already in place. Fetched records are
+  * handed to the queue of their owning group, and whatever does not fit is parked in that group's
+  * spillover list to be retried on the next poll.
+  *
+  * ==Rebalance flow==
+  *
+  * A rebalance invokes the rebalance listeners, and assigning or revoking partitions follows the
+  * same path: we compute the new assignment by adding/removing the affected partitions, then ask
+  * [[PartitionGroupingCalculator]] for the target grouping. Groups whose partitions all survive in
+  * the new grouping are left untouched; any group that loses a partition (or gets folded into a
+  * different group) is revoked.
   */
 final private[kafka] class KafkaConsumerActor[F[_], K, V](
   settings: ConsumerSettings[F, K, V],
@@ -105,31 +123,6 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
     * assignment is realigned (subscribe, rebalance).
     *
     * Partition groups
-    *
-    * Assigned partitions are split into up to `maxParallel` groups, each consumed by its own
-    * downstream fiber. Groups are sized as evenly as possible; see [[PartitionGroupingCalculator]].
-    *
-    * Rebalance and partial partition loss
-    *
-    * A rebalance may revoke only some partitions from what was previously one group (e.g.
-    * `{p0, p1, p2}` loses `p1`). Groups whose membership or size is no longer valid are revoked:
-    * their record stream is interrupted, buffered records are drained from the group's queue and
-    * spillover, and chunks for partitions that are still assigned are re-enqueued into the
-    * appropriate new group(s).
-    *
-    * Groups that still match the target assignment and sizing are kept as-is and keep streaming.
-    *
-    * Synchronization
-    *
-    * Each group owns a binary semaphore (`groupSemaphore`). Record consumption acquires it with
-    * `tryPermit` and the permit is held until the stream is interrupted; On reassignment
-    * (`alignPartitionState`) the stream is interrupted which eventually leads to the permit being
-    * released. Once that happens it is safe to drain the state held in the queues and spillover
-    * buffers. Only the consumption or reassignment may touch a group's buffer at any time, which
-    * makes draining on revoke safe.
-    *
-    * TODO: document the need to have the assignment get the state first and only then subscribe
-    * (due to the "double usage" of consume())
     */
   def consume()
     : Stream[F, Map[Set[TopicPartition], Stream[F, Chunk[CommittableConsumerRecord[F, K, V]]]]] =
@@ -328,7 +321,7 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
                            .acquire
                            .timeoutTo(
                              settings.sessionTimeout,
-                             logging.log(LogEntry.RevokeTimeoutOccurred(group, state))
+                             logging.log(LogEntry.RevokeTimeoutOccurred(group, state)) // TODO: throw exception here ?
                            )
                     queued   <- state.queue.tryTakeN(none)
                     spillover = state.spillover
