@@ -1,13 +1,13 @@
 val avroVersion                = "1.12.1"
 val catsEffectVersion          = "3.7.0"
 val catsVersion                = "2.13.0"
-val confluentVersion           = "8.2.0"
+val confluentVersion           = "8.2.1"
 val disciplineVersion          = "2.3.0"
 val fs2Version                 = "3.13.0"
 val kafkaVersion               = "4.2.0"
 val logbackVersion             = "1.5.32"
-val munitVersion               = "1.3.0"
-val slf4jVersion               = "1.7.36"
+val munitVersion               = "1.3.1"
+val slf4jVersion               = "2.0.18"
 val testcontainersScalaVersion = "0.44.1"
 val vulcanVersion              = "1.13.0"
 
@@ -15,7 +15,7 @@ val scala212 = "2.12.21"
 val scala213 = "2.13.18"
 val scala3   = "3.3.7"
 
-ThisBuild / tlBaseVersion := "4.0"
+ThisBuild / tlBaseVersion := "4.1"
 
 lazy val root = project
   .in(file("."))
@@ -265,7 +265,8 @@ lazy val publishSettings =
 ThisBuild / mimaBinaryIssueFilters ++= {
   import com.typesafe.tools.mima.core.*
   Seq(
-    ProblemFilters.exclude[Problem]("fs2.kafka.internal.*")
+    ProblemFilters.exclude[Problem]("fs2.kafka.internal.*"),
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("fs2.kafka.KafkaConsumer.settings")
   )
 }
 

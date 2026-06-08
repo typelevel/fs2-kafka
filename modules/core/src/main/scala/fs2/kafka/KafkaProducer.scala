@@ -145,6 +145,24 @@ abstract class KafkaProducer[F[_], K, V] {
 
 object KafkaProducer {
 
+  trait WithSettings[F[_], K, V] extends KafkaProducer[F, K, V] {
+
+    /**
+      * Returns the settings used to create the producer instance.
+      */
+    def settings: ProducerSettings[F, K, V]
+
+    /**
+      * Returns a new [[KafkaProducer]] using the same underlying producer but with different key
+      * and value serializers.
+      */
+    def withSerializers[K2, V2](
+      keySerializer: KeySerializer[F, K2],
+      valueSerializer: ValueSerializer[F, V2]
+    ): KafkaProducer.WithSettings[F, K2, V2]
+
+  }
+
   implicit class ProducerOps[F[_], K, V](private val producer: KafkaProducer[F, K, V])
       extends AnyVal {
 
@@ -193,7 +211,11 @@ object KafkaProducer {
     */
   def stream[F[_], K, V](
     settings: ProducerSettings[F, K, V]
-  )(implicit F: Async[F], mk: MkProducer[F], P: Parallel[F]): Stream[F, KafkaProducer[F, K, V]] =
+  )(implicit
+    F: Async[F],
+    mk: MkProducer[F],
+    P: Parallel[F]
+  ): Stream[F, KafkaProducer.WithSettings[F, K, V]] =
     Stream.resource(KafkaProducer.resource(settings)(F, mk, P))
 
   /**
@@ -209,7 +231,7 @@ object KafkaProducer {
     F: Async[F],
     mk: MkProducer[F],
     P: Parallel[F]
-  ): Resource[F, KafkaProducer[F, K, V]] = {
+  ): Resource[F, KafkaProducer.WithSettings[F, K, V]] = {
     for {
       producer <- KafkaProducer.resource(settings)(F, mk, P)
       _        <- producer.initTransactions.toResource
@@ -229,7 +251,7 @@ object KafkaProducer {
     F: Async[F],
     mk: MkProducer[F],
     P: Parallel[F]
-  ): Stream[F, KafkaProducer[F, K, V]] =
+  ): Stream[F, KafkaProducer.WithSettings[F, K, V]] =
     Stream.resource(transactional(settings)(F, mk, P))
 
   /**
@@ -267,7 +289,7 @@ object KafkaProducer {
     F: Async[F],
     mk: MkProducer[F],
     P: Parallel[F]
-  ): Resource[F, KafkaProducer[F, K, V]] = {
+  ): Resource[F, KafkaProducer.WithSettings[F, K, V]] = {
     for {
       keySerializer   <- settings.keySerializer
       valueSerializer <- settings.valueSerializer
@@ -278,7 +300,7 @@ object KafkaProducer {
       close            = blocking(producer.close(java.time.Duration.ofMillis(settings.closeTimeout.toMillis)))
       _               <- Resource.onFinalize(close)
       fs2KafkaProducer = resourceInternal[F, K, V](
-                           settings.failFastProduce,
+                           settings,
                            keySerializer,
                            valueSerializer,
                            producer,
@@ -289,17 +311,17 @@ object KafkaProducer {
   }
 
   private def resourceInternal[F[_], K, V](
-    failFastProduce: Boolean,
+    settings: ProducerSettings[F, K, V],
     keySerializer: KeySerializer[F, K],
     valueSerializer: ValueSerializer[F, V],
     producer: KafkaByteProducer,
     txSemaphore: Semaphore[F],
     blocking: Blocking[F]
-  )(implicit F: Async[F], P: Parallel[F]): KafkaProducer[F, K, V] =
-    new KafkaProducer[F, K, V] {
-
+  )(implicit F: Async[F], P: Parallel[F]): KafkaProducer.WithSettings[F, K, V] = {
+    val _settings = settings
+    new KafkaProducer.WithSettings[F, K, V] {
       override def produce(records: ProducerRecords[K, V]): F[F[ProducerResult[K, V]]] = {
-        if (failFastProduce)
+        if (settings.failFastProduce)
           Async[F]
             .delay(Promise[Throwable]())
             .flatMap { produceRecordError =>
@@ -420,12 +442,23 @@ object KafkaProducer {
       def withSerializers[K2, V2](
         k: KeySerializer[F, K2],
         v: ValueSerializer[F, V2]
-      ): KafkaProducer[F, K2, V2] =
-        resourceInternal[F, K2, V2](failFastProduce, k, v, producer, txSemaphore, blocking)
+      ): KafkaProducer.WithSettings[F, K2, V2] =
+        resourceInternal[F, K2, V2](
+          settings = settings.withSerializers(Resource.pure(k), Resource.pure(v)),
+          keySerializer = k,
+          valueSerializer = v,
+          producer = producer,
+          txSemaphore = txSemaphore,
+          blocking = blocking
+        )
+
+      override def settings: ProducerSettings[F, K, V] =
+        _settings
 
       override def toString: String =
         "KafkaProducer$" + System.identityHashCode(this)
     }
+  }
 
   private[this] def serializeToBytes[F[_], K, V](
     keySerializer: KeySerializer[F, K],
@@ -476,7 +509,7 @@ object KafkaProducer {
       F: Async[F],
       mk: MkProducer[F],
       P: Parallel[F]
-    ): Resource[F, KafkaProducer[F, K, V]] =
+    ): Resource[F, KafkaProducer.WithSettings[F, K, V]] =
       KafkaProducer.resource(settings)(F, mk, P)
 
     /**
@@ -492,7 +525,7 @@ object KafkaProducer {
       F: Async[F],
       mk: MkProducer[F],
       P: Parallel[F]
-    ): Stream[F, KafkaProducer[F, K, V]] =
+    ): Stream[F, KafkaProducer.WithSettings[F, K, V]] =
       KafkaProducer.stream(settings)(F, mk, P)
 
     override def toString: String =

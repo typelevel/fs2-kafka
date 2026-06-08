@@ -74,7 +74,7 @@ import org.apache.kafka.common.TopicPartition
   * per [[KafkaConsumer]], and if you want to start a new stream if the first one finishes, let the
   * [[KafkaConsumer]] shutdown and create a new one.
   */
-sealed abstract class KafkaConsumer[F[_], K, V]
+abstract class KafkaConsumer[F[_], K, V]
     extends KafkaConsume[F, K, V]
     with KafkaConsumeChunk[F, K, V]
     with KafkaAssignment[F]
@@ -83,7 +83,13 @@ sealed abstract class KafkaConsumer[F[_], K, V]
     with KafkaTopics[F]
     with KafkaCommit[F]
     with KafkaMetrics[F]
-    with KafkaConsumerLifecycle[F]
+    with KafkaConsumerLifecycle[F] {
+
+  /**
+    * Returns the settings used to create the consumer instance.
+    */
+  def settings: ConsumerSettings[F, K, V]
+}
 
 object KafkaConsumer {
 
@@ -139,14 +145,14 @@ object KafkaConsumer {
 
   private def createKafkaConsumer[F[_], K, V](
     requests: QueueSink[F, Request[F, K, V]],
+    settings: ConsumerSettings[F, K, V],
     actor: KafkaConsumerActor[F, K, V],
     fiber: Fiber[F, Throwable, Unit],
     id: Int,
     withConsumer: WithConsumer[F],
     stopConsumingDeferred: Deferred[F, Unit]
-  )(implicit
-    F: Async[F]
-  ): KafkaConsumer[F, K, V] =
+  )(implicit F: Async[F]): KafkaConsumer[F, K, V] = {
+    val _settings = settings
     new KafkaConsumer[F, K, V] {
 
       override def partitionsMapStream
@@ -377,7 +383,11 @@ object KafkaConsumer {
 
       override def groupMetadata: F[ConsumerGroupMetadata] =
         withConsumer.blocking(_.groupMetadata())
+
+      override def settings: ConsumerSettings[F, K, V] =
+        _settings
     }
+  }
 
   /**
     * Creates a new [[KafkaConsumer]] in the `Resource` context, using the specified
@@ -435,6 +445,7 @@ object KafkaConsumer {
       fiber <- startBackgroundConsumer(requests, polls, actor, settings.pollInterval)
     } yield createKafkaConsumer(
       requests,
+      settings,
       actor,
       fiber,
       id,
