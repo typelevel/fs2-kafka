@@ -691,18 +691,14 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
               .compile
               .drain
               .start
-          _                                                    <- waitForRecords(consumer2Records, 1)
-          _                                                    <- stopSignal.set(true)
-          (consumer1AssignmentsResult, consumer1RecordsResult) <-
-            fiber1.joinWith(
-              IO(fail("Did not expect cancellation"))
-            )
-          (consumer2AssignmentsResult, consumer2RecordsResult) <-
-            fiber2.joinWith(
-              IO(fail("Did not expect cancellation"))
-            )
-          _ <- publisherFiber.joinWithNever
+          _               <- waitForRecords(consumer2Records, 1)
+          _               <- stopSignal.set(true)
+          consumer1Result <- fiber1.joinWith(IO(fail("Did not expect cancellation")))
+          consumer2Result <- fiber2.joinWith(IO(fail("Did not expect cancellation")))
+          _               <- publisherFiber.joinWithNever
         } yield {
+          val (consumer1AssignmentsResult, consumer1RecordsResult) = consumer1Result
+          val (consumer2AssignmentsResult, consumer2RecordsResult) = consumer2Result
           for {
             assignment <- consumer1AssignmentsResult
           } assert(assignment.size <= 2)
