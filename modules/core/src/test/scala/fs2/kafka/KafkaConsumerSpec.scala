@@ -631,24 +631,24 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
         ): IO[FiberIO[(List[Set[Set[TopicPartition]]], Int)]] =
           for {
             fiber <- (
-              for {
-                consumer <- KafkaConsumer
-                              .stream(consumerSettings[IO].withMaxParallelism(2))
-                              .subscribeTo(topic)
-                assignment <- consumer.partitionsMapStream
-                _          <- Stream.eval(assignmentsRef.update(_ :+ assignment.keySet))
-              } yield Stream.emits(
-                for {
-                  (_, partitionStream) <- assignment.toList
-                } yield partitionStream.evalMap(_ => recordsRef.update(_ + 1))
-              )
-            ).flatten
-              .parJoinUnbounded
-              .interruptWhen(stopSignal)
-              .compile
-              .drain
-              .flatMap(_ => (assignmentsRef.get, recordsRef.get).mapN((_, _)))
-              .start
+                       for {
+                         consumer <- KafkaConsumer
+                                       .stream(consumerSettings[IO].withMaxParallelism(2))
+                                       .subscribeTo(topic)
+                         assignment <- consumer.partitionsMapStream
+                         _          <- Stream.eval(assignmentsRef.update(_ :+ assignment.keySet))
+                       } yield Stream.emits(
+                         for {
+                           (_, partitionStream) <- assignment.toList
+                         } yield partitionStream.evalMap(_ => recordsRef.update(_ + 1))
+                       )
+                     ).flatten
+                       .parJoinUnbounded
+                       .interruptWhen(stopSignal)
+                       .compile
+                       .drain
+                       .flatMap(_ => (assignmentsRef.get, recordsRef.get).mapN((_, _)))
+                       .start
           } yield fiber
 
         def waitForRecords(recordsRef: Ref[IO, Int], count: Int): IO[Unit] =
@@ -661,43 +661,47 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
             .drain
 
         (for {
-          stopSignal             <- SignallingRef[IO, Boolean](false)
-          consumer1Records       <- Ref.of[IO, Int](0)
-          consumer2Records       <- Ref.of[IO, Int](0)
-          consumer1Assignments   <- Ref.of[IO, List[Set[Set[TopicPartition]]]](Nil)
-          consumer2Assignments   <- Ref.of[IO, List[Set[Set[TopicPartition]]]](Nil)
-          batchRef               <- Ref.of[IO, Int](0)
-          fiber1                 <- startConsumer(stopSignal, consumer1Records, consumer1Assignments)
-          _                      <- IO.sleep(5.seconds)
-          initialRecords          = (0 until partitionCount).toList.map(p => recordForPartition(p, s"0-$p"))
-          _                       = publishToKafka(initialRecords)
-          _                      <- waitForRecords(consumer1Records, partitionCount)
-          fiber2                 <- startConsumer(stopSignal, consumer2Records, consumer2Assignments)
-          publisherFiber         <- (
-                                     Stream
-                                       .awakeEvery[IO](500.millis)
-                                       .evalMap { _ =>
-                                         for {
-                                           batch <- batchRef.getAndUpdate(_ + 1)
-                                           records = (0 until partitionCount).toList.map { partition =>
-                                             recordForPartition(partition, s"$batch-$partition")
-                                           }
-                                           _ <- IO(publishToKafka(records))
-                                         } yield ()
-                                       }
-                                       .interruptWhen(stopSignal)
-                                       .compile
-                                       .drain
-                                   ).start
-          _                      <- waitForRecords(consumer2Records, 1)
-          _                      <- stopSignal.set(true)
-          (consumer1AssignmentsResult, consumer1RecordsResult) <- fiber1.joinWith(
-                                                                    IO(fail("Did not expect cancellation"))
-                                                                  )
-          (consumer2AssignmentsResult, consumer2RecordsResult) <- fiber2.joinWith(
-                                                                    IO(fail("Did not expect cancellation"))
-                                                                  )
-          _                      <- publisherFiber.joinWithNever
+          stopSignal           <- SignallingRef[IO, Boolean](false)
+          consumer1Records     <- Ref.of[IO, Int](0)
+          consumer2Records     <- Ref.of[IO, Int](0)
+          consumer1Assignments <- Ref.of[IO, List[Set[Set[TopicPartition]]]](Nil)
+          consumer2Assignments <- Ref.of[IO, List[Set[Set[TopicPartition]]]](Nil)
+          batchRef             <- Ref.of[IO, Int](0)
+          fiber1               <- startConsumer(stopSignal, consumer1Records, consumer1Assignments)
+          _                    <- IO.sleep(5.seconds)
+          initialRecords        = (0 until partitionCount).toList.map(p => recordForPartition(p, s"0-$p"))
+          _                     = publishToKafka(initialRecords)
+          _                    <- waitForRecords(consumer1Records, partitionCount)
+          fiber2               <- startConsumer(stopSignal, consumer2Records, consumer2Assignments)
+          publisherFiber       <-
+            Stream
+              .awakeEvery[IO](500.millis)
+              .evalMap { _ =>
+                for {
+                  batch  <- batchRef.getAndUpdate(_ + 1)
+                  records = (0 until partitionCount)
+                              .toList
+                              .map { partition =>
+                                recordForPartition(partition, s"$batch-$partition")
+                              }
+                  _ <- IO(publishToKafka(records))
+                } yield ()
+              }
+              .interruptWhen(stopSignal)
+              .compile
+              .drain
+              .start
+          _                                                    <- waitForRecords(consumer2Records, 1)
+          _                                                    <- stopSignal.set(true)
+          (consumer1AssignmentsResult, consumer1RecordsResult) <-
+            fiber1.joinWith(
+              IO(fail("Did not expect cancellation"))
+            )
+          (consumer2AssignmentsResult, consumer2RecordsResult) <-
+            fiber2.joinWith(
+              IO(fail("Did not expect cancellation"))
+            )
+          _ <- publisherFiber.joinWithNever
         } yield {
           for {
             assignment <- consumer1AssignmentsResult
