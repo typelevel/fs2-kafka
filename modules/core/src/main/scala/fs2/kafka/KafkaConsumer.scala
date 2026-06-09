@@ -22,6 +22,7 @@ import cats.instances.all.*
 import cats.syntax.all.*
 import cats.Foldable
 import cats.Reducible
+import fs2.{Chunk, Stream}
 import fs2.concurrent.SignallingRef
 import fs2.kafka.consumer.*
 import fs2.kafka.consumer.KafkaConsumeChunk.CommitNow
@@ -33,8 +34,6 @@ import fs2.kafka.internal.actor.Request
 import fs2.kafka.internal.actor.State
 import fs2.kafka.internal.converters.collection.*
 import fs2.kafka.internal.syntax.*
-import fs2.Chunk
-import fs2.Stream
 
 import org.apache.kafka.clients.consumer.ConsumerGroupMetadata
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
@@ -155,7 +154,7 @@ object KafkaConsumer {
     val _settings = settings
     new KafkaConsumer[F, K, V] {
 
-      override def partitionsMapStream
+      override def groupedPartitionsMapStream
         : Stream[F, Map[Set[TopicPartition], Stream[F, CommittableConsumerRecord[F, K, V]]]] =
         for {
           interruptConsumption <- Stream.eval(SignallingRef[F].of(false))
@@ -185,6 +184,61 @@ object KafkaConsumer {
               .mergeHaltBoth(Stream.eval(waitOnGlobalStop).drain)
               .interruptWhen(interruptConsumption)
         } yield result
+
+      override def partitionsMapStream
+        : Stream[F, Map[TopicPartition, Stream[F, CommittableConsumerRecord[F, K, V]]]] = {
+        for {
+          assignment     <- groupedPartitionsMapStream
+          assignmentList <- assignment
+                              .toList
+                              .traverse { case (tps, records) =>
+                                if (tps.size == 1) {
+                                  Stream.emit(Map(tps.head -> records)).covary[F]
+                                } else {
+                                  for {
+                                    interrupt  <- Stream.eval(Deferred[F, Either[Throwable, Unit]])
+                                    initialize <- Stream.eval(Deferred[F, Unit])
+                                    queues     <- Stream.eval(
+                                                tps
+                                                  .toList
+                                                  .traverse(
+                                                    Queue
+                                                      .bounded[F, Chunk[
+                                                        CommittableConsumerRecord[F, K, V]
+                                                      ]](1)
+                                                      .tupleLeft
+                                                  )
+                                              )
+                                    queuesMap = queues.toMap
+                                    enqueueS  = (for {
+                                                 isFirst <- Stream.eval(initialize.complete(()))
+                                                 result  <-
+                                                   if (isFirst)
+                                                     records
+                                                       .chunks
+                                                       .evalMap(chunk =>
+                                                         queuesMap(
+                                                           chunk.head.get.offset.topicPartition
+                                                         ).offer(chunk)
+                                                       )
+                                                       .drain
+                                                   else Stream.never
+                                               } yield result).onFinalize(
+                                                 interrupt.complete(().asRight).void
+                                               )
+                                    streams = queues.map { case (k, q) =>
+                                                k -> Stream
+                                                  .fromQueueUnterminatedChunk(q)
+                                                  .interruptWhen(interrupt)
+                                                  .onFinalize(interrupt.complete(().asRight).void)
+                                                  .mergeHaltBoth(enqueueS)
+                                              }
+                                  } yield streams.toMap
+                                }
+                              }
+          result = assignmentList.foldMap(identity)
+        } yield result
+      }
 
       override def partitionedStream: Stream[F, Stream[F, CommittableConsumerRecord[F, K, V]]] =
         partitionsMapStream.flatMap(partitionsMap => Stream.iterable(partitionsMap.values))

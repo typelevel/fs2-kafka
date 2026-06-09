@@ -131,25 +131,21 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
         Stream.eval(
           state.get.map(_.subscribed).ifM(().pure[F], NotSubscribedException().raiseError[F, Unit])
         )
-      _ <-
-        Stream.resource(
-          Resource.make(state.update(_.withStreaming()))(_ => state.update(_.withNotStreaming()))
-        )
-      assignment <- (Stream.eval(state.get.map(_.partitionGroupState)).filter(_.nonEmpty) ++ Stream
-                      .fromQueueNoneTerminated(assignment))
-                      .evalTap(assignment =>
-                        currentAssignmentRef.set(SortedSet(assignment.keys.toList.flatten: _*).some)
-                      )
-                      .map { assignment =>
-                        assignment.map { case (k, state) =>
-                          k ->
-                            (for {
-                              hasPermit <- Stream.resource(state.groupSemaphore.tryPermit)
-                              result    <- if (hasPermit) Stream.fromQueueUnterminated(state.queue)
-                                        else Stream.empty
-                            } yield result).interruptWhen(state.interrupt)
-                        }
+      _ <- Stream.resource(
+             Resource.make(state.update(_.withStreaming()))(_ => state.update(_.withNotStreaming()))
+           )
+      assignments0      = Stream.eval(state.get.map(_.partitionGroupState)).filter(_.nonEmpty)
+      assignmentUpdates = Stream.fromQueueNoneTerminated(assignment)
+      assignment       <- (assignments0 ++ assignmentUpdates).map { assignment =>
+                      assignment.map { case (k, state) =>
+                        k ->
+                          (for {
+                            hasPermit <- Stream.resource(state.groupSemaphore.tryPermit)
+                            result    <- if (hasPermit) Stream.fromQueueUnterminated(state.queue)
+                                      else Stream.empty
+                          } yield result).interruptWhen(state.interrupt)
                       }
+                    }
     } yield assignment
 
   def assignments: Stream[F, SortedSet[TopicPartition]] =
@@ -299,7 +295,15 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
                              )
                            }
         newState = newPartitions.toMap ++ toKeep
-        _       <- assignment.offer(newState.some).whenA(newState.keys.toSet != state.keys.toSet)
+        _       <- newPartitions
+               .toMap
+               .some
+               .filter(_.nonEmpty)
+               .map(_.some)
+               .traverse(assignment.offer)
+               .whenA(newState.keySet != state.keySet)
+        newStateSet = SortedSet(newState.keys.toList.flatten: _*)
+        _          <- currentAssignmentRef.set(newStateSet.some)
       } yield newState
     }
   }
