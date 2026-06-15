@@ -9,9 +9,9 @@ package fs2.kafka.internal.actor
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.TopicPartition
 
-sealed abstract class Request[F[_], -K, -V]
+sealed abstract private[kafka] class Request[F[_], -K, -V]
 
-object Request {
+private[kafka] object Request {
 
   final case class WithPermit[F[_], A](fa: F[A], callback: Either[Throwable, A] => F[Unit])
       extends Request[F, Any, Any]

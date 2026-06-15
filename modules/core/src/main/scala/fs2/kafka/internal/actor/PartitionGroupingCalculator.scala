@@ -17,11 +17,11 @@ import org.apache.kafka.common.TopicPartition
   * @param revokeFull
   * @param revokePartially
   */
-final case class PartitionGroupingCalculator(
+final private[kafka] case class PartitionGroupingCalculator(
   groupGoal: Set[Set[TopicPartition]]
 )
 
-object PartitionGroupingCalculator {
+private[kafka] object PartitionGroupingCalculator {
 
   /**
     * Computes the partition groups for `targetAssignment`.

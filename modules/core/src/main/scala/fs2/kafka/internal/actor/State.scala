@@ -15,7 +15,7 @@ import fs2.Chunk
 
 import org.apache.kafka.common.TopicPartition
 
-object State {
+private[kafka] object State {
 
   def empty[F[_]: Async, K, V] =
     State[F, K, V](
@@ -26,7 +26,7 @@ object State {
 
 }
 
-case class PartitionGroupState[F[_], K, V](
+final private[kafka] case class PartitionGroupState[F[_], K, V](
   groupSemaphore: Semaphore[F],
   interrupt: Deferred[F, Either[Throwable, Unit]],
   queue: Queue[F, Chunk[CommittableConsumerRecord[F, K, V]]],
@@ -38,7 +38,7 @@ case class PartitionGroupState[F[_], K, V](
 
 }
 
-final case class State[F[_], K, V](
+final private[kafka] case class State[F[_], K, V](
   partitionGroupState: Map[Set[TopicPartition], PartitionGroupState[F, K, V]],
   subscribed: Boolean,
   streaming: Boolean
