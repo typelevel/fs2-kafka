@@ -398,9 +398,20 @@ sealed abstract class ConsumerSettings[F[_], K, V] {
 
   /**
     * Sets the maximum number of parallel consumption streams.
+    *
+    * @see
+    *   [[KafkaConsumeGrouped.groupedPartitionsMapStream]]
     */
   def withMaxParallelism(maxParallelism: Int): ConsumerSettings[F, K, V]
 
+  /**
+    * Returns the maximum number of parallel consumption streams.
+    *
+    * The default is `Int.MaxValue` (unbounded consumption streams).
+    *
+    * @see
+    *   [[KafkaConsumeGrouped.groupedPartitionsMapStream]]
+    */
   def maxParallelism: Int
 
 }
