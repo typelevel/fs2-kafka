@@ -264,10 +264,23 @@ lazy val publishSettings =
 
 ThisBuild / mimaBinaryIssueFilters ++= {
   import com.typesafe.tools.mima.core.*
+  // scalafmt: { maxColumn = 200 }
   Seq(
     ProblemFilters.exclude[Problem]("fs2.kafka.internal.*"),
-    ProblemFilters.exclude[ReversedMissingMethodProblem]("fs2.kafka.KafkaConsumer.settings")
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("fs2.kafka.KafkaConsumer.settings"),
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("fs2.kafka.ConsumerSettings.withMaxParallelism"),
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("fs2.kafka.ConsumerSettings.maxParallelism"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.kafka.ConsumerSettings#ConsumerSettingsImpl.copy"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.kafka.ConsumerSettings#ConsumerSettingsImpl.this"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.kafka.ConsumerSettings#ConsumerSettingsImpl.apply"),
+    ProblemFilters.exclude[MissingClassProblem]("fs2.kafka.KafkaConsumer$AssignmentSignals"),
+    ProblemFilters.exclude[MissingClassProblem]("fs2.kafka.KafkaConsumer$AssignmentSignals$"),
+    ProblemFilters.exclude[MissingClassProblem]("fs2.kafka.KafkaConsumer$AssignmentSignals$EagerSignals"),
+    ProblemFilters.exclude[MissingClassProblem]("fs2.kafka.KafkaConsumer$AssignmentSignals$EagerSignals$"),
+    ProblemFilters.exclude[MissingClassProblem]("fs2.kafka.KafkaConsumer$AssignmentSignals$GracefulSignals"),
+    ProblemFilters.exclude[MissingClassProblem]("fs2.kafka.KafkaConsumer$AssignmentSignals$GracefulSignals$")
   )
+  // scalafmt: {}
 }
 
 lazy val noMimaSettings = Seq(mimaPreviousArtifacts := Set())
