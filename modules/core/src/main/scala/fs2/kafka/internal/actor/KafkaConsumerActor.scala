@@ -154,7 +154,7 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
   def assign(partitions: NonEmptySet[TopicPartition]): F[Unit] =
     F.uncancelable { _ =>
       withConsumer.blocking(_.assign(partitions.toSortedSet.toList.asJava))
-    } *> state.evalUpdate { s =>
+    } >> state.evalUpdate { s =>
       for {
         groups <- alignPartitionState(partitions.toSortedSet, Map.empty)
         next    = s.withGroupState(groups).withSubscribed()
@@ -213,7 +213,7 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
                .values
                .toList
                .parTraverse(group =>
-                 group.interrupt.complete(().asRight) *> group.groupSemaphore.acquire
+                 group.interrupt.complete(().asRight) >> group.groupSemaphore.acquire
                )
         newState = state.withUnsubscribed()
         _       <- withConsumer.blocking(_.unsubscribe())
