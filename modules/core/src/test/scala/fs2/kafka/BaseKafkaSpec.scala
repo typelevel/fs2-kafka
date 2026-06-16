@@ -262,40 +262,6 @@ abstract class BaseKafkaSpec extends BaseAsyncSpec with ForAllTestContainer {
       new KProducerRecord[String, T](topic, message)
     )
 
-  def publishToKafka[K, V](records: List[ProducerRecord[K, V]])(implicit
-    keySerializer: KafkaSerializer[K],
-    valueSerializer: KafkaSerializer[V]
-  ): Unit = {
-    val producer =
-      new KProducer(
-        defaultProducerConfig.asInstanceOf[Map[String, Object]].asJava,
-        keySerializer,
-        valueSerializer
-      )
-
-    records.foreach { record =>
-      val javaRecord = new KProducerRecord(
-        record.topic,
-        record.partition.map(_.asInstanceOf[java.lang.Integer]).orNull,
-        record.key,
-        record.value
-      )
-
-      val sendResult = Try {
-        producer.send(javaRecord).get(producerPublishTimeout.length, producerPublishTimeout.unit)
-      }
-
-      sendResult match {
-        case Failure(ex) =>
-          producer.close()
-          throw new Exception("Kafka unavailable", ex)
-        case _ => ()
-      }
-    }
-
-    producer.close()
-  }
-
   private def publishToKafka[K, T](
     kafkaProducer: KProducer[K, T],
     record: KProducerRecord[K, T]
