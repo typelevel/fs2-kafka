@@ -90,6 +90,13 @@ abstract class KafkaConsumer[F[_], K, V]
   def settings: ConsumerSettings[F, K, V]
 }
 
+/**
+  * [[KafkaConsumer]] with [[KafkaConsumeGrouped]] to maintain backwards compatibility.
+  */
+abstract class KafkaConsumerGrouped[F[_], K, V]
+    extends KafkaConsumer[F, K, V]
+    with KafkaConsumeGrouped[F, K, V]
+
 object KafkaConsumer {
 
   /**
@@ -150,9 +157,9 @@ object KafkaConsumer {
     id: Int,
     withConsumer: WithConsumer[F],
     stopConsumingDeferred: Deferred[F, Unit]
-  )(implicit F: Async[F]): KafkaConsumer[F, K, V] = {
+  )(implicit F: Async[F]): KafkaConsumerGrouped[F, K, V] = {
     val _settings = settings
-    new KafkaConsumer[F, K, V] {
+    new KafkaConsumerGrouped[F, K, V] {
 
       override def groupedPartitionsMapStream
         : Stream[F, Map[Set[TopicPartition], Stream[F, CommittableConsumerRecord[F, K, V]]]] =
@@ -457,7 +464,7 @@ object KafkaConsumer {
   )(implicit
     F: Async[F],
     mk: MkConsumer[F]
-  ): Resource[F, KafkaConsumer[F, K, V]] =
+  ): Resource[F, KafkaConsumerGrouped[F, K, V]] =
     for {
       keyDeserializer   <- settings.keyDeserializer
       valueDeserializer <- settings.valueDeserializer
@@ -521,7 +528,7 @@ object KafkaConsumer {
   )(implicit
     F: Async[F],
     mk: MkConsumer[F]
-  ): Stream[F, KafkaConsumer[F, K, V]] =
+  ): Stream[F, KafkaConsumerGrouped[F, K, V]] =
     Stream.resource(resource(settings)(F, mk))
 
   def apply[F[_]]: ConsumerPartiallyApplied[F] =
@@ -544,7 +551,7 @@ object KafkaConsumer {
     )(implicit
       F: Async[F],
       mk: MkConsumer[F]
-    ): Resource[F, KafkaConsumer[F, K, V]] =
+    ): Resource[F, KafkaConsumerGrouped[F, K, V]] =
       KafkaConsumer.resource(settings)(F, mk)
 
     /**
@@ -561,7 +568,7 @@ object KafkaConsumer {
     )(implicit
       F: Async[F],
       mk: MkConsumer[F]
-    ): Stream[F, KafkaConsumer[F, K, V]] =
+    ): Stream[F, KafkaConsumerGrouped[F, K, V]] =
       KafkaConsumer.stream(settings)(F, mk)
 
     override def toString: String =
@@ -573,16 +580,16 @@ object KafkaConsumer {
    * Extension methods for operating on a `KafkaConsumer` in a `Stream` context without needing
    * to explicitly use operations such as `flatMap` and `evalTap`
    */
-  implicit final class StreamOps[F[_], K, V](self: Stream[F, KafkaConsumer[F, K, V]]) {
+  implicit final class StreamOps[F[_], K, V](self: Stream[F, KafkaConsumerGrouped[F, K, V]]) {
 
     /**
       * Subscribes a consumer to the specified topics within the [[Stream]] context. See
       * [[KafkaSubscription#subscribe]].
       */
-    def subscribe[G[_]: Reducible](topics: G[String]): Stream[F, KafkaConsumer[F, K, V]] =
+    def subscribe[G[_]: Reducible](topics: G[String]): Stream[F, KafkaConsumerGrouped[F, K, V]] =
       self.evalTap(_.subscribe(topics))
 
-    def subscribe(regex: Regex): Stream[F, KafkaConsumer[F, K, V]] =
+    def subscribe(regex: Regex): Stream[F, KafkaConsumerGrouped[F, K, V]] =
       self.evalTap(_.subscribe(regex))
 
     /**
@@ -592,7 +599,7 @@ object KafkaConsumer {
     def subscribeTo(
       firstTopic: String,
       remainingTopics: String*
-    ): Stream[F, KafkaConsumer[F, K, V]] =
+    ): Stream[F, KafkaConsumerGrouped[F, K, V]] =
       self.evalTap(_.subscribeTo(firstTopic, remainingTopics*))
 
     /**
