@@ -87,27 +87,6 @@ trait KafkaConsume[F[_], K, V] {
     : Stream[F, Map[TopicPartition, Stream[F, CommittableConsumerRecord[F, K, V]]]]
 
   /**
-    * Stops consuming new messages from Kafka. This method could be used to implement a graceful
-    * shutdown.<br><br>
-    *
-    * This method has a few effects:
-    *   - After this call no more data will be fetched from Kafka through the `poll` method.
-    *   - All currently running streams will continue to run until all in-flight messages will be
-    *     processed. It means that streams will be completed when all fetched messages will be
-    *     processed.<br><br>
-    *
-    * If some of the [[records]] methods will be called after [[stopConsuming]] call, these methods
-    * will return empty streams.<br><br>
-    *
-    * More than one call of [[stopConsuming]] will have no effect.
-    */
-  def stopConsuming: F[Unit]
-
-}
-
-trait KafkaConsumeGrouped[F[_], K, V] extends KafkaConsume[F, K, V] {
-
-  /**
     * `Stream` where each element contains a `Map` of the current partition-group assignment. Keys
     * are partition groups (`Set[TopicPartition]`); values are record streams for that
     * group.<br><br>
@@ -140,5 +119,22 @@ trait KafkaConsumeGrouped[F[_], K, V] extends KafkaConsume[F, K, V] {
     */
   def groupedPartitionsMapStream
     : Stream[F, Map[Set[TopicPartition], Stream[F, CommittableConsumerRecord[F, K, V]]]]
+
+  /**
+    * Stops consuming new messages from Kafka. This method could be used to implement a graceful
+    * shutdown.<br><br>
+    *
+    * This method has a few effects:
+    *   - After this call no more data will be fetched from Kafka through the `poll` method.
+    *   - All currently running streams will continue to run until all in-flight messages will be
+    *     processed. It means that streams will be completed when all fetched messages will be
+    *     processed.<br><br>
+    *
+    * If some of the [[records]] methods will be called after [[stopConsuming]] call, these methods
+    * will return empty streams.<br><br>
+    *
+    * More than one call of [[stopConsuming]] will have no effect.
+    */
+  def stopConsuming: F[Unit]
 
 }
