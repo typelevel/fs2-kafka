@@ -278,7 +278,9 @@ abstract class BaseKafkaSpec extends BaseAsyncSpec with ForAllTestContainer {
         message.value
       )
     )
-    records.foreach(producer.send(_).get(producerPublishTimeout.length, producerPublishTimeout.unit))
+    records.foreach(
+      producer.send(_).get(producerPublishTimeout.length, producerPublishTimeout.unit)
+    )
     producer.flush()
     producer.close()
   }
