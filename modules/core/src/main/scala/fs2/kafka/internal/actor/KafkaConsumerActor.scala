@@ -234,7 +234,7 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
     *      groups them by `TopicPartition`, and carries them into newly created groups.
     *   5. For each partition set in `groupGoal` that is not already in `state`, creates a new
     *      [[PartitionGroupState]] and enqueues carried-over chunks into its queue; chunks that do
-    *      not fit remain in `spillover` (and may be retried by [[enqueueSpillOver]] on poll).
+    *      not fit remain in `spillover`.
     *   6. Publishes `newState` to the `assignment` queue so [[consume]] can expose the updated
     *      streams.
     *
@@ -335,17 +335,6 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
                   } yield records
                 } else Nil.pure[F]
     } yield result
-
-  private def enqueueSpillOver(groupState: GroupsState): F[GroupsState] =
-    groupState
-      .toList
-      .traverse { case (group, state) =>
-        for {
-          newSpillover <- state.queue.tryOfferN(state.spillover)
-          newState      = state.copy(spillover = newSpillover)
-        } yield group -> newState
-      }
-      .map(_.toMap)
 
   private def enqueueRecordsAndSpillover(
     records: ConsumerRecordsMap,
