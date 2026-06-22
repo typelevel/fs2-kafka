@@ -36,6 +36,11 @@ final private[kafka] case class PartitionGroupState[F[_], K, V](
   def withSpillover(record: Chunk[CommittableConsumerRecord[F, K, V]]) =
     copy(spillover = spillover :+ record)
 
+  def setSpillover(newSpillover: List[Chunk[CommittableConsumerRecord[F, K, V]]]) =
+    copy(spillover = newSpillover)
+
+  def clearSpillover(): PartitionGroupState[F, K, V] = copy(spillover = Nil)
+
 }
 
 final private[kafka] case class State[F[_], K, V](

@@ -86,7 +86,7 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
   private[this] type ConsumerRecordsMap =
     Map[TopicPartition, Chunk[CommittableConsumerRecord[F, K, V]]]
 
-  private type GroupState = Map[Set[TopicPartition], PartitionGroupState[F, K, V]]
+  private type GroupsState = Map[Set[TopicPartition], PartitionGroupState[F, K, V]]
   private[this] val pollTimeout: Duration = settings.pollTimeout.toJava
   private[this] val maxPrefetch: Int      = settings.maxPrefetchBatches
 
@@ -191,9 +191,8 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
           records <- pollRecords
           _       <- state.evalUpdate { s =>
                  for {
-                   stateAfterEnqueued <- enqueueRecords(records, s.partitionGroupState)
-                   spillOverEnqueued  <- enqueueSpillOver(stateAfterEnqueued)
-                 } yield s.withGroupState(spillOverEnqueued)
+                   stateAfterEnqueued <- enqueueRecordsAndSpillover(records, s.partitionGroupState)
+                 } yield s.withGroupState(stateAfterEnqueued)
                }
         } yield ()
       case request @ Request.Commit(_, _) =>
@@ -244,8 +243,8 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
     */
   private def alignPartitionState(
     targetAssignment: Set[TopicPartition],
-    state: GroupState
-  ): F[GroupState] = {
+    state: GroupsState
+  ): F[GroupsState] = {
     val currentAssignment = state.keys.toSet
     if (targetAssignment == currentAssignment.flatten) {
       state.pure[F]
@@ -337,7 +336,7 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
                 } else Nil.pure[F]
     } yield result
 
-  private def enqueueSpillOver(groupState: GroupState): F[GroupState] =
+  private def enqueueSpillOver(groupState: GroupsState): F[GroupsState] =
     groupState
       .toList
       .traverse { case (group, state) =>
@@ -348,25 +347,21 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
       }
       .map(_.toMap)
 
-  private def enqueueRecords(records: ConsumerRecordsMap, groupState: GroupState): F[GroupState] = {
-    val groupMap = groupState.keys.flatMap(set => set.map(tp => tp -> set)).toMap
-    for {
-      enqueueResult <- records
-                         .toList
-                         .traverse { case (tp, records) =>
-                           groupMap
-                             .get(tp)
-                             .flatMap(g => groupState.get(g).tupleLeft(g))
-                             .traverse { case (group, gState) =>
-                               gState
-                                 .queue
-                                 .tryOffer(records)
-                                 .ifF(gState, gState.withSpillover(records))
-                                 .tupleLeft(group)
-                             }
-                         }
-      toOverride = enqueueResult.flatten.toMap
-    } yield groupState ++ toOverride
+  private def enqueueRecordsAndSpillover(
+    records: ConsumerRecordsMap,
+    groupsState: GroupsState
+  ): F[GroupsState] = {
+    groupsState
+      .toList
+      .parTraverse { case (set, groupState) =>
+        val toEnqueue = set.toList.flatMap(records.get(_).toList)
+        groupState
+          .queue
+          .tryOfferN(groupState.spillover ++ toEnqueue)
+          .map(groupState.setSpillover)
+          .tupleLeft(set)
+      }
+      .map(_.toMap)
   }
 
   private[this] val committer: KafkaCommitter[F] =

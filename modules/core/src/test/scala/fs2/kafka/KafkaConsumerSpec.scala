@@ -6,11 +6,13 @@
 
 package fs2.kafka
 
+import java.util.UUID
+
 import scala.collection.immutable.SortedSet
 import scala.concurrent.duration.*
 
 import cats.data.NonEmptySet
-import cats.effect.{Fiber, FiberIO, IO, Ref}
+import cats.effect.{Fiber, IO, OutcomeIO, Ref, Resource}
 import cats.effect.std.{Queue, Semaphore}
 import cats.effect.unsafe.implicits.global
 import cats.syntax.all.*
@@ -530,186 +532,87 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
   describe("KafkaConsumer#groupedPartitionsMapStream") {
     it("should handle rebalance") {
       withTopic { topic =>
-        createCustomTopic(topic, partitions = 3)
-        val produced1     = (0 until 100).map(n => s"key-$n" -> s"value->$n")
-        val produced2     = (100 until 200).map(n => s"key-$n" -> s"value->$n")
-        val producedTotal = produced1.size.toLong + produced2.size.toLong
-
-        def startConsumer(
-          consumedQueue: Queue[IO, CommittableConsumerRecord[IO, String, String]],
-          stopSignal: SignallingRef[IO, Boolean]
-        ): IO[Fiber[IO, Throwable, Vector[Set[Int]]]] =
-          Ref[IO]
-            .of(Vector.empty[Set[Int]])
-            .flatMap { assignedPartitionsRef =>
-              KafkaConsumer
-                .stream(consumerSettings[IO])
-                .subscribeTo(topic)
-                .flatMap(_.groupedPartitionsMapStream)
-                .filter(_.nonEmpty)
-                .evalMap { assignment =>
-                  assignedPartitionsRef
-                    .update(_ :+ assignment.keySet.flatten.map(_.partition()))
-                    .as {
-                      Stream
-                        .emits(
-                          assignment
-                            .map { case (_, stream) =>
-                              stream.evalMap(consumedQueue.offer)
-                            }
-                            .toList
-                        )
-                        .covary[IO]
-                    }
-                }
-                .flatten
-                .parJoinUnbounded
-                .interruptWhen(stopSignal)
-                .compile
-                .drain >> assignedPartitionsRef.get
-            }
-            .start
-
+        val groupId    = UUID.randomUUID().toString
+        val pCount     = 10
+        val settings   = consumerSettings[IO].withGroupId(s"test-$groupId")
+        val partitions = (0 until pCount).toList
+        val recordsT1  = partitions.map(p => buildRecordFor(topic, p, s"r$p"))
         (for {
-          stopSignal <- SignallingRef[IO, Boolean](false)
-          queue      <- Queue.unbounded[IO, CommittableConsumerRecord[IO, String, String]]
-          ref        <- Ref.of[IO, Map[String, Int]](Map.empty)
-          fiber1     <- startConsumer(queue, stopSignal)
-          _          <- IO.sleep(5.seconds)
-          _          <- IO(publishToKafka(topic, produced1))
-          fiber2     <- startConsumer(queue, stopSignal)
-          _          <- IO.sleep(5.seconds)
-          _          <- IO(publishToKafka(topic, produced2))
-          _          <- Stream
-                 .fromQueueUnterminated(queue)
-                 .evalMap { committable =>
-                   ref.modify { counts =>
-                     val key       = committable.record.key
-                     val newCounts = counts.updated(key, counts.getOrElse(key, 0) + 1)
-                     (newCounts, newCounts)
-                   }
-                 }
-                 .takeWhile(_.size < 200)
-                 .timeout(20.seconds)
-                 .compile
-                 .drain
-                 .guarantee(stopSignal.set(true))
-          consumer1assignments <- fiber1.joinWithNever
-          consumer2assignments <- fiber2.joinWithNever
-          keys                 <- ref.get
-        } yield {
-          assert(keys.size.toLong == producedTotal)
-          assert(
-            keys == (0 until 200)
-              .map { n =>
-                s"key-$n" -> (if (n < 100) 2 else 1)
-              }
-              .toMap
-          )
-          assert(consumer1assignments.size == 2)
-          assert(consumer1assignments(0) == Set(0, 1, 2))
-          assert(consumer1assignments(1).size < 3)
-          assert(consumer2assignments.size == 1)
-          assert(consumer2assignments(0).size < 3)
-          assert(consumer1assignments(1) ++ consumer2assignments(0) == Set(0, 1, 2))
-        }).unsafeRunSync()
+          _          <- IO.blocking(createCustomTopic(topic, partitions = pCount)).toResource
+          consumer01 <- consumeUsing(topic, settings)
+          _          <- IO.blocking(publishMessagesToKafka(recordsT1)).toResource
+          _          <-
+            consumer01
+              .records
+              .discrete
+              .takeWhile(_.distinct.size != recordsT1.size) // asserts everything is read
+              .compile
+              .drain
+              .toResource
+          _            <- consumer01.records.set(Nil).toResource // reset because rebalance will trigger read from start
+          consumer02   <- consumeUsing(topic, settings)
+          assignment02 <- consumer02
+                            .assignments
+                            .discrete
+                            .takeWhile(_.flatten.size != (pCount / 2), true)
+                            .compile
+                            .last
+                            .map(_.toList.flatten.flatten)
+                            .toResource
+          assignment01 <- consumer01
+                            .assignments
+                            .discrete
+                            .takeWhile(_.flatten.size != (pCount / 2), true)
+                            .compile
+                            .last
+                            .map(_.toList.flatten.flatten)
+                            .toResource
+        } yield assert(assignment01.intersect(assignment02).isEmpty)).use_.unsafeRunSync()
       }
     }
 
     it("should handle limited parallelization") {
       withTopic { topic =>
-        val partitionCount = 9
-        createCustomTopic(topic, partitions = partitionCount)
-
-        def recordForPartition(partition: Int, key: String) =
-          ProducerRecord(topic, key, key).withPartition(partition)
-
-        def startConsumer(
-          stopSignal: SignallingRef[IO, Boolean],
-          recordsRef: Ref[IO, Int],
-          assignmentsRef: Ref[IO, List[Set[Set[TopicPartition]]]]
-        ): IO[FiberIO[(List[Set[Set[TopicPartition]]], Int)]] =
-          for {
-            fiber <- (
-                       for {
-                         consumer <- KafkaConsumer
-                                       .stream(consumerSettings[IO].withMaxParallelism(2))
-                                       .subscribeTo(topic)
-                         assignment <- consumer.groupedPartitionsMapStream
-                         _          <- Stream.eval(assignmentsRef.update(_ :+ assignment.keySet))
-                       } yield Stream.emits(
-                         for {
-                           (_, partitionStream) <- assignment.toList
-                         } yield partitionStream.evalMap(_ => recordsRef.update(_ + 1))
-                       )
-                     ).flatten
-                       .parJoinUnbounded
-                       .interruptWhen(stopSignal)
-                       .compile
-                       .drain
-                       .flatMap(_ => (assignmentsRef.get, recordsRef.get).mapN((_, _)))
-                       .start
-          } yield fiber
-
-        def waitForRecords(recordsRef: Ref[IO, Int], count: Int): IO[Unit] =
-          Stream
-            .repeatEval(recordsRef.get)
-            .metered(100.millis)
-            .takeWhile(_ < count)
-            .timeout(20.seconds)
-            .compile
-            .drain
+        val groupId    = UUID.randomUUID().toString
+        val pCount     = 9
+        val offset     = pCount + 1
+        val settings   = consumerSettings[IO].withMaxParallelism(2).withGroupId(s"test-$groupId") // set max parallelism
+        val partitions = (0 until pCount).toList
+        val recordsT1  = partitions.map(p => buildRecordFor(topic, p, s"r$p"))
+        val recordsT2  = partitions.map(p => buildRecordFor(topic, p, s"r${p + offset}"))
 
         (for {
-          stopSignal           <- SignallingRef[IO, Boolean](false)
-          consumer1Records     <- Ref.of[IO, Int](0)
-          consumer2Records     <- Ref.of[IO, Int](0)
-          consumer1Assignments <- Ref.of[IO, List[Set[Set[TopicPartition]]]](Nil)
-          consumer2Assignments <- Ref.of[IO, List[Set[Set[TopicPartition]]]](Nil)
-          batchRef             <- Ref.of[IO, Int](0)
-          fiber1               <- startConsumer(stopSignal, consumer1Records, consumer1Assignments)
-          _                    <- IO.sleep(5.seconds)
-          initialRecords        = (0 until partitionCount).toList.map(p => recordForPartition(p, s"0-$p"))
-          _                     = publishToKafka(initialRecords)
-          _                    <- waitForRecords(consumer1Records, partitionCount)
-          fiber2               <- startConsumer(stopSignal, consumer2Records, consumer2Assignments)
-          publisherFiber       <-
-            Stream
-              .awakeEvery[IO](500.millis)
-              .evalMap { _ =>
-                for {
-                  batch  <- batchRef.getAndUpdate(_ + 1)
-                  records = (0 until partitionCount)
-                              .toList
-                              .map { partition =>
-                                recordForPartition(partition, s"$batch-$partition")
-                              }
-                  _ <- IO(publishToKafka(records))
-                } yield ()
-              }
-              .interruptWhen(stopSignal)
+          _          <- IO.blocking(createCustomTopic(topic, partitions = pCount)).toResource
+          consumer01 <- consumeUsing(topic, settings)
+          _          <- IO.blocking(publishMessagesToKafka(recordsT1)).toResource
+          _          <-
+            consumer01
+              .records
+              .discrete
+              .takeWhile(_.distinct.size != recordsT1.size) // asserts everything is read
               .compile
               .drain
-              .start
-          _               <- waitForRecords(consumer2Records, 1)
-          _               <- stopSignal.set(true)
-          consumer1Result <- fiber1.joinWith(IO(fail("Did not expect cancellation")))
-          consumer2Result <- fiber2.joinWith(IO(fail("Did not expect cancellation")))
-          _               <- publisherFiber.joinWithNever
+              .toResource
+          _          <- consumer01.records.set(Nil).toResource // reset because rebalance will trigger read from start
+          consumer02 <- consumeUsing(topic, settings)
+
+          _ <- consumer02.assignments.discrete.takeWhile(_.isEmpty).compile.drain.toResource
+          _ <- IO.blocking(publishMessagesToKafka(recordsT2)).toResource
+          _ <- List(
+                 consumer01.records.discrete.void,
+                 consumer02.records.discrete.void
+               ).parJoinUnbounded
+                 .evalMap(_ => (consumer01.records.get -> consumer02.records.get).mapN(_ ++ _))
+                 .takeWhile(_.distinct.size != (recordsT1.size + recordsT2.size)) // asserts everything is read
+                 .compile
+                 .drain
+                 .toResource
+          assignment01 <- consumer01.assignments.get.toResource
+          assignment02 <- consumer02.assignments.get.toResource
         } yield {
-          val (consumer1AssignmentsResult, consumer1RecordsResult) = consumer1Result
-          val (consumer2AssignmentsResult, consumer2RecordsResult) = consumer2Result
-          for {
-            assignment <- consumer1AssignmentsResult
-          } assert(assignment.size <= 2)
-
-          for {
-            assignment <- consumer2AssignmentsResult
-          } assert(assignment.size <= 2)
-
-          assert(consumer1RecordsResult > 0)
-          assert(consumer2RecordsResult > 0)
-        }).unsafeRunSync()
+          assert(assignment01.size <= 2) // there should be no more than 2 groups ever due to limit parallelization
+          assert(assignment02.size <= 2) // there should be no more than 2 groups ever due to limit parallelization
+        }).use_.unsafeRunSync()
       }
     }
 
@@ -1798,5 +1701,40 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
         }
       }
     }
+
+  def buildRecordFor(topic: String, partition: Int, key: String) =
+    ProducerRecord(topic, key, key).withPartition(partition)
+
+  case class ConsumerRunningState(
+    assignments: SignallingRef[IO, Set[Set[TopicPartition]]],
+    records: SignallingRef[IO, List[CommittableConsumerRecord[IO, String, String]]],
+    stopSignal: SignallingRef[IO, Boolean],
+    consumerOutcome: IO[OutcomeIO[Unit]]
+  )
+
+  def consumeUsing(
+    topic: String,
+    settings: ConsumerSettings[IO, String, String]
+  ): Resource[IO, ConsumerRunningState] = {
+    for {
+      assignments <- SignallingRef[IO, Set[Set[TopicPartition]]](Set.empty).toResource
+      records     <- SignallingRef[IO, List[CommittableConsumerRecord[IO, String, String]]](Nil)
+                   .toResource
+      signal   <- SignallingRef[IO, Boolean](false).toResource
+      consumer <- KafkaConsumer.resource(settings)
+      _        <- consumer.subscribeTo(topic).toResource
+      fiber    <- consumer
+                 .groupedPartitionsMapStream
+                 .evalTap(assignment => assignments.set(assignment.keySet))
+                 .map(_.values.toList)
+                 .flatMap(Stream.emits)
+                 .parJoinUnbounded
+                 .evalTap(read => records.update(_ :+ read))
+                 .interruptWhen(signal)
+                 .compile
+                 .drain
+                 .background
+    } yield ConsumerRunningState(assignments, records, signal, fiber)
+  }
 
 }
