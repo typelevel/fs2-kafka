@@ -13,7 +13,7 @@ val vulcanVersion              = "1.13.0"
 
 val scala212 = "2.12.21"
 val scala213 = "2.13.18"
-val scala3   = "3.3.7"
+val scala3   = "3.3.8"
 
 ThisBuild / tlBaseVersion := "4.1"
 
