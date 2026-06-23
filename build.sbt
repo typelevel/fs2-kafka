@@ -270,6 +270,11 @@ ThisBuild / mimaBinaryIssueFilters ++= {
     ProblemFilters.exclude[ReversedMissingMethodProblem]("fs2.kafka.KafkaConsumer.settings"),
     ProblemFilters.exclude[ReversedMissingMethodProblem]("fs2.kafka.ConsumerSettings.withMaxParallelism"),
     ProblemFilters.exclude[ReversedMissingMethodProblem]("fs2.kafka.ConsumerSettings.maxParallelism"),
+    // `commitOnRevoke` settings flag, added (opt-in) in 4.1. `ConsumerSettings` is a sealed
+    // abstract class (no external implementors), so adding these abstract methods is safe; the
+    // `ConsumerSettingsImpl` copy/this/apply filters below already cover the extra field.
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("fs2.kafka.ConsumerSettings.commitOnRevoke"),
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("fs2.kafka.ConsumerSettings.withCommitOnRevoke"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.kafka.ConsumerSettings#ConsumerSettingsImpl.copy"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.kafka.ConsumerSettings#ConsumerSettingsImpl.this"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.kafka.ConsumerSettings#ConsumerSettingsImpl.apply"),

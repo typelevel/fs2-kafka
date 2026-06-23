@@ -75,6 +75,51 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
       }
     }
 
+    it("should commit offsets synchronously on revoke when commitOnRevoke is enabled") {
+      withTopic { topic =>
+        createCustomTopic(topic, partitions = 1)
+        val produced = (0 until 5).map(n => s"key-$n" -> s"value->$n")
+        publishToKafka(topic, produced)
+
+        val settings =
+          consumerSettings[IO]
+            .withGroupId(s"commit-on-revoke-${UUID.randomUUID()}")
+            .withCommitOnRevoke(true)
+
+        // The first consumer processes and commits every record, then shuts down. Closing it
+        // triggers `onPartitionsRevoked`, where the tracked offsets are committed synchronously
+        // (directly on the Java consumer, while the partition is still owned).
+        val consumedFirst =
+          KafkaConsumer
+            .stream(settings)
+            .subscribeTo(topic)
+            .records
+            .evalMap(committable => committable.offset.commit.as(committable.record.key))
+            .take(produced.size.toLong)
+            .compile
+            .toVector
+
+        // A second consumer in the same group must then find nothing left to consume.
+        val consumedSecond =
+          KafkaConsumer
+            .stream(settings)
+            .subscribeTo(topic)
+            .records
+            .map(_.record.key)
+            .interruptAfter(10.seconds)
+            .compile
+            .toVector
+
+        val (first, second) =
+          (for {
+            a <- consumedFirst
+            b <- consumedSecond
+          } yield (a, b)).unsafeRunSync()
+
+        assert(first.size.toLong == produced.size.toLong && second.isEmpty)
+      }
+    }
+
     def testMultipleConsumersCorrectConsumption(
       customizeSettings: ConsumerSettings[IO, String, String] => ConsumerSettings[
         IO,
