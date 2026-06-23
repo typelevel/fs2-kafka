@@ -396,6 +396,24 @@ sealed abstract class ConsumerSettings[F[_], K, V] {
     */
   def withRebalanceRevokeMode(rebalanceRevokeMode: RebalanceRevokeMode): ConsumerSettings[F, K, V]
 
+  /**
+    * Sets the maximum number of parallel consumption streams.
+    *
+    * @see
+    *   [[KafkaConsumeGrouped.groupedPartitionsMapStream]]
+    */
+  def withMaxParallelism(maxParallelism: Int): ConsumerSettings[F, K, V]
+
+  /**
+    * Returns the maximum number of parallel consumption streams.
+    *
+    * The default is `Int.MaxValue` (unbounded consumption streams).
+    *
+    * @see
+    *   [[KafkaConsumeGrouped.groupedPartitionsMapStream]]
+    */
+  def maxParallelism: Int
+
 }
 
 object ConsumerSettings {
@@ -412,8 +430,12 @@ object ConsumerSettings {
     override val commitRecovery: CommitRecovery,
     override val recordMetadata: ConsumerRecord[K, V] => String,
     override val maxPrefetchBatches: Int,
-    override val rebalanceRevokeMode: RebalanceRevokeMode
+    override val rebalanceRevokeMode: RebalanceRevokeMode,
+    override val maxParallelism: Int
   ) extends ConsumerSettings[F, K, V] {
+
+    override def withMaxParallelism(maxParallelism: Int): ConsumerSettings[F, K, V] =
+      copy(maxParallelism = maxParallelism)
 
     override def withCustomBlockingContext(ec: ExecutionContext): ConsumerSettings[F, K, V] =
       copy(customBlockingContext = Some(ec))
@@ -580,7 +602,8 @@ object ConsumerSettings {
       commitRecovery = CommitRecovery.Default,
       recordMetadata = _ => OffsetFetchResponse.NO_METADATA,
       maxPrefetchBatches = 2,
-      rebalanceRevokeMode = RebalanceRevokeMode.Eager
+      rebalanceRevokeMode = RebalanceRevokeMode.Eager,
+      maxParallelism = Int.MaxValue
     )
 
   def apply[F[_], K, V](

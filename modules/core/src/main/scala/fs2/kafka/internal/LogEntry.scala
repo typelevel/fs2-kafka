@@ -13,11 +13,10 @@ import scala.collection.immutable.SortedSet
 import cats.data.{NonEmptyList, NonEmptySet}
 import cats.syntax.all.*
 import fs2.kafka.instances.*
+import fs2.kafka.internal.actor.{PartitionGroupState, State}
 import fs2.kafka.internal.syntax.*
-import fs2.kafka.internal.KafkaConsumerActor.*
 import fs2.kafka.internal.LogLevel.*
 import fs2.kafka.CommittableConsumerRecord
-import fs2.Chunk
 
 import org.apache.kafka.common.TopicPartition
 
@@ -31,10 +30,8 @@ sealed abstract private[kafka] class LogEntry {
 
 private[kafka] object LogEntry {
 
-  final case class SubscribedTopics[F[_]](
-    topics: NonEmptyList[String],
-    state: State[F, ?, ?]
-  ) extends LogEntry {
+  final case class SubscribedTopics[F[_]](topics: NonEmptyList[String], state: State[F, ?, ?])
+      extends LogEntry {
 
     override def level: LogLevel = Debug
 
@@ -51,7 +48,7 @@ private[kafka] object LogEntry {
     override def level: LogLevel = Debug
 
     override def message: String =
-      s"Consumer manually assigned partitions [${partitions.toList.mkString(", ")}]. Current state [$state]."
+      s"Consumer manually assigned partitions [${partitions.toSortedSet.toList.mkString(", ")}]. Current state [$state]."
 
   }
 
@@ -67,26 +64,12 @@ private[kafka] object LogEntry {
 
   }
 
-  final case class Unsubscribed[F[_]](
-    state: State[F, ?, ?]
-  ) extends LogEntry {
+  final case class Unsubscribed[F[_]](state: State[F, ?, ?]) extends LogEntry {
 
     override def level: LogLevel = Debug
 
     override def message: String =
       s"Consumer unsubscribed from all partitions. Current state [$state]."
-
-  }
-
-  final case class StoredOnRebalance[F[_]](
-    onRebalance: OnRebalance[F],
-    state: State[F, ?, ?]
-  ) extends LogEntry {
-
-    override def level: LogLevel = Debug
-
-    override def message: String =
-      s"Stored OnRebalance [$onRebalance]. Current state [$state]."
 
   }
 
@@ -103,76 +86,59 @@ private[kafka] object LogEntry {
   }
 
   final case class RevokedPartitions[F[_], K, V](
-    partitions: Set[TopicPartition],
-    partitionState: Map[TopicPartition, PartitionState[F, K, V]],
-    state: State[F, ?, ?]
+    partitions: Set[Set[TopicPartition]],
+    partitionState: Map[Set[TopicPartition], PartitionGroupState[F, K, V]]
   ) extends LogEntry {
 
     override def level: LogLevel = Debug
 
     override def message: String = {
-      var message = s"Revoked partitions [${partitions.mkString(", ")}]"
+      var message = s"Revoked partition groups [${partitions.map(_.mkString(", ")).mkString(", ")}]"
 
       if (partitionState.nonEmpty) {
-        val withSpillover =
-          partitionState.view.filter(_._2.isQueueFull).map(kv => kv._1 -> kv._2.spillover).toMap
+        val withSpillover = partitionState
+          .view
+          .filter(_._2.spillover.nonEmpty)
+          .map(kv => kv._1 -> kv._2.spillover.flatMap(_.toList))
+          .toMap
 
         message += s", dropped record queues [${partitionState.keys.mkString(", ")}]"
         if (withSpillover.nonEmpty)
           message += s", dropped spillover records [${recordsString(withSpillover)}]"
       }
 
-      message += s". Current state [$state]"
-
       message
     }
 
   }
 
-  final case class StoredPendingCommit[F[_]](
-    commit: Request.Commit[F],
-    state: State[F, ?, ?]
-  ) extends LogEntry {
-
-    override def level: LogLevel = Debug
-
-    override def message: String =
-      s"Stored pending commit [$commit] as rebalance is in-progress. Current state [$state]."
-
-  }
-
-  final case class CommittedPendingCommit[F[_]](pendingCommit: Request.Commit[F]) extends LogEntry {
-
-    override def level: LogLevel = Debug
-
-    override def message: String = s"Committed pending commit [$pendingCommit]."
-
-  }
-
-  final case class RevokeTimeoutOccurred[F[_]](
-    revoked: Set[TopicPartition],
-    state: State[F, ?, ?]
+  final case class RevokeTimeoutOccurred[F[_], K, V](
+    group: Set[TopicPartition],
+    groupState: PartitionGroupState[F, K, V]
   ) extends LogEntry {
 
     override def level: LogLevel = Info
 
     override def message: String =
-      s"Consuming streams did not signal processing completion of [$revoked]. Current state [$state]."
+      s"Consuming streams did not signal processing completion of [$group]. Current state [$groupState]."
 
   }
 
   def recordsString[F[_]](
-    records: Map[TopicPartition, Chunk[CommittableConsumerRecord[F, ?, ?]]]
+    records: Map[Set[TopicPartition], List[CommittableConsumerRecord[F, ?, ?]]]
   ): String =
     records
+      .values
+      .flatten
+      .groupBy(_.offset.topicPartition)
       .toList
       .sortBy { case (tp, _) => tp }
       .mkStringAppend { case (append, (tp, chunk)) =>
         append(tp.show)
         append(" -> { first: ")
-        append(chunk.head.get.offset.show)
+        append(chunk.head.offset.show)
         append(", last: ")
-        append(chunk.last.get.offset.show)
+        append(chunk.last.offset.show)
         append(" }")
       }("", ", ", "")
 
