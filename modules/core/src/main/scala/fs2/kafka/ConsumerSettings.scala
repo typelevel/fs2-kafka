@@ -414,6 +414,27 @@ sealed abstract class ConsumerSettings[F[_], K, V] {
     */
   def maxParallelism: Int
 
+  /**
+    * Whether, when partitions are revoked, the offsets of already-requested commits for those
+    * partitions should be committed synchronously (via `commitSync`) from within the rebalance
+    * listener, while the consumer still owns them.
+    *
+    * The default is `false`. When `false`, the behaviour is unchanged: commits are issued
+    * asynchronously and an in-flight commit may be lost if a rebalance or shutdown happens before
+    * it is acknowledged, leading to records being re-delivered (at-least-once).
+    *
+    * When `true`, the latest requested offset per partition is remembered and re-committed
+    * synchronously on revoke, which narrows that duplicate-delivery window. It does not eliminate
+    * duplicates entirely (records consumed but not yet committed are still re-delivered), and is
+    * best combined with [[RebalanceRevokeMode.Graceful]] and/or idempotent processing.
+    */
+  def commitOnRevoke: Boolean
+
+  /**
+    * Creates a new [[ConsumerSettings]] with the specified [[commitOnRevoke]] flag.
+    */
+  def withCommitOnRevoke(commitOnRevoke: Boolean): ConsumerSettings[F, K, V]
+
 }
 
 object ConsumerSettings {
@@ -431,7 +452,8 @@ object ConsumerSettings {
     override val recordMetadata: ConsumerRecord[K, V] => String,
     override val maxPrefetchBatches: Int,
     override val rebalanceRevokeMode: RebalanceRevokeMode,
-    override val maxParallelism: Int
+    override val maxParallelism: Int,
+    override val commitOnRevoke: Boolean
   ) extends ConsumerSettings[F, K, V] {
 
     override def withMaxParallelism(maxParallelism: Int): ConsumerSettings[F, K, V] =
@@ -568,6 +590,9 @@ object ConsumerSettings {
     ): ConsumerSettings[F, K, V] =
       copy(rebalanceRevokeMode = rebalanceRevokeMode)
 
+    override def withCommitOnRevoke(commitOnRevoke: Boolean): ConsumerSettings[F, K, V] =
+      copy(commitOnRevoke = commitOnRevoke)
+
     override def toString: String =
       s"ConsumerSettings(closeTimeout = $closeTimeout, commitTimeout = $commitTimeout, pollInterval = $pollInterval, pollTimeout = $pollTimeout, commitRecovery = $commitRecovery)"
 
@@ -603,7 +628,8 @@ object ConsumerSettings {
       recordMetadata = _ => OffsetFetchResponse.NO_METADATA,
       maxPrefetchBatches = 2,
       rebalanceRevokeMode = RebalanceRevokeMode.Eager,
-      maxParallelism = Int.MaxValue
+      maxParallelism = Int.MaxValue,
+      commitOnRevoke = false
     )
 
   def apply[F[_], K, V](

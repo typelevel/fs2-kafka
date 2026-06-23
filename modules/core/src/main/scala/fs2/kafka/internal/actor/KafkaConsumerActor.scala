@@ -10,6 +10,7 @@ import java.time.Duration
 import java.util
 
 import scala.collection.immutable.SortedSet
+import scala.util.control.NonFatal
 import scala.util.matching.Regex
 
 import cats.data.NonEmptyList
@@ -91,7 +92,9 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
   private[this] val maxPrefetch: Int      = settings.maxPrefetchBatches
 
   val consumerRebalanceListener: ConsumerRebalanceListener = new ConsumerRebalanceListener {
-    override def onPartitionsRevoked(partitions: util.Collection[TopicPartition]): Unit =
+    override def onPartitionsRevoked(partitions: util.Collection[TopicPartition]): Unit = {
+      if (settings.commitOnRevoke)
+        commitOnRevokeSync(partitions.asScala.toSet)
       dispatcher.unsafeRunSync {
         state.evalUpdate { state =>
           val currentAssignment = state.partitionGroupState.keys.toList.flatten.toSet
@@ -99,6 +102,7 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
           alignPartitionState(targetAssignment, state.partitionGroupState).map(state.withGroupState)
         }
       }
+    }
 
     override def onPartitionsAssigned(partitions: util.Collection[TopicPartition]): Unit =
       dispatcher.unsafeRunSync {
@@ -381,7 +385,39 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
       .handleErrorWith(e => F.delay(callback(Left(e))))
 
   private[this] def commit(request: Request.Commit[F]): F[Unit] =
-    commitAsync(request.offsets, request.callback)
+    state
+      .update(_.withRequestedCommitOffsets(request.offsets))
+      .whenA(settings.commitOnRevoke) >> commitAsync(request.offsets, request.callback)
+
+  /**
+    * Best-effort, synchronous commit of the most recently requested offsets for the partitions
+    * being revoked, performed from within `onPartitionsRevoked` while we still own them.
+    *
+    * Kafka invokes the rebalance listener on the consumer's polling thread, from inside `poll`. The
+    * `commitSync` therefore goes through [[WithConsumer.synchronouslyDuringRebalance]] — a direct,
+    * reentrant call on the Java consumer on that same thread — rather than `withConsumer.blocking`,
+    * which would submit to the single-threaded blocking context already occupied by `poll` and
+    * deadlock. State access is bounced onto the effect runtime (it is thread-safe), but the
+    * consumer call itself must stay on the polling thread.
+    *
+    * Failures are logged and swallowed: this only narrows the duplicate-delivery window, and the
+    * consumer remains at-least-once.
+    */
+  private[this] def commitOnRevokeSync(revoked: Set[TopicPartition]): Unit = {
+    val offsets = dispatcher.unsafeRunSync(state.modify(_.removeRequestedCommitOffsets(revoked)))
+    if (offsets.nonEmpty) {
+      val result =
+        try {
+          withConsumer.synchronouslyDuringRebalance(
+            _.commitSync(offsets.asJava, settings.commitTimeout.toJava)
+          )
+          ().asRight[Throwable]
+        } catch {
+          case NonFatal(e) => Left(e)
+        }
+      dispatcher.unsafeRunSync(logging.log(CommittedOffsetsOnRevoke(revoked, offsets, result)))
+    }
+  }
 
   private[this] def manualCommitSync(request: Request.ManualCommitSync[F]): F[Unit] = {
     val commit =
