@@ -9,17 +9,42 @@ package fs2.kafka
 import java.nio.charset.{Charset, StandardCharsets}
 import java.util.UUID
 
+import cats.~>
 import cats.effect.{Resource, Sync}
 import cats.syntax.all.*
 import cats.Contravariant
 
-sealed abstract class GenericSerializer[-T <: KeyOrValue, F[_], A] {
+sealed abstract class GenericSerializer[-T <: KeyOrValue, F[_], A] { self =>
 
   /**
     * Attempts to serialize the specified value of type `A` into bytes. The Kafka topic name, to
     * which the serialized bytes are going to be sent, and record headers are available.
     */
   def serialize(topic: String, headers: Headers, a: A): F[Array[Byte]]
+
+  /**
+    * Creates a new serializer in which the effect type has been changed using the specified
+    * `FunctionK`.
+    */
+  final def mapK[G[_]](f: F ~> G): GenericSerializer[T, G, A] =
+    new GenericSerializer[T, G, A] {
+
+      override def serialize(topic: String, headers: Headers, a: A): G[Array[Byte]] =
+        f(self.serialize(topic, headers, a))
+
+      override def contramap[B](g: B => A): GenericSerializer[T, G, B] =
+        self.contramap(g).mapK(f)
+
+      override def mapBytes(g: Array[Byte] => Array[Byte]): GenericSerializer[T, G, A] =
+        self.mapBytes(g).mapK(f)
+
+      override def option: GenericSerializer[T, G, Option[A]] =
+        self.option.mapK(f)
+
+      override def suspend: Serializer[G, A] =
+        self.suspend.mapK(f)
+
+    }
 
   /**
     * Creates a new [[Serializer]] which applies the specified function `f` on a value of type `B`,
