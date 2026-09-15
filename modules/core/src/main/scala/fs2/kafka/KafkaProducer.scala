@@ -10,6 +10,7 @@ import scala.annotation.nowarn
 import scala.concurrent.Promise
 
 import cats.{Apply, Functor, Parallel}
+import cats.~>
 import cats.effect.*
 import cats.effect.std.Semaphore
 import cats.effect.syntax.all.*
@@ -28,7 +29,7 @@ import org.apache.kafka.common.{Metric, MetricName, PartitionInfo, TopicPartitio
   * [[KafkaProducer]] represents a producer of Kafka records, with the ability to produce
   * `ProducerRecord`s using [[produce]].
   */
-abstract class KafkaProducer[F[_], K, V] {
+abstract class KafkaProducer[F[_], K, V] { self =>
 
   /**
     * Produces the specified [[ProducerRecords]] in two steps: the first effect puts the records in
@@ -140,6 +141,52 @@ abstract class KafkaProducer[F[_], K, V] {
     keySerializer: KeySerializer[F, K2],
     valueSerializer: ValueSerializer[F, V2]
   ): KafkaProducer[F, K2, V2]
+
+  /**
+    * Creates a new [[KafkaProducer]] in which the effect type has been changed using the specified
+    * `FunctionK`s.
+    */
+  final def imapK[G[_]: MonadCancelThrow](fk: F ~> G, gk: G ~> F)(implicit
+    F: MonadCancelThrow[F]
+  ): KafkaProducer[G, K, V] =
+    new KafkaProducer[G, K, V] {
+
+      override def produce(records: ProducerRecords[K, V]): G[G[ProducerResult[K, V]]] =
+        fk(self.produce(records).map(fk(_)))
+
+      override def initTransactions: G[Unit] =
+        fk(self.initTransactions)
+
+      override def transaction: Resource[G, Unit] =
+        self.transaction.mapK(fk)
+
+      override def sendOffsetsToTransaction(
+        offsets: Map[TopicPartition, OffsetAndMetadata],
+        groupMetadata: ConsumerGroupMetadata
+      ): G[Unit] =
+        fk(self.sendOffsetsToTransaction(offsets, groupMetadata))
+
+      override def produceAndCommitTransactionally(
+        records: TransactionalProducerRecords[G, K, V]
+      ): G[ProducerResult[K, V]] =
+        fk(self.produceAndCommitTransactionally(records.map(_.mapK(gk))))
+
+      override def produceTransactionally(records: ProducerRecords[K, V]): G[ProducerResult[K, V]] =
+        fk(self.produceTransactionally(records))
+
+      override def metrics: G[Map[MetricName, Metric]] =
+        fk(self.metrics)
+
+      override def partitionsFor(topic: String): G[List[PartitionInfo]] =
+        fk(self.partitionsFor(topic))
+
+      override def withSerializers[K2, V2](
+        keySerializer: KeySerializer[G, K2],
+        valueSerializer: ValueSerializer[G, V2]
+      ): KafkaProducer[G, K2, V2] =
+        self.withSerializers(keySerializer.mapK(gk), valueSerializer.mapK(gk)).imapK(fk, gk)
+
+    }
 
 }
 

@@ -6,6 +6,8 @@
 
 package fs2.kafka
 
+import cats.~>
+import cats.data.OptionT
 import cats.effect.unsafe.implicits.global
 import cats.effect.IO
 import cats.syntax.all.*
@@ -72,6 +74,83 @@ final class KafkaProducerSpec extends BaseKafkaSpec {
         _              <- Stream.eval(stringProducer.produceOne(ProducerRecord(topic, "str", "str")).flatten)
         _              <- Stream.eval(unitProducer.produceOne(ProducerRecord(topic, (), ())).flatten)
         _              <- Stream.eval(intProducer.produceOne(ProducerRecord(topic, 1, 2)).flatten)
+      } yield ()).compile.toVector.unsafeRunSync()
+    }
+  }
+
+  it("should be able to produce with a mapped effect type") {
+    withTopic { topic =>
+      createCustomTopic(topic, partitions = 3)
+      val toProduce = (0 until 100).map(n => s"key-$n" -> s"value->$n")
+
+      val fk: IO ~> OptionT[IO, *] = new (IO ~> OptionT[IO, *]) {
+
+        override def apply[A](fa: IO[A]): OptionT[IO, A] = OptionT.liftF(fa)
+
+      }
+
+      val gk: OptionT[IO, *] ~> IO = new (OptionT[IO, *] ~> IO) {
+
+        override def apply[A](fa: OptionT[IO, A]): IO[A] =
+          fa.getOrElseF(IO.raiseError(new NoSuchElementException))
+
+      }
+
+      val produced =
+        (for {
+          producer               <- KafkaProducer.stream(producerSettings[IO]).map(_.imapK(fk, gk))
+          (records, passthrough) <-
+            Stream.chunk(
+              Chunk
+                .from(toProduce)
+                .map { case passthrough @ (key, value) =>
+                  (ProducerRecords.one(ProducerRecord(topic, key, value)), passthrough)
+                }
+            )
+          batched <-
+            Stream
+              .eval(gk(producer.produce(records)))
+              .map(acked => gk(acked).as(passthrough))
+              .buffer(toProduce.size)
+          passthrough <- Stream.eval(batched)
+        } yield passthrough).compile.toVector.unsafeRunSync()
+
+      produced should contain theSameElementsAs toProduce
+
+      val consumed =
+        consumeNumberKeyedMessagesFrom[String, String](topic, produced.size)
+
+      consumed should contain theSameElementsAs produced
+    }
+  }
+
+  it("should be able to produce with different serializers after imapK") {
+    withTopic { topic =>
+      createCustomTopic(topic, partitions = 3)
+
+      val fk: IO ~> OptionT[IO, *] = new (IO ~> OptionT[IO, *]) {
+
+        override def apply[A](fa: IO[A]): OptionT[IO, A] = OptionT.liftF(fa)
+
+      }
+
+      val gk: OptionT[IO, *] ~> IO = new (OptionT[IO, *] ~> IO) {
+
+        override def apply[A](fa: OptionT[IO, A]): IO[A] =
+          fa.getOrElseF(IO.raiseError(new NoSuchElementException))
+
+      }
+
+      (for {
+        stringProducer <- KafkaProducer.stream(producerSettings[IO]).map(_.imapK(fk, gk))
+        intProducer     = stringProducer.withSerializers[Int, Int](
+                        implicitly[KeySerializer[IO, Int]].mapK(fk),
+                        implicitly[ValueSerializer[IO, Int]].mapK(fk)
+                      )
+        _ <- Stream.eval(
+               gk(stringProducer.produceOne(ProducerRecord(topic, "str", "str")).flatten)
+             )
+        _ <- Stream.eval(gk(intProducer.produceOne(ProducerRecord(topic, 1, 2)).flatten))
       } yield ()).compile.toVector.unsafeRunSync()
     }
   }
