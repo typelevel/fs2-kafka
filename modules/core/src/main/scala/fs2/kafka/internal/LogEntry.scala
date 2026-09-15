@@ -18,6 +18,7 @@ import fs2.kafka.internal.syntax.*
 import fs2.kafka.internal.LogLevel.*
 import fs2.kafka.CommittableConsumerRecord
 
+import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.TopicPartition
 
 sealed abstract private[kafka] class LogEntry {
@@ -121,6 +122,26 @@ private[kafka] object LogEntry {
 
     override def message: String =
       s"Consuming streams did not signal processing completion of [$group]. Current state [$groupState]."
+
+  }
+
+  final case class CommittedOffsetsOnRevoke(
+    revoked: Set[TopicPartition],
+    offsets: Map[TopicPartition, OffsetAndMetadata],
+    result: Either[Throwable, Unit]
+  ) extends LogEntry {
+
+    override def level: LogLevel = Info
+
+    override def message: String =
+      result match {
+        case Right(()) =>
+          s"Committed offsets [${offsets
+              .mkString(", ")}] synchronously on revoke of partitions [${revoked.mkString(", ")}]."
+        case Left(e) =>
+          s"Failed to commit offsets [${offsets
+              .mkString(", ")}] synchronously on revoke of partitions [${revoked.mkString(", ")}]: $e."
+      }
 
   }
 

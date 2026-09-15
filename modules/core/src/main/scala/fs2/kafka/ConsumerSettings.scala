@@ -414,6 +414,23 @@ sealed abstract class ConsumerSettings[F[_], K, V] {
     */
   def maxParallelism: Int
 
+  /**
+    * Whether offsets already passed to `commit` should be committed synchronously when their
+    * partitions are revoked, from within the rebalance listener, before the partitions are lost.
+    * This reduces duplicate deliveries around rebalances and shutdown, where an asynchronous commit
+    * that has not yet been acknowledged would otherwise be lost. It does not remove duplicates
+    * entirely, since records consumed but not yet committed are still redelivered; combine it with
+    * [[RebalanceRevokeMode.Graceful]] or idempotent processing for stronger guarantees.<br><br>
+    *
+    * The default value is `false`.
+    */
+  def commitOnRevoke: Boolean
+
+  /**
+    * Creates a new [[ConsumerSettings]] with the specified [[commitOnRevoke]].
+    */
+  def withCommitOnRevoke(commitOnRevoke: Boolean): ConsumerSettings[F, K, V]
+
 }
 
 object ConsumerSettings {
@@ -431,7 +448,8 @@ object ConsumerSettings {
     override val recordMetadata: ConsumerRecord[K, V] => String,
     override val maxPrefetchBatches: Int,
     override val rebalanceRevokeMode: RebalanceRevokeMode,
-    override val maxParallelism: Int
+    override val maxParallelism: Int,
+    override val commitOnRevoke: Boolean
   ) extends ConsumerSettings[F, K, V] {
 
     override def withMaxParallelism(maxParallelism: Int): ConsumerSettings[F, K, V] =
@@ -568,6 +586,9 @@ object ConsumerSettings {
     ): ConsumerSettings[F, K, V] =
       copy(rebalanceRevokeMode = rebalanceRevokeMode)
 
+    override def withCommitOnRevoke(commitOnRevoke: Boolean): ConsumerSettings[F, K, V] =
+      copy(commitOnRevoke = commitOnRevoke)
+
     override def toString: String =
       s"ConsumerSettings(closeTimeout = $closeTimeout, commitTimeout = $commitTimeout, pollInterval = $pollInterval, pollTimeout = $pollTimeout, commitRecovery = $commitRecovery)"
 
@@ -603,7 +624,8 @@ object ConsumerSettings {
       recordMetadata = _ => OffsetFetchResponse.NO_METADATA,
       maxPrefetchBatches = 2,
       rebalanceRevokeMode = RebalanceRevokeMode.Eager,
-      maxParallelism = Int.MaxValue
+      maxParallelism = Int.MaxValue,
+      commitOnRevoke = false
     )
 
   def apply[F[_], K, V](

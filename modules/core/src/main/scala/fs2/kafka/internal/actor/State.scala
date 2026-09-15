@@ -13,6 +13,7 @@ import cats.effect.Deferred
 import fs2.kafka.CommittableConsumerRecord
 import fs2.Chunk
 
+import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.TopicPartition
 
 private[kafka] object State {
@@ -21,7 +22,8 @@ private[kafka] object State {
     State[F, K, V](
       Map.empty,
       false,
-      false
+      false,
+      Map.empty
     )
 
 }
@@ -46,7 +48,8 @@ final private[kafka] case class PartitionGroupState[F[_], K, V](
 final private[kafka] case class State[F[_], K, V](
   partitionGroupState: Map[Set[TopicPartition], PartitionGroupState[F, K, V]],
   subscribed: Boolean,
-  streaming: Boolean
+  streaming: Boolean,
+  requestedCommitOffsets: Map[TopicPartition, OffsetAndMetadata]
 )(implicit
   F: Async[F]
 ) {
@@ -63,6 +66,23 @@ final private[kafka] case class State[F[_], K, V](
     copy(streaming = true)
 
   def withNotStreaming(): State[F, K, V] = copy(streaming = false)
+
+  def withRequestedCommitOffsets(
+    offsets: Map[TopicPartition, OffsetAndMetadata]
+  ): State[F, K, V] =
+    copy(requestedCommitOffsets = offsets.foldLeft(requestedCommitOffsets) {
+      case (acc, (partition, offsetAndMetadata)) =>
+        val isNewer = acc.get(partition).forall(_.offset < offsetAndMetadata.offset)
+        if (isNewer) acc.updated(partition, offsetAndMetadata) else acc
+    })
+
+  def removeRequestedCommitOffsets(
+    revoked: Set[TopicPartition]
+  ): (State[F, K, V], Map[TopicPartition, OffsetAndMetadata]) = {
+    val (toCommit, retained) =
+      requestedCommitOffsets.partition { case (partition, _) => revoked.contains(partition) }
+    (copy(requestedCommitOffsets = retained), toCommit)
+  }
 
   override def toString: String =
     s"State(partitionGroupState = $partitionGroupState, subscribed = $subscribed, streaming = $streaming)"

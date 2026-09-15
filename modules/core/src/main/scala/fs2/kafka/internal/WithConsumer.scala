@@ -15,7 +15,11 @@ import fs2.kafka.internal.syntax.*
 import org.apache.kafka.clients.consumer.CloseOptions
 
 sealed abstract private[kafka] class WithConsumer[F[_]] {
+
   def blocking[A](f: KafkaByteConsumer => A): F[A]
+
+  def synchronouslyDuringRebalance[A](f: KafkaByteConsumer => A): A
+
 }
 
 private[kafka] object WithConsumer {
@@ -36,6 +40,9 @@ private[kafka] object WithConsumer {
 
             override def blocking[A](f: KafkaByteConsumer => A): F[A] =
               b(f(consumer))
+
+            override def synchronouslyDuringRebalance[A](f: KafkaByteConsumer => A): A =
+              f(consumer)
 
           }
         }

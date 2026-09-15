@@ -289,6 +289,14 @@ final class ConsumerSettingsSpec extends BaseSpec {
         settings.show == settings.toString
       }
     }
+
+    it("should default commitOnRevoke to false and provide withCommitOnRevoke") {
+      assert {
+        !settings.commitOnRevoke &&
+        settings.withCommitOnRevoke(true).commitOnRevoke &&
+        !settings.withCommitOnRevoke(true).withCommitOnRevoke(false).commitOnRevoke
+      }
+    }
   }
 
   val settings =
