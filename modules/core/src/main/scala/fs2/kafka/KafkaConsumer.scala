@@ -334,8 +334,9 @@ object KafkaConsumer {
           .flatMap { deferred =>
             requests.offer(
               Request.WithPermit(fa, deferred.complete(_: Either[Throwable, A]).void)
-            ) >> deferred.get.rethrow
+            ) >> F.race(awaitTermination.as(ConsumerShutdownException()), deferred.get.rethrow)
           }
+          .rethrow
 
       override def subscribe(regex: Regex): F[Unit] =
         withPermit(actor.subscribe(regex))
