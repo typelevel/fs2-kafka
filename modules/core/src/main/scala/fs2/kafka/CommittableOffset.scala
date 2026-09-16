@@ -6,6 +6,7 @@
 
 package fs2.kafka
 
+import cats.~>
 import cats.syntax.all.*
 import cats.Eq
 import cats.Show
@@ -19,7 +20,7 @@ import org.apache.kafka.common.TopicPartition
   *
   * Note offsets are most often committed in batches for performance reasons.
   */
-sealed abstract class CommittableOffset[F[_]] {
+sealed abstract class CommittableOffset[F[_]] { self =>
 
   /**
     * The topic and partition for the offset and metadata.
@@ -40,6 +41,13 @@ sealed abstract class CommittableOffset[F[_]] {
     * Commits the offset and metadata for the topic and partition.
     */
   def commit: F[Unit]
+
+  /**
+    * Creates a new [[CommittableOffset]] in which the effect type has been changed using the
+    * specified `FunctionK`.
+    */
+  final def mapK[G[_]](f: F ~> G): CommittableOffset[G] =
+    CommittableOffset(self.topicPartition, self.offsetAndMetadata, self.committer.mapK(f))
 
 }
 

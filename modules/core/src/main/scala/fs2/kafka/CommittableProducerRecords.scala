@@ -7,6 +7,7 @@
 package fs2.kafka
 
 import cats.{Applicative, Bitraverse, Eq, Eval, Foldable, Show, Traverse}
+import cats.~>
 import cats.syntax.bifoldable.*
 import cats.syntax.bitraverse.*
 import cats.syntax.eq.*
@@ -28,7 +29,7 @@ import fs2.Chunk
   *   - `CommittableProducerRecords#one` to produce exactly one record within the same transaction
   *     as the offset is committed.
   */
-sealed abstract class CommittableProducerRecords[F[_], +K, +V] {
+sealed abstract class CommittableProducerRecords[F[_], +K, +V] { self =>
 
   /**
     * The records to produce. Can be empty to simply commit the offset.
@@ -39,6 +40,13 @@ sealed abstract class CommittableProducerRecords[F[_], +K, +V] {
     * The offset to commit.
     */
   def offset: CommittableOffset[F]
+
+  /**
+    * Creates a new [[CommittableProducerRecords]] in which the effect type has been changed using
+    * the specified `FunctionK`.
+    */
+  final def mapK[G[_]](f: F ~> G): CommittableProducerRecords[G, K, V] =
+    CommittableProducerRecords.chunk(self.records, self.offset.mapK(f))
 
 }
 
