@@ -9,7 +9,7 @@ val logbackVersion             = "1.5.32"
 val munitVersion               = "1.3.6"
 val slf4jVersion               = "1.7.36"
 val testcontainersScalaVersion = "0.44.1"
-val vulcanVersion              = "1.13.0"
+val vulcanVersion              = "1.14.0"
 
 val scala212 = "2.12.21"
 val scala213 = "2.13.18"
