@@ -6,6 +6,7 @@
 
 package fs2.kafka
 
+import cats.~>
 import cats.Eq
 import cats.Show
 
@@ -16,7 +17,7 @@ import org.apache.kafka.common.TopicPartition
 /**
   * Describes commit-related capabilities for a particular consumer instance.
   */
-sealed abstract class KafkaCommitter[F[_]] {
+sealed abstract class KafkaCommitter[F[_]] { self =>
 
   /**
     * Commits the specified offsets and metadata.
@@ -27,6 +28,13 @@ sealed abstract class KafkaCommitter[F[_]] {
     * Returns the current consumer group metadata.
     */
   def metadata: F[ConsumerGroupMetadata]
+
+  /**
+    * Creates a new [[KafkaCommitter]] in which the effect type has been changed using the specified
+    * `FunctionK`.
+    */
+  final def mapK[G[_]](f: F ~> G): KafkaCommitter[G] =
+    KafkaCommitter(offsets => f(self.commit(offsets)), f(self.metadata))
 
 }
 

@@ -245,6 +245,24 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
       }
     }
 
+    it("should fail subscription operations instead of hanging when terminated") {
+      withTopic { topic =>
+        val result =
+          KafkaConsumer
+            .stream(consumerSettings[IO])
+            .subscribeTo(topic)
+            .evalTap(_.terminate)
+            .evalTap(_.awaitTermination)
+            .evalMap(_.unsubscribe.attempt)
+            .compile
+            .lastOrError
+            .timeout(30.seconds)
+            .unsafeRunSync()
+
+        assert(result.left.exists(_.isInstanceOf[ConsumerShutdownException]))
+      }
+    }
+
     it("should fail with an error if not subscribed or assigned") {
       withTopic { topic =>
         createCustomTopic(topic, partitions = 3)

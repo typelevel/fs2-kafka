@@ -7,6 +7,7 @@
 package fs2.kafka
 
 import cats.{Applicative, Bitraverse, Eq, Eval, Show, Traverse}
+import cats.~>
 import cats.syntax.bifoldable.*
 import cats.syntax.bitraverse.*
 import cats.syntax.eq.*
@@ -25,7 +26,7 @@ import cats.syntax.traverse.*
   * While normally not necessary, [[CommittableConsumerRecord#apply]] can be used to create a new
   * instance.
   */
-sealed abstract class CommittableConsumerRecord[F[_], +K, +V] {
+sealed abstract class CommittableConsumerRecord[F[_], +K, +V] { self =>
 
   /**
     * The Kafka record for the [[CommittableConsumerRecord]]. If you are not committing offsets to
@@ -39,6 +40,13 @@ sealed abstract class CommittableConsumerRecord[F[_], +K, +V] {
     * [[commitBatchWithin]] use [[CommittableOffsetBatch]] to batch and commit offsets.
     */
   def offset: CommittableOffset[F]
+
+  /**
+    * Creates a new [[CommittableConsumerRecord]] in which the effect type has been changed using
+    * the specified `FunctionK`.
+    */
+  final def mapK[G[_]](f: F ~> G): CommittableConsumerRecord[G, K, V] =
+    CommittableConsumerRecord(self.record, self.offset.mapK(f))
 
 }
 
