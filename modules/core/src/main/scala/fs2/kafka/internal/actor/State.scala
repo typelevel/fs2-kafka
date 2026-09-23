@@ -65,8 +65,6 @@ final private[kafka] case class State[F[_], K, V](
   def withStreaming(): State[F, K, V] =
     copy(streaming = true)
 
-  def withNotStreaming(): State[F, K, V] = copy(streaming = false)
-
   def withRequestedCommitOffsets(
     offsets: Map[TopicPartition, OffsetAndMetadata]
   ): State[F, K, V] =
