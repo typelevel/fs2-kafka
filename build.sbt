@@ -7,7 +7,7 @@ val fs2Version                 = "3.14.0"
 val kafkaVersion               = "4.3.1"
 val logbackVersion             = "1.6.3"
 val munitVersion               = "1.3.6"
-val slf4jVersion               = "1.7.36"
+val slf4jVersion               = "2.0.20"
 val testcontainersScalaVersion = "0.44.1"
 val vulcanVersion              = "1.14.0"
 
