@@ -18,6 +18,7 @@ import cats.effect.unsafe.implicits.global
 import cats.syntax.all.*
 import fs2.concurrent.SignallingRef
 import fs2.kafka.consumer.KafkaConsumeChunk.CommitNow
+import fs2.kafka.instances.*
 import fs2.kafka.internal.converters.collection.*
 import fs2.Stream
 
@@ -260,6 +261,41 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
           readOffset = 90,
           partition = Some(123)
         )(_)
+      }
+    }
+
+    it("#1524 should not poll before the stream is consumed") {
+      withTopic { topic =>
+        createCustomTopic(topic)
+        val produced = (0 until 5).map(n => s"key-$n" -> s"value->$n")
+        publishToKafka(topic, produced)
+
+        val settings =
+          consumerSettings[IO]
+            .withGroupId(s"no-poll-before-stream-${UUID.randomUUID()}")
+            .withAutoOffsetReset(AutoOffsetReset.None)
+
+        val partition = new TopicPartition(topic, 0)
+
+        val consumed =
+          KafkaConsumer
+            .resource(settings)
+            .use { consumer =>
+              for {
+                _       <- consumer.assign(NonEmptySet.one(partition))
+                _       <- IO.sleep(3.seconds) // any poll in here races with the seek below
+                _       <- consumer.seekToBeginning(List(partition))
+                records <- consumer
+                             .records
+                             .take(produced.size.toLong)
+                             .map(committable => committable.record.key -> committable.record.value)
+                             .compile
+                             .toVector
+              } yield records
+            }
+            .timeout(30.seconds)
+
+        consumed.unsafeRunSync() should contain theSameElementsAs produced
       }
     }
 

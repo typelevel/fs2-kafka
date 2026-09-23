@@ -135,9 +135,7 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
         Stream.eval(
           state.get.map(_.subscribed).ifM(().pure[F], NotSubscribedException().raiseError[F, Unit])
         )
-      _ <- Stream.resource(
-             Resource.make(state.update(_.withStreaming()))(_ => state.update(_.withNotStreaming()))
-           )
+      _                <- Stream.eval(state.update(_.withStreaming()))
       assignments0      = Stream.eval(state.get.map(_.partitionGroupState)).filter(_.nonEmpty)
       assignmentUpdates = Stream.fromQueueNoneTerminated(assignment)
       assignment       <- (assignments0 ++ assignmentUpdates).map { assignment =>
@@ -153,7 +151,8 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
     } yield assignment
 
   def assignments: Stream[F, SortedSet[TopicPartition]] =
-    currentAssignmentRef.discrete.takeWhile(_.isDefined).unNone
+    Stream.exec(state.update(_.withStreaming())) ++
+      currentAssignmentRef.discrete.takeWhile(_.isDefined).unNone
 
   def assign(partitions: NonEmptySet[TopicPartition]): F[Unit] =
     F.uncancelable { _ =>
@@ -444,7 +443,7 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
     state
       .get
       .flatMap {
-        case state if state.subscribed =>
+        case state if state.subscribed && state.streaming =>
           for {
             partition <-
               state.partitionGroupState.partition { case (_, s) => s.spillover.isEmpty }.pure[F]
