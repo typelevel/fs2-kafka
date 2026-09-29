@@ -207,21 +207,23 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
     }
 
   def unsubscribe(): F[Unit] =
-    state.evalUpdate { state =>
-      for {
-        _ <- assignment.offer(None)
-        _ <- state
-               .partitionGroupState
-               .values
-               .toList
-               .parTraverse(group =>
-                 group.interrupt.complete(().asRight) >> group.groupSemaphore.acquire
-               )
-        newState = state.withUnsubscribed()
-        _       <- withConsumer.blocking(_.unsubscribe())
-        _       <- logging.log(Unsubscribed(newState))
-      } yield newState
-    }
+    for {
+      _ <- withConsumer.blocking(_.unsubscribe()).uncancelable
+      _ <- state.evalUpdate { state =>
+             for {
+               _ <- assignment.offer(None)
+               _ <- state
+                      .partitionGroupState
+                      .values
+                      .toList
+                      .parTraverse(group =>
+                        group.interrupt.complete(().asRight) >> group.groupSemaphore.acquire
+                      )
+               newState = state.withUnsubscribed()
+               _       <- logging.log(Unsubscribed(newState))
+             } yield newState
+           }
+    } yield ()
 
   /**
     * Realigns partition-group state with `targetAssignment`.
