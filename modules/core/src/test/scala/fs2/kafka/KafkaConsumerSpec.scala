@@ -340,6 +340,27 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
       }
     }
 
+    it("should unsubscribe while holding an assignment") {
+      withTopic { topic =>
+        createCustomTopic(topic, partitions = 3)
+        publishToKafka(topic, (0 until 5).map(n => s"key-$n" -> s"value->$n"))
+
+        val consumed =
+          KafkaConsumer
+            .stream(consumerSettings[IO])
+            .subscribeTo(topic)
+            .flatMap { consumer =>
+              consumer.records.take(5) ++ Stream.exec(consumer.unsubscribe)
+            }
+            .compile
+            .toVector
+            .timeout(30.seconds)
+            .unsafeRunSync()
+
+        consumed should have size 5
+      }
+    }
+
     it("should fail with an error if not subscribed or assigned") {
       withTopic { topic =>
         createCustomTopic(topic, partitions = 3)
