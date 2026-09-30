@@ -191,22 +191,29 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
         KafkaAdminClient
           .resource[IO](adminClientSettings)
           .use { adminClient =>
+            // delete is also the default cleanup.policy, so also check that it was set on the topic
+            def isSetOnTopic(expected: ConfigEntry)(actual: ConfigEntry): Boolean =
+              actual.name == expected.name && actual.value == expected.value &&
+                actual.source == ConfigEntry.ConfigSource.DYNAMIC_TOPIC_CONFIG
+
             for {
-              cr                    <- IO.pure(new ConfigResource(ConfigResource.Type.TOPIC, topic))
-              delete                 = new ConfigEntry("cleanup.policy", "delete")
-              compact                = new ConfigEntry("cleanup.policy", "compact")
-              setDelete              = Map(cr -> List(new AlterConfigOp(delete, AlterConfigOp.OpType.SET)))
-              setCompact             = Map(cr -> List(new AlterConfigOp(compact, AlterConfigOp.OpType.SET)))
-              _                     <- adminClient.alterConfigs[List](setDelete)
-              describeAfterSet      <- adminClient.describeConfigs(List(cr))
+              cr               <- IO.pure(new ConfigResource(ConfigResource.Type.TOPIC, topic))
+              delete            = new ConfigEntry("cleanup.policy", "delete")
+              compact           = new ConfigEntry("cleanup.policy", "compact")
+              setDelete         = Map(cr -> List(new AlterConfigOp(delete, AlterConfigOp.OpType.SET)))
+              setCompact        = Map(cr -> List(new AlterConfigOp(compact, AlterConfigOp.OpType.SET)))
+              _                <- adminClient.alterConfigs[List](setDelete)
+              describeAfterSet <- eventually {
+                                    adminClient
+                                      .describeConfigs(List(cr))
+                                      .map { described =>
+                                        assert(described(cr).exists(isSetOnTopic(delete)))
+                                        described
+                                      }
+                                  }
               _                     <- adminClient.alterConfigs[List](setCompact, validateOnly = true)
               describeAfterValidate <- adminClient.describeConfigs(List(cr))
-            } yield {
-              describeAfterSet(cr).exists(actual =>
-                actual.name == delete.name && actual.value == delete.value
-              )
-              assert(describeAfterSet.get(cr) == describeAfterValidate.get(cr))
-            }
+            } yield assert(describeAfterSet.get(cr) == describeAfterValidate.get(cr))
           }
           .unsafeRunSync()
       }
@@ -239,34 +246,47 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
                      adminClient.listTopics.includeInternal.toString should
                        startWith("ListTopicsIncludeInternal$")
                    }
-              describedTopics  <- adminClient.describeTopics(topicNames.toList)
-              _                <- IO(assert(describedTopics.size == topicCount))
-              newTopic          = new NewTopic("new-test-topic", 1, 1.toShort)
-              preCreateNames   <- adminClient.listTopics.names
-              _                <- IO(assert(!preCreateNames.contains(newTopic.name)))
-              _                <- adminClient.createTopic(newTopic)
-              postCreateNames  <- adminClient.listTopics.names
+              describedTopics <- adminClient.describeTopics(topicNames.toList)
+              _               <- IO(assert(describedTopics.size == topicCount))
+              newTopic         = new NewTopic("new-test-topic", 1, 1.toShort)
+              preCreateNames  <- adminClient.listTopics.names
+              _               <- IO(assert(!preCreateNames.contains(newTopic.name)))
+              _               <- adminClient.createTopic(newTopic)
+              _               <- eventually {
+                     adminClient
+                       .listTopics
+                       .names
+                       .map { postCreateNames =>
+                         assert(postCreateNames.contains(newTopic.name))
+                       }
+                   }
               createAgain      <- adminClient.createTopics(List(newTopic)).attempt
               _                <- IO(assert(createAgain.isLeft))
-              _                <- IO(assert(postCreateNames.contains(newTopic.name)))
               createPartitions <-
                 adminClient.createPartitions(Map(topic -> NewPartitions.increaseTo(4))).attempt
-              _               <- IO(assert(createPartitions.isRight))
-              describedTopics <- adminClient.describeTopics(topic :: Nil)
-              _               <- IO(assert(describedTopics.size == 1))
-              _               <- IO(
-                     assert(describedTopics.headOption.exists(_._2.partitions.size == 4))
-                   )
-              deleteTopics    <- adminClient.deleteTopics(List(topic)).attempt
-              _               <- IO(assert(deleteTopics.isRight))
-              describedTopics <- adminClient.describeTopics(topic :: Nil).attempt
-              _               <- IO(
-                     assert(
-                       describedTopics.leftMap(_.getMessage()) == Left(
-                         "This server does not host this topic-partition."
-                       )
-                     )
-                   )
+              _ <- IO(assert(createPartitions.isRight))
+              _ <- eventually {
+                     adminClient
+                       .describeTopics(topic :: Nil)
+                       .map { describedTopics =>
+                         assert(describedTopics.size == 1)
+                         assert(describedTopics.headOption.exists(_._2.partitions.size == 4))
+                       }
+                   }
+              deleteTopics <- adminClient.deleteTopics(List(topic)).attempt
+              _            <- IO(assert(deleteTopics.isRight))
+              _            <- eventually {
+                     adminClient
+                       .describeTopics(topic :: Nil)
+                       .attempt
+                       .map { describedTopics =>
+                         assert(
+                           describedTopics.leftMap(_.getMessage()) == Left(
+                             "This server does not host this topic-partition."
+                           )
+                         )
+                       }
+                   }
               deleteTopic <- adminClient.deleteTopic(newTopic.name()).attempt
               _           <- IO(assert(deleteTopic.isRight))
             } yield ()
@@ -535,10 +555,11 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
                       )
           adminClient <- KafkaAdminClient.resource[IO](adminClientSettings)
           _           <- producer.transaction // start transaction so that it can be managed
-          _           <- producer             // we are forced to produce in order for the transaction to become visble
+          _           <- producer             // await the ack so the transaction is ongoing
                  .produce(
                    Chunk.singleton(ProducerRecord(tp.topic(), (), ()).withPartition(tp.partition()))
                  )
+                 .flatten
                  .toResource
         } yield (producer, adminClient))
           .use { case (_, adminClient) =>
@@ -565,7 +586,12 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
             // When it does it attempts to commit the transaction but since the producer was fenced it should fail
             // We assert that the failure does happen.
             case Left(_: ProducerFencedException) => succeed.pure[IO]
-            case _                                => IO(fail("expected ProducerFencedException when deallocating transaction"))
+            case other                            =>
+              IO(
+                fail(
+                  s"expected ProducerFencedException when deallocating transaction but got: $other"
+                )
+              )
           }
           .unsafeRunSync()
       }
@@ -735,5 +761,11 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
       .lastOrError
       .unsafeRunSync()
   }
+
+  def eventually[A](check: IO[A], attempts: Int = 100): IO[A] =
+    check.handleErrorWith { error =>
+      if (attempts > 1) IO.sleep(100.millis) >> eventually(check, attempts - 1)
+      else IO.raiseError(error)
+    }
 
 }
