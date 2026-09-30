@@ -154,8 +154,11 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
     Stream.exec(state.update(_.withStreaming())) ++
       currentAssignmentRef.discrete.takeWhile(_.isDefined).unNone
 
+  private def drainAssignmentQueue: F[Unit] =
+    state.get.flatMap(s => assignment.tryTakeN(None).void.whenA(!s.subscribed))
+
   def assign(partitions: NonEmptySet[TopicPartition]): F[Unit] =
-    F.uncancelable { _ =>
+    drainAssignmentQueue >> F.uncancelable { _ =>
       withConsumer.blocking(_.assign(partitions.toSortedSet.toList.asJava))
     } >> state.evalUpdate { s =>
       for {
@@ -167,6 +170,7 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
 
   def subscribe(regex: Regex): F[Unit] =
     for {
+      _ <- drainAssignmentQueue
       _ <- withConsumer
              .blocking {
                _.subscribe(regex.pattern, consumerRebalanceListener)
@@ -178,6 +182,7 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
 
   def subscribe[G[_]](topics: G[String])(implicit G: Reducible[G]): F[Unit] =
     for {
+      _ <- drainAssignmentQueue
       _ <- withConsumer
              .blocking {
                _.subscribe(topics.toList.asJava, consumerRebalanceListener)
