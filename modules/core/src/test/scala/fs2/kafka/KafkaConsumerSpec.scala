@@ -361,6 +361,34 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
       }
     }
 
+    it("should consume after unsubscribing and subscribing again") {
+      withTopic { first =>
+        withTopic { second =>
+          createCustomTopic(first, partitions = 3)
+          createCustomTopic(second, partitions = 3)
+          publishToKafka(first, (0 until 5).map(n => s"key-$n" -> s"value->$n"))
+          publishToKafka(second, (5 until 10).map(n => s"key-$n" -> s"value->$n"))
+
+          val consumed =
+            KafkaConsumer
+              .stream(consumerSettings[IO])
+              .subscribeTo(first)
+              .flatMap { consumer =>
+                consumer.records.take(5) ++
+                  Stream.exec(consumer.unsubscribe >> consumer.subscribeTo(second)) ++
+                  consumer.records.take(5)
+              }
+              .map(committable => committable.record.key -> committable.record.value)
+              .compile
+              .toVector
+              .timeout(60.seconds)
+              .unsafeRunSync()
+
+          consumed.map(_._1) should contain theSameElementsAs (0 until 10).map(n => s"key-$n")
+        }
+      }
+    }
+
     it("should fail with an error if not subscribed or assigned") {
       withTopic { topic =>
         createCustomTopic(topic, partitions = 3)
