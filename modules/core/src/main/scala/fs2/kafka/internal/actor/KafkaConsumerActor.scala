@@ -112,7 +112,7 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
           val targetAssignment  = currentAssignment ++ assigned
           for {
             groups  <- alignPartitionState(targetAssignment, state.partitionGroupState)
-            newState = state.withGroupState(groups)
+            newState = state.withGroupState(groups).withoutRequestedCommitOffsets(assigned)
             _       <- logging.log(AssignedPartitions(assigned, newState))
           } yield newState
         }
