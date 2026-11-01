@@ -1034,7 +1034,7 @@ object KafkaAdminClient {
 
   /**
     * Like [[resource]], but allows the effect type of the created [[KafkaAdminClient]] to be
-    * different from the effect type of the [[Resource]] that allocates it.
+    * different from the effect type of the [[cats.effect.kernel.Resource]] that allocates it.
     */
   def resourceIn[F[_], G[_]](
     settings: AdminClientSettings
@@ -1293,7 +1293,7 @@ object KafkaAdminClient {
 
   /**
     * Like [[stream]], but allows the effect type of the created [[KafkaAdminClient]] to be
-    * different from the effect type of the [[Stream]] that allocates it.
+    * different from the effect type of the [[fs2.Stream]] that allocates it.
     */
   def streamIn[F[_], G[_]](
     settings: AdminClientSettings
@@ -1305,11 +1305,11 @@ object KafkaAdminClient {
    * to code defined in this object, ensuring factory methods require an instance
    * to be provided at the call site.
    */
-  @nowarn("msg=never used")
+  @nowarn("msg=never used|unused private member")
   implicit private def mkAmbig1[F[_]]: MkAdminClient[F] =
     throw new AssertionError("should not be used")
 
-  @nowarn("msg=never used")
+  @nowarn("msg=never used|unused private member")
   implicit private def mkAmbig2[F[_]]: MkAdminClient[F] =
     throw new AssertionError("should not be used")
 

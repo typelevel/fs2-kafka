@@ -20,8 +20,8 @@ import fs2.Chunk
 
 /**
   * [[CommittableProducerRecords]] represents zero or more [[ProducerRecord]]s and a
-  * [[CommittableOffset]], used by [[TransactionalKafkaProducer]] to produce the records and commit
-  * the offset atomically.<br><br>
+  * [[CommittableOffset]], used by a transactional [[KafkaProducer]] to produce the records and
+  * commit the offset atomically.<br><br>
   *
   * [[CommittableProducerRecords]]s can be created using one of the following options:<br>
   *   - `CommittableProducerRecords#apply` to produce zero or more records within the same

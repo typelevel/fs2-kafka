@@ -40,9 +40,9 @@ trait KafkaConsumeGrouped[F[_], K, V] {
     *   `Stream`. If you forgot to subscribe, there will be a [[NotSubscribedException]] raised in
     *   the `Stream`.
     * @see
-    *   [[records]]
+    *   [[KafkaConsume#records]]
     * @see
-    *   [[partitionedRecords]]
+    *   [[KafkaConsume#partitionedRecords]]
     */
   def groupedPartitionsMapStream
     : Stream[F, Map[Set[TopicPartition], Stream[F, CommittableConsumerRecord[F, K, V]]]]

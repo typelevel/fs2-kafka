@@ -66,7 +66,7 @@ object GenericDeserializer {
   def apply[F[_], A](implicit deserializer: Deserializer[F, A]): Deserializer[F, A] = deserializer
 
   /**
-    * Alias for [[Deserializer#identity]].
+    * Alias for [[GenericDeserializer.identity]].
     */
   def apply[F[_]](implicit F: Sync[F]): Deserializer[F, Array[Byte]] = identity
 

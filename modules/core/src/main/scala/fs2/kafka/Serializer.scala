@@ -80,7 +80,7 @@ object GenericSerializer {
   def apply[F[_], A](implicit serializer: Serializer[F, A]): Serializer[F, A] = serializer
 
   /**
-    * Alias for [[Serializer#identity]].
+    * Alias for [[GenericSerializer.identity]].
     */
   def apply[F[_]](implicit F: Sync[F]): Serializer[F, Array[Byte]] = identity
 

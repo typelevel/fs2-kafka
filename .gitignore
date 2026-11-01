@@ -1,8 +1,3 @@
-/website/build/
-/website/node_modules/
-/website/static/api/
-/website/variables.js
-/website/yarn.lock
 target/
 .metals/
 .vscode/

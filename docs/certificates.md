@@ -1,9 +1,4 @@
----
-id: security
-title: Security & Certificates
----
-
-## Security: certificates, trust stores, and passwords 
+# Security & Certificates
 
 The `KafkaCredentialStore` can be used to create the necessary trust stores and passwords to access Kafka.
 

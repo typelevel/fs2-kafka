@@ -1,7 +1,4 @@
----
-id: modules
-title: Modules
----
+# Modules
 
 The following sections describe the additional modules.
 
@@ -173,7 +170,7 @@ class MySpec extends SchemaSuite {
   override def munitFixtures = List(checker)
 
   test("my codec is compatible") {
-    val myCodec: Codec[String] = ???
+    val myCodec: Codec[String] = Codec.string
 
     val compatibility = checker()
       .assertReaderCompatibility(myCodec, "my-schema-subject")
