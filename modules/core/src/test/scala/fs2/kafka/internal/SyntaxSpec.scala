@@ -9,6 +9,8 @@ package fs2.kafka.internal
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.CancellationException
 
+import scala.concurrent.duration.*
+
 import cats.effect.std.CountDownLatch
 import cats.effect.unsafe.implicits.global
 import cats.effect.IO
@@ -80,8 +82,32 @@ final class SyntaxSpec extends BaseSpec {
           _     <- IO.cede.whileM_(IO(!isFutureStarted.get))
           _     <- IO(assert(!isFutureCancelled.get))
           _     <- fiber.cancel
-          _     <- latch.await
+          _     <- latch.await.timeout(10.seconds)
           _     <- IO(assert(isFutureCancelled.get))
+        } yield ()
+      test.unsafeRunSync()
+    }
+
+    it("should cancel future when fiber is cancelled right after creating the future") {
+      val test =
+        for {
+          latch                          <- CountDownLatch[IO](1)
+          isFutureCancelled              <- IO(new AtomicBoolean)
+          futureIO: IO[KafkaFuture[Unit]] = IO {
+                                              val future = new KafkaFutureImpl[Unit]
+                                              future.whenComplete {
+                                                case (_, _: CancellationException) =>
+                                                  latch
+                                                    .release
+                                                    .as(isFutureCancelled.set(true))
+                                                    .unsafeRunSync()
+                                                case _ => ()
+                                              }
+                                              future
+                                            } <* IO.canceled
+          outcome <- futureIO.cancelable_.start.flatMap(_.join)
+          _       <- latch.await.timeout(10.seconds)
+          _       <- IO(assert(outcome.isCanceled && isFutureCancelled.get))
         } yield ()
       test.unsafeRunSync()
     }
