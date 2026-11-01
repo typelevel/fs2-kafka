@@ -1,35 +1,703 @@
-<!DOCTYPE html ><html><head><meta http-equiv="X-UA-Compatible" content="IE=edge"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/><title>FS2 Kafka v4.1.3 - fs2.kafka.AdminClientSettings</title><meta content="FS2 Kafka v4.1.3 - fs2.kafka.AdminClientSettings" name="description"/><meta content="FS2 Kafka v4.1.3 fs2.kafka.AdminClientSettings" name="keywords"/><meta http-equiv="content-type" content="text/html; charset=UTF-8"/><link href="../../lib/index.css" media="screen" type="text/css" rel="stylesheet"/><link href="../../lib/template.css" media="screen" type="text/css" rel="stylesheet"/><link href="../../lib/print.css" media="print" type="text/css" rel="stylesheet"/><link href="../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css"/><script type="text/javascript" src="../../lib/jquery.min.js"></script><script type="text/javascript" src="../../lib/index.js"></script><script type="text/javascript" src="../../index.js"></script><script type="text/javascript" src="../../lib/scheduler.js"></script><script type="text/javascript" src="../../lib/template.js"></script><script type="text/javascript">/* this variable can be used by the JS to determine the path to the root document */
-var toRoot = '../../';</script></head><body><div id="search"><span id="doc-title">FS2 Kafka<span id="doc-version">v4.1.3</span></span> <span class="close-results"><span class="left">&lt;</span> Back</span><div id="textfilter"><span class="input"><input autocapitalize="none" placeholder="Search" id="index-input" type="text" accesskey="/"/><i class="clear material-icons"></i><i id="search-icon" class="material-icons"></i></span></div></div><div id="search-results"><div id="search-progress"><div id="progress-fill"></div></div><div id="results-content"><div id="entity-results"></div><div id="member-results"></div></div></div><div id="content-scroll-container" style="-webkit-overflow-scrolling: touch;"><div id="content-container" style="-webkit-overflow-scrolling: touch;"><div id="subpackage-spacer"><div id="packages"><h1>Packages</h1><ul><li class="indented0 " name="_root_.root" group="Ungrouped" fullComment="yes" data-isabs="false" visbl="pub"><a id="_root_" class="anchorToMember"></a><a id="root:_root_" class="anchorToMember"></a> <span class="permalink"><a href="../../index.html" title="Permalink"><i class="material-icons"></i></a></span> <span class="modifier_kind"><span class="modifier"></span> <span class="kind">package</span></span> <span class="symbol"><a href="../../index.html" title=""><span class="name">root</span></a></span><div class="fullcomment"><dl class="attributes block"><dt>Definition Classes</dt><dd><a href="../../index.html" name="_root_" id="_root_" class="extype">root</a></dd></dl></div></li><li class="indented1 " name="_root_.fs2" group="Ungrouped" fullComment="yes" data-isabs="false" visbl="pub"><a id="fs2" class="anchorToMember"></a><a id="fs2:fs2" class="anchorToMember"></a> <span class="permalink"><a href="../../fs2/index.html" title="Permalink"><i class="material-icons"></i></a></span> <span class="modifier_kind"><span class="modifier"></span> <span class="kind">package</span></span> <span class="symbol"><a href="../index.html" title=""><span class="name">fs2</span></a></span><div class="fullcomment"><dl class="attributes block"><dt>Definition Classes</dt><dd><a href="../../index.html" name="_root_" id="_root_" class="extype">root</a></dd></dl></div></li><li class="indented2 " name="fs2.kafka" group="Ungrouped" fullComment="yes" data-isabs="false" visbl="pub"><a id="kafka" class="anchorToMember"></a><a id="kafka:kafka" class="anchorToMember"></a> <span class="permalink"><a href="../../fs2/kafka/index.html" title="Permalink"><i class="material-icons"></i></a></span> <span class="modifier_kind"><span class="modifier"></span> <span class="kind">package</span></span> <span class="symbol"><a href="index.html" title=""><span class="name">kafka</span></a></span><div class="fullcomment"><dl class="attributes block"><dt>Definition Classes</dt><dd><a href="../index.html" name="fs2" id="fs2" class="extype">fs2</a></dd></dl></div></li><li class="indented3 " name="fs2.kafka.admin" group="Ungrouped" fullComment="yes" data-isabs="false" visbl="pub"><a id="admin" class="anchorToMember"></a><a id="admin:admin" class="anchorToMember"></a> <span class="permalink"><a href="../../fs2/kafka/admin/index.html" title="Permalink"><i class="material-icons"></i></a></span> <span class="modifier_kind"><span class="modifier"></span> <span class="kind">package</span></span> <span class="symbol"><a href="admin/index.html" title=""><span class="name">admin</span></a></span><div class="fullcomment"><dl class="attributes block"><dt>Definition Classes</dt><dd><a href="index.html" name="fs2.kafka" id="fs2.kafka" class="extype">kafka</a></dd></dl></div></li><li class="indented3 " name="fs2.kafka.consumer" group="Ungrouped" fullComment="yes" data-isabs="false" visbl="pub"><a id="consumer" class="anchorToMember"></a><a id="consumer:consumer" class="anchorToMember"></a> <span class="permalink"><a href="../../fs2/kafka/consumer/index.html" title="Permalink"><i class="material-icons"></i></a></span> <span class="modifier_kind"><span class="modifier"></span> <span class="kind">package</span></span> <span class="symbol"><a href="consumer/index.html" title=""><span class="name">consumer</span></a></span><div class="fullcomment"><dl class="attributes block"><dt>Definition Classes</dt><dd><a href="index.html" name="fs2.kafka" id="fs2.kafka" class="extype">kafka</a></dd></dl></div></li><li class="indented3 " name="fs2.kafka.producer" group="Ungrouped" fullComment="yes" data-isabs="false" visbl="pub"><a id="producer" class="anchorToMember"></a><a id="producer:producer" class="anchorToMember"></a> <span class="permalink"><a href="../../fs2/kafka/producer/index.html" title="Permalink"><i class="material-icons"></i></a></span> <span class="modifier_kind"><span class="modifier"></span> <span class="kind">package</span></span> <span class="symbol"><a href="producer/index.html" title=""><span class="name">producer</span></a></span><div class="fullcomment"><dl class="attributes block"><dt>Definition Classes</dt><dd><a href="index.html" name="fs2.kafka" id="fs2.kafka" class="extype">kafka</a></dd></dl></div></li><li class="indented3 " name="fs2.kafka.security" group="Ungrouped" fullComment="yes" data-isabs="false" visbl="pub"><a id="security" class="anchorToMember"></a><a id="security:security" class="anchorToMember"></a> <span class="permalink"><a href="../../fs2/kafka/security/index.html" title="Permalink"><i class="material-icons"></i></a></span> <span class="modifier_kind"><span class="modifier"></span> <span class="kind">package</span></span> <span class="symbol"><a href="security/index.html" title=""><span class="name">security</span></a></span><div class="fullcomment"><dl class="attributes block"><dt>Definition Classes</dt><dd><a href="index.html" name="fs2.kafka" id="fs2.kafka" class="extype">kafka</a></dd></dl></div></li><li class="indented3 " name="fs2.kafka.vulcan" group="Ungrouped" fullComment="yes" data-isabs="false" visbl="pub"><a id="vulcan" class="anchorToMember"></a><a id="vulcan:vulcan" class="anchorToMember"></a> <span class="permalink"><a href="../../fs2/kafka/vulcan/index.html" title="Permalink"><i class="material-icons"></i></a></span> <span class="modifier_kind"><span class="modifier"></span> <span class="kind">package</span></span> <span class="symbol"><a href="vulcan/index.html" title=""><span class="name">vulcan</span></a></span><div class="fullcomment"><dl class="attributes block"><dt>Definition Classes</dt><dd><a href="index.html" name="fs2.kafka" id="fs2.kafka" class="extype">kafka</a></dd></dl></div></li><li class="current-entities indented2"><a href="Acks$.html" title="" class="object"></a> <a href="Acks.html" title="The available options for ProducerSettings#withAcks." class="class"></a><a href="Acks.html" title="The available options for ProducerSettings#withAcks.">Acks</a></li><li class="current-entities indented2"><a href="AdminClientSettings$.html" title="" class="object"></a> <a href="" title="AdminClientSettings contain settings necessary to create a KafkaAdminClient." class="class"></a><a href="" title="AdminClientSettings contain settings necessary to create a KafkaAdminClient.">AdminClientSettings</a></li><li class="current-entities indented2"><a href="AutoOffsetReset$.html" title="" class="object"></a> <a href="AutoOffsetReset.html" title="The available options for ConsumerSettings#withAutoOffsetReset." class="class"></a><a href="AutoOffsetReset.html" title="The available options for ConsumerSettings#withAutoOffsetReset.">AutoOffsetReset</a></li><li class="current-entities indented2"><a href="CommitRecovery$.html" title="" class="object"></a> <a href="CommitRecovery.html" title="CommitRecovery describes how to recover from exceptions raised while trying to commit offsets." class="class"></a><a href="CommitRecovery.html" title="CommitRecovery describes how to recover from exceptions raised while trying to commit offsets.">CommitRecovery</a></li><li class="current-entities indented2"><a href="CommitRecoveryException$.html" title="" class="object"></a> <a href="CommitRecoveryException.html" title="CommitRecoveryException indicates that offset commit recovery was attempted attempts times for offsets, but that it wasn't able to complete successfully." class="class"></a><a href="CommitRecoveryException.html" title="CommitRecoveryException indicates that offset commit recovery was attempted attempts times for offsets, but that it wasn't able to complete successfully.">CommitRecoveryException</a></li><li class="current-entities indented2"><span class="separator"></span> <a href="CommitTimeoutException.html" title="CommitTimeoutException indicates that offset commit took longer than the configured ConsumerSettings#commitTimeout." class="class"></a><a href="CommitTimeoutException.html" title="CommitTimeoutException indicates that offset commit took longer than the configured ConsumerSettings#commitTimeout.">CommitTimeoutException</a></li><li class="current-entities indented2"><a href="CommittableConsumerRecord$.html" title="" class="object"></a> <a href="CommittableConsumerRecord.html" title="CommittableConsumerRecord is a Kafka record along with an instance of CommittableOffset, which can be used commit the record offset to Kafka." class="class"></a><a href="CommittableConsumerRecord.html" title="CommittableConsumerRecord is a Kafka record along with an instance of CommittableOffset, which can be used commit the record offset to Kafka.">CommittableConsumerRecord</a></li><li class="current-entities indented2"><a href="CommittableOffset$.html" title="" class="object"></a> <a href="CommittableOffset.html" title="An offset and metadata for a topic and partition which can be committed." class="class"></a><a href="CommittableOffset.html" title="An offset and metadata for a topic and partition which can be committed.">CommittableOffset</a></li><li class="current-entities indented2"><a href="CommittableOffsetBatch$.html" title="" class="object"></a> <a href="CommittableOffsetBatch.html" title="Offsets and metadata for topics and partitions which can be committed." class="class"></a><a href="CommittableOffsetBatch.html" title="Offsets and metadata for topics and partitions which can be committed.">CommittableOffsetBatch</a></li><li class="current-entities indented2"><a href="CommittableProducerRecords$.html" title="" class="object"></a> <a href="CommittableProducerRecords.html" title="CommittableProducerRecords represents zero or more ProducerRecords and a CommittableOffset, used by TransactionalKafkaProducer to produce the records and commit the offset atomically." class="class"></a><a href="CommittableProducerRecords.html" title="CommittableProducerRecords represents zero or more ProducerRecords and a CommittableOffset, used by TransactionalKafkaProducer to produce the records and commit the offset atomically.">CommittableProducerRecords</a></li><li class="current-entities indented2"><a href="ConsumerRecord$.html" title="" class="object"></a> <a href="ConsumerRecord.html" title="ConsumerRecord represents a record which has been consumed from Kafka." class="class"></a><a href="ConsumerRecord.html" title="ConsumerRecord represents a record which has been consumed from Kafka.">ConsumerRecord</a></li><li class="current-entities indented2"><a href="ConsumerSettings$.html" title="" class="object"></a> <a href="ConsumerSettings.html" title="ConsumerSettings contain settings necessary to create a KafkaConsumer." class="class"></a><a href="ConsumerSettings.html" title="ConsumerSettings contain settings necessary to create a KafkaConsumer.">ConsumerSettings</a></li><li class="current-entities indented2"><span class="separator"></span> <a href="ConsumerShutdownException.html" title="ConsumerShutdownException indicates that a request could not be completed because the consumer has already shutdown." class="class"></a><a href="ConsumerShutdownException.html" title="ConsumerShutdownException indicates that a request could not be completed because the consumer has already shutdown.">ConsumerShutdownException</a></li><li class="current-entities indented2"><span class="separator"></span> <a href="DeserializationException.html" title="Exception raised with Deserializer#failWith when deserialization was unable to complete successfully." class="class"></a><a href="DeserializationException.html" title="Exception raised with Deserializer#failWith when deserialization was unable to complete successfully.">DeserializationException</a></li><li class="current-entities indented2"><a href="GenericDeserializer$.html" title="" class="object"></a> <a href="GenericDeserializer.html" title="Functional composable Kafka key- and record deserializer with support for effect types." class="class"></a><a href="GenericDeserializer.html" title="Functional composable Kafka key- and record deserializer with support for effect types.">GenericDeserializer</a></li><li class="current-entities indented2"><a href="GenericSerializer$.html" title="Functional composable Kafka key- and record serializer with support for effect types." class="object"></a> <a href="GenericSerializer.html" title="" class="class"></a><a href="GenericSerializer.html" title="">GenericSerializer</a></li><li class="current-entities indented2"><a href="Header$.html" title="" class="object"></a> <a href="Header.html" title="Header represents a String key and Array[Byte] value which can be included as part of Headers when creating a ProducerRecord." class="class"></a><a href="Header.html" title="Header represents a String key and Array[Byte] value which can be included as part of Headers when creating a ProducerRecord.">Header</a></li><li class="current-entities indented2"><a href="HeaderDeserializer$.html" title="" class="object"></a> <a href="HeaderDeserializer.html" title="HeaderDeserializer is a functional deserializer for Kafka record header values." class="class"></a><a href="HeaderDeserializer.html" title="HeaderDeserializer is a functional deserializer for Kafka record header values.">HeaderDeserializer</a></li><li class="current-entities indented2"><a href="HeaderSerializer$.html" title="" class="object"></a> <a href="HeaderSerializer.html" title="HeaderSerializer is a functional serializer for Kafka record header values." class="class"></a><a href="HeaderSerializer.html" title="HeaderSerializer is a functional serializer for Kafka record header values.">HeaderSerializer</a></li><li class="current-entities indented2"><a href="Headers$.html" title="" class="object"></a> <a href="Headers.html" title="Headers represent an immutable append-only collection of Headers." class="class"></a><a href="Headers.html" title="Headers represent an immutable append-only collection of Headers.">Headers</a></li><li class="current-entities indented2"><a href="IsolationLevel$.html" title="" class="object"></a> <a href="IsolationLevel.html" title="The available options for ConsumerSettings#withIsolationLevel." class="class"></a><a href="IsolationLevel.html" title="The available options for ConsumerSettings#withIsolationLevel.">IsolationLevel</a></li><li class="current-entities indented2"><a href="Jitter$.html" title="" class="object"></a> <a href="Jitter.html" title="Jitter represents the ability to apply jitter to an existing value n, effectively multiplying n with a pseudorandom value between 0 and 1 (both inclusive, although implementation dependent)." class="class"></a><a href="Jitter.html" title="Jitter represents the ability to apply jitter to an existing value n, effectively multiplying n with a pseudorandom value between 0 and 1 (both inclusive, although implementation dependent).">Jitter</a></li><li class="current-entities indented2"><a href="KafkaAdminClient$.html" title="" class="object"></a> <a href="KafkaAdminClient.html" title="KafkaAdminClient represents an admin client for Kafka, which is able to describe queries about topics, consumer groups, offsets, and other entities related to Kafka." class="class"></a><a href="KafkaAdminClient.html" title="KafkaAdminClient represents an admin client for Kafka, which is able to describe queries about topics, consumer groups, offsets, and other entities related to Kafka.">KafkaAdminClient</a></li><li class="current-entities indented2"><a href="KafkaCommitter$.html" title="" class="object"></a> <a href="KafkaCommitter.html" title="Describes commit-related capabilities for a particular consumer instance." class="class"></a><a href="KafkaCommitter.html" title="Describes commit-related capabilities for a particular consumer instance.">KafkaCommitter</a></li><li class="current-entities indented2"><a href="KafkaConsumer$.html" title="" class="object"></a> <a href="KafkaConsumer.html" title="KafkaConsumer represents a consumer of Kafka records, with the ability to subscribe to topics, start a single top-level stream, and optionally control it via the provided fiber instance." class="class"></a><a href="KafkaConsumer.html" title="KafkaConsumer represents a consumer of Kafka records, with the ability to subscribe to topics, start a single top-level stream, and optionally control it via the provided fiber instance.">KafkaConsumer</a></li><li class="current-entities indented2"><a href="KafkaProducer$.html" title="" class="object"></a> <a href="KafkaProducer.html" title="KafkaProducer represents a producer of Kafka records, with the ability to produce ProducerRecords using produce." class="class"></a><a href="KafkaProducer.html" title="KafkaProducer represents a producer of Kafka records, with the ability to produce ProducerRecords using produce.">KafkaProducer</a></li><li class="current-entities indented2"><span class="separator"></span> <a href="Key.html" title="" class="trait"></a><a href="Key.html" title="">Key</a></li><li class="current-entities indented2"><span class="separator"></span> <a href="KeyOrValue.html" title="Phantom types to indicate whether a Serializer/Deserializer if for keys, values, or both" class="trait"></a><a href="KeyOrValue.html" title="Phantom types to indicate whether a Serializer/Deserializer if for keys, values, or both">KeyOrValue</a></li><li class="current-entities indented2"><span class="separator"></span> <a href="NotSubscribedException.html" title="NotSubscribedException indicates that a Stream was started in KafkaConsumer even though the consumer had not been subscribed to any topics or assigned any partitions before starting." class="class"></a><a href="NotSubscribedException.html" title="NotSubscribedException indicates that a Stream was started in KafkaConsumer even though the consumer had not been subscribed to any topics or assigned any partitions before starting.">NotSubscribedException</a></li><li class="current-entities indented2"><a href="ProducerRecord$.html" title="" class="object"></a> <a href="ProducerRecord.html" title="ProducerRecord represents a record which can be produced to Kafka." class="class"></a><a href="ProducerRecord.html" title="ProducerRecord represents a record which can be produced to Kafka.">ProducerRecord</a></li><li class="current-entities indented2"><span class="separator"></span> <a href="ProducerRecords$.html" title="" class="object"></a><a href="ProducerRecords$.html" title="">ProducerRecords</a></li><li class="current-entities indented2"><a href="ProducerSettings$.html" title="" class="object"></a> <a href="ProducerSettings.html" title="ProducerSettings contain settings necessary to create a KafkaProducer." class="class"></a><a href="ProducerSettings.html" title="ProducerSettings contain settings necessary to create a KafkaProducer.">ProducerSettings</a></li><li class="current-entities indented2"><a href="RebalanceRevokeMode$.html" title="" class="object"></a> <a href="RebalanceRevokeMode.html" title="The available options for ConsumerSettings#rebalanceRevokeMode." class="class"></a><a href="RebalanceRevokeMode.html" title="The available options for ConsumerSettings#rebalanceRevokeMode.">RebalanceRevokeMode</a></li><li class="current-entities indented2"><span class="separator"></span> <a href="SerializationException.html" title="Exception raised with Serializer#failWith when serialization was unable to complete successfully." class="class"></a><a href="SerializationException.html" title="Exception raised with Serializer#failWith when serialization was unable to complete successfully.">SerializationException</a></li><li class="current-entities indented2"><a href="Timestamp$.html" title="" class="object"></a> <a href="Timestamp.html" title="Timestamp is an optional timestamp value." class="class"></a><a href="Timestamp.html" title="Timestamp is an optional timestamp value.">Timestamp</a></li><li class="current-entities indented2"><span class="separator"></span> <a href="TransactionalProducerRecords$.html" title="" class="object"></a><a href="TransactionalProducerRecords$.html" title="">TransactionalProducerRecords</a></li><li class="current-entities indented2"><span class="separator"></span> <a href="UnexpectedTopicException.html" title="UnexpectedTopicException is raised when serialization or deserialization occurred for an unexpected topic which isn't supported by the Serializer or Deserializer." class="class"></a><a href="UnexpectedTopicException.html" title="UnexpectedTopicException is raised when serialization or deserialization occurred for an unexpected topic which isn't supported by the Serializer or Deserializer.">UnexpectedTopicException</a></li><li class="current-entities indented2"><span class="separator"></span> <a href="Value.html" title="" class="trait"></a><a href="Value.html" title="">Value</a></li><li class="current-entities indented2"><span class="separator"></span> <a href="instances$.html" title="" class="object"></a><a href="instances$.html" title="">instances</a></li></ul></div></div><div id="content"><body class="class type"><div id="definition"><a href="AdminClientSettings$.html" title="See companion object"><div class="big-circle class-companion-object">c</div></a><p id="owner"><a href="../index.html" name="fs2" id="fs2" class="extype">fs2</a>.<a href="index.html" name="fs2.kafka" id="fs2.kafka" class="extype">kafka</a></p><h1><a href="AdminClientSettings$.html" title="See companion object">AdminClientSettings</a><span class="permalink"><a href="../../fs2/kafka/AdminClientSettings.html" title="Permalink"><i class="material-icons"></i></a></span></h1><h3><span class="morelinks"><div>Companion <a href="AdminClientSettings$.html" title="See companion object">object AdminClientSettings</a></div></span></h3></div><h4 id="signature" class="signature"><span class="modifier_kind"><span class="modifier">sealed abstract </span> <span class="kind">class</span></span> <span class="symbol"><span class="name">AdminClientSettings</span><span class="result"> extends <a href="https://www.scala-lang.org/api/2.13.18/scala/AnyRef.html#scala.AnyRef" name="scala.AnyRef" id="scala.AnyRef" class="extype">AnyRef</a></span></span></h4><div id="comment" class="fullcommenttop"><div class="comment cmt"><p><a href="" name="fs2.kafka.AdminClientSettings" id="fs2.kafka.AdminClientSettings" class="extype">AdminClientSettings</a> contain settings necessary to create a <a href="KafkaAdminClient.html" name="fs2.kafka.KafkaAdminClient" id="fs2.kafka.KafkaAdminClient" class="extype">KafkaAdminClient</a>. Several
-convenience functions are provided so that you don't have to work with <code>String</code> values and keys
-from <code>AdminClientConfig</code>. It's still possible to set <code>AdminClientConfig</code> values with functions
-like <a href="#withProperty(key:String,value:String):fs2.kafka.AdminClientSettings" name="fs2.kafka.AdminClientSettings#withProperty" id="fs2.kafka.AdminClientSettings#withProperty" class="extmbr">withProperty</a>.<br><br></p><p><a href="" name="fs2.kafka.AdminClientSettings" id="fs2.kafka.AdminClientSettings" class="extype">AdminClientSettings</a> instances are immutable and all modification functions return a new
-<a href="" name="fs2.kafka.AdminClientSettings" id="fs2.kafka.AdminClientSettings" class="extype">AdminClientSettings</a> instance.<br><br></p><p>Use <a href="AdminClientSettings$.html#apply(bootstrapServers:String):fs2.kafka.AdminClientSettings" name="fs2.kafka.AdminClientSettings#apply" id="fs2.kafka.AdminClientSettings#apply" class="extmbr">AdminClientSettings#apply</a> for the default settings, and then apply any desired
-modifications on top of that instance.
-</p></div><dl class="attributes block"><dt>Source</dt><dd><a href="https://github.com/typelevel/fs2-kafka/tree/v4.1.3/modules/core/src/main/scala/fs2/kafka/AdminClientSettings.scala" target="_blank">AdminClientSettings.scala</a></dd></dl><div class="toggleContainer"><div class="toggle block"><span>Linear Supertypes</span><div class="superTypes hiddenContent"><a href="https://www.scala-lang.org/api/2.13.18/scala/AnyRef.html#scala.AnyRef" name="scala.AnyRef" id="scala.AnyRef" class="extype">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.13.18/scala/Any.html#scala.Any" name="scala.Any" id="scala.Any" class="extype">Any</a></div></div></div></div><div id="mbrsel"><div class="toggle"></div><div id="memberfilter"><i class="material-icons arrow"></i><span class="input"><input placeholder="Filter all members" id="mbrsel-input" type="text" accesskey="/"/></span><i class="clear material-icons"></i></div><div id="filterby"><div id="order"><span class="filtertype">Ordering</span><ol><li class="alpha in"><span>Alphabetic</span></li><li class="inherit out"><span>By Inheritance</span></li></ol></div><div class="ancestors"><span class="filtertype">Inherited<br/></span><ol id="linearization"><li class="in" name="fs2.kafka.AdminClientSettings"><span>AdminClientSettings</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li></ol></div><div class="ancestors"><span class="filtertype"></span><ol><li class="hideall out"><span>Hide All</span></li><li class="showall in"><span>Show All</span></li></ol></div><div id="visbl"><span class="filtertype">Visibility</span><ol><li class="public in"><span>Public</span></li><li class="protected out"><span>Protected</span></li></ol></div></div></div><div id="template"><div id="allMembers"><div class="values members"><h3>Abstract Value Members</h3><ol><li class="indented0 " name="fs2.kafka.AdminClientSettings#closeTimeout" group="Ungrouped" fullComment="yes" data-isabs="true" visbl="pub"><a id="closeTimeout:scala.concurrent.duration.FiniteDuration" class="anchorToMember"></a><a id="closeTimeout:FiniteDuration" class="anchorToMember"></a> <span class="permalink"><a href="../../fs2/kafka/AdminClientSettings.html#closeTimeout:scala.concurrent.duration.FiniteDuration" title="Permalink"><i class="material-icons"></i></a></span> <span class="modifier_kind"><span class="modifier">abstract </span> <span class="kind">def</span></span> <span class="symbol"><span class="name">closeTimeout</span><span class="result">: <a href="https://www.scala-lang.org/api/2.13.18/scala/concurrent/duration/FiniteDuration.html#scala.concurrent.duration.FiniteDuration" name="scala.concurrent.duration.FiniteDuration" id="scala.concurrent.duration.FiniteDuration" class="extype">FiniteDuration</a></span></span><p class="shortcomment cmt">The time to wait for the Java <code>KafkaAdminClient</code> to shutdown.<br><br></p><div class="fullcomment"><div class="comment cmt"><p>The time to wait for the Java <code>KafkaAdminClient</code> to shutdown.<br><br></p><p>The default value is 20 seconds.
-</p></div></div></li><li class="indented0 " name="fs2.kafka.AdminClientSettings#properties" group="Ungrouped" fullComment="yes" data-isabs="true" visbl="pub"><a id="properties:Map[String,String]" class="anchorToMember"></a> <span class="permalink"><a href="../../fs2/kafka/AdminClientSettings.html#properties:Map[String,String]" title="Permalink"><i class="material-icons"></i></a></span> <span class="modifier_kind"><span class="modifier">abstract </span> <span class="kind">def</span></span> <span class="symbol"><span class="name">properties</span><span class="result">: <span name="scala.Predef.Map" class="extype">Map</span>[<span name="scala.Predef.String" class="extype">String</span>, <span name="scala.Predef.String" class="extype">String</span>]</span></span><p class="shortcomment cmt">Properties which can be provided when creating a Java <code>KafkaAdminClient</code> instance.</p><div class="fullcomment"><div class="comment cmt"><p>Properties which can be provided when creating a Java <code>KafkaAdminClient</code> instance. Numerous
-functions in <a href="" name="fs2.kafka.AdminClientSettings" id="fs2.kafka.AdminClientSettings" class="extype">AdminClientSettings</a> add properties here if the settings are used by the Java
-<code>KafkaAdminClient</code>.
-</p></div></div></li><li class="indented0 " name="fs2.kafka.AdminClientSettings#withBootstrapServers" group="Ungrouped" fullComment="yes" data-isabs="true" visbl="pub"><a id="withBootstrapServers(bootstrapServers:String):fs2.kafka.AdminClientSettings" class="anchorToMember"></a><a id="withBootstrapServers(String):AdminClientSettings" class="anchorToMember"></a> <span class="permalink"><a href="../../fs2/kafka/AdminClientSettings.html#withBootstrapServers(bootstrapServers:String):fs2.kafka.AdminClientSettings" title="Permalink"><i class="material-icons"></i></a></span> <span class="modifier_kind"><span class="modifier">abstract </span> <span class="kind">def</span></span> <span class="symbol"><span class="name">withBootstrapServers</span><span class="params">(<span name="bootstrapServers">bootstrapServers: <span name="scala.Predef.String" class="extype">String</span></span>)</span><span class="result">: <a href="" name="fs2.kafka.AdminClientSettings" id="fs2.kafka.AdminClientSettings" class="extype">AdminClientSettings</a></span></span><p class="shortcomment cmt">Returns a new <a href="" name="fs2.kafka.AdminClientSettings" id="fs2.kafka.AdminClientSettings" class="extype">AdminClientSettings</a> instance with the specified bootstrap servers.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new <a href="" name="fs2.kafka.AdminClientSettings" id="fs2.kafka.AdminClientSettings" class="extype">AdminClientSettings</a> instance with the specified bootstrap servers. This is
-equivalent to setting the following property using the <a href="#withProperty(key:String,value:String):fs2.kafka.AdminClientSettings" name="fs2.kafka.AdminClientSettings#withProperty" id="fs2.kafka.AdminClientSettings#withProperty" class="extmbr">withProperty</a> function.</p><pre>AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG</pre></div></div></li><li class="indented0 " name="fs2.kafka.AdminClientSettings#withClientId" group="Ungrouped" fullComment="yes" data-isabs="true" visbl="pub"><a id="withClientId(clientId:String):fs2.kafka.AdminClientSettings" class="anchorToMember"></a><a id="withClientId(String):AdminClientSettings" class="anchorToMember"></a> <span class="permalink"><a href="../../fs2/kafka/AdminClientSettings.html#withClientId(clientId:String):fs2.kafka.AdminClientSettings" title="Permalink"><i class="material-icons"></i></a></span> <span class="modifier_kind"><span class="modifier">abstract </span> <span class="kind">def</span></span> <span class="symbol"><span class="name">withClientId</span><span class="params">(<span name="clientId">clientId: <span name="scala.Predef.String" class="extype">String</span></span>)</span><span class="result">: <a href="" name="fs2.kafka.AdminClientSettings" id="fs2.kafka.AdminClientSettings" class="extype">AdminClientSettings</a></span></span><p class="shortcomment cmt">Returns a new <a href="" name="fs2.kafka.AdminClientSettings" id="fs2.kafka.AdminClientSettings" class="extype">AdminClientSettings</a> instance with the specified client id.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new <a href="" name="fs2.kafka.AdminClientSettings" id="fs2.kafka.AdminClientSettings" class="extype">AdminClientSettings</a> instance with the specified client id. This is
-equivalent to setting the following property using the <a href="#withProperty(key:String,value:String):fs2.kafka.AdminClientSettings" name="fs2.kafka.AdminClientSettings#withProperty" id="fs2.kafka.AdminClientSettings#withProperty" class="extmbr">withProperty</a> function.</p><pre>AdminClientConfig.CLIENT_ID_CONFIG</pre></div></div></li><li class="indented0 " name="fs2.kafka.AdminClientSettings#withCloseTimeout" group="Ungrouped" fullComment="no" data-isabs="true" visbl="pub"><a id="withCloseTimeout(closeTimeout:scala.concurrent.duration.FiniteDuration):fs2.kafka.AdminClientSettings" class="anchorToMember"></a><a id="withCloseTimeout(FiniteDuration):AdminClientSettings" class="anchorToMember"></a> <span class="permalink"><a href="../../fs2/kafka/AdminClientSettings.html#withCloseTimeout(closeTimeout:scala.concurrent.duration.FiniteDuration):fs2.kafka.AdminClientSettings" title="Permalink"><i class="material-icons"></i></a></span> <span class="modifier_kind"><span class="modifier">abstract </span> <span class="kind">def</span></span> <span class="symbol"><span class="name">withCloseTimeout</span><span class="params">(<span name="closeTimeout">closeTimeout: <a href="https://www.scala-lang.org/api/2.13.18/scala/concurrent/duration/FiniteDuration.html#scala.concurrent.duration.FiniteDuration" name="scala.concurrent.duration.FiniteDuration" id="scala.concurrent.duration.FiniteDuration" class="extype">FiniteDuration</a></span>)</span><span class="result">: <a href="" name="fs2.kafka.AdminClientSettings" id="fs2.kafka.AdminClientSettings" class="extype">AdminClientSettings</a></span></span><p class="shortcomment cmt">Creates a new <a href="" name="fs2.kafka.AdminClientSettings" id="fs2.kafka.AdminClientSettings" class="extype">AdminClientSettings</a> with the specified <a href="#closeTimeout:scala.concurrent.duration.FiniteDuration" name="fs2.kafka.AdminClientSettings#closeTimeout" id="fs2.kafka.AdminClientSettings#closeTimeout" class="extmbr">closeTimeout</a>.</p></li><li class="indented0 " name="fs2.kafka.AdminClientSettings#withConnectionsMaxIdle" group="Ungrouped" fullComment="yes" data-isabs="true" visbl="pub"><a id="withConnectionsMaxIdle(connectionsMaxIdle:scala.concurrent.duration.FiniteDuration):fs2.kafka.AdminClientSettings" class="anchorToMember"></a><a id="withConnectionsMaxIdle(FiniteDuration):AdminClientSettings" class="anchorToMember"></a> <span class="permalink"><a href="../../fs2/kafka/AdminClientSettings.html#withConnectionsMaxIdle(connectionsMaxIdle:scala.concurrent.duration.FiniteDuration):fs2.kafka.AdminClientSettings" title="Permalink"><i class="material-icons"></i></a></span> <span class="modifier_kind"><span class="modifier">abstract </span> <span class="kind">def</span></span> <span class="symbol"><span class="name">withConnectionsMaxIdle</span><span class="params">(<span name="connectionsMaxIdle">connectionsMaxIdle: <a href="https://www.scala-lang.org/api/2.13.18/scala/concurrent/duration/FiniteDuration.html#scala.concurrent.duration.FiniteDuration" name="scala.concurrent.duration.FiniteDuration" id="scala.concurrent.duration.FiniteDuration" class="extype">FiniteDuration</a></span>)</span><span class="result">: <a href="" name="fs2.kafka.AdminClientSettings" id="fs2.kafka.AdminClientSettings" class="extype">AdminClientSettings</a></span></span><p class="shortcomment cmt">Returns a new <a href="" name="fs2.kafka.AdminClientSettings" id="fs2.kafka.AdminClientSettings" class="extype">AdminClientSettings</a> instance with the specified max connection idle time.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new <a href="" name="fs2.kafka.AdminClientSettings" id="fs2.kafka.AdminClientSettings" class="extype">AdminClientSettings</a> instance with the specified max connection idle time.
-This is equivalent to setting the following property using the <a href="#withProperty(key:String,value:String):fs2.kafka.AdminClientSettings" name="fs2.kafka.AdminClientSettings#withProperty" id="fs2.kafka.AdminClientSettings#withProperty" class="extmbr">withProperty</a> function,
-except you can specify it with a <code>FiniteDuration</code> instead of a <code>String</code>.</p><pre>AdminClientConfig.CONNECTIONS_MAX_IDLE_MS_CONFIG</pre></div></div></li><li class="indented0 " name="fs2.kafka.AdminClientSettings#withCredentials" group="Ungrouped" fullComment="no" data-isabs="true" visbl="pub"><a id="withCredentials(credentialsStore:fs2.kafka.security.KafkaCredentialStore):fs2.kafka.AdminClientSettings" class="anchorToMember"></a><a id="withCredentials(KafkaCredentialStore):AdminClientSettings" class="anchorToMember"></a> <span class="permalink"><a href="../../fs2/kafka/AdminClientSettings.html#withCredentials(credentialsStore:fs2.kafka.security.KafkaCredentialStore):fs2.kafka.AdminClientSettings" title="Permalink"><i class="material-icons"></i></a></span> <span class="modifier_kind"><span class="modifier">abstract </span> <span class="kind">def</span></span> <span class="symbol"><span class="name">withCredentials</span><span class="params">(<span name="credentialsStore">credentialsStore: <a href="security/KafkaCredentialStore.html" name="fs2.kafka.security.KafkaCredentialStore" id="fs2.kafka.security.KafkaCredentialStore" class="extype">KafkaCredentialStore</a></span>)</span><span class="result">: <a href="" name="fs2.kafka.AdminClientSettings" id="fs2.kafka.AdminClientSettings" class="extype">AdminClientSettings</a></span></span><p class="shortcomment cmt">Includes the credentials properties from the provided <span name="KafkaCredentialStore" class="extype">KafkaCredentialStore</span>
-</p></li><li class="indented0 " name="fs2.kafka.AdminClientSettings#withMetadataMaxAge" group="Ungrouped" fullComment="yes" data-isabs="true" visbl="pub"><a id="withMetadataMaxAge(metadataMaxAge:scala.concurrent.duration.FiniteDuration):fs2.kafka.AdminClientSettings" class="anchorToMember"></a><a id="withMetadataMaxAge(FiniteDuration):AdminClientSettings" class="anchorToMember"></a> <span class="permalink"><a href="../../fs2/kafka/AdminClientSettings.html#withMetadataMaxAge(metadataMaxAge:scala.concurrent.duration.FiniteDuration):fs2.kafka.AdminClientSettings" title="Permalink"><i class="material-icons"></i></a></span> <span class="modifier_kind"><span class="modifier">abstract </span> <span class="kind">def</span></span> <span class="symbol"><span class="name">withMetadataMaxAge</span><span class="params">(<span name="metadataMaxAge">metadataMaxAge: <a href="https://www.scala-lang.org/api/2.13.18/scala/concurrent/duration/FiniteDuration.html#scala.concurrent.duration.FiniteDuration" name="scala.concurrent.duration.FiniteDuration" id="scala.concurrent.duration.FiniteDuration" class="extype">FiniteDuration</a></span>)</span><span class="result">: <a href="" name="fs2.kafka.AdminClientSettings" id="fs2.kafka.AdminClientSettings" class="extype">AdminClientSettings</a></span></span><p class="shortcomment cmt">Returns a new <a href="" name="fs2.kafka.AdminClientSettings" id="fs2.kafka.AdminClientSettings" class="extype">AdminClientSettings</a> instance with the specified max metadata age.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new <a href="" name="fs2.kafka.AdminClientSettings" id="fs2.kafka.AdminClientSettings" class="extype">AdminClientSettings</a> instance with the specified max metadata age. This is
-equivalent to setting the following property using the <a href="#withProperty(key:String,value:String):fs2.kafka.AdminClientSettings" name="fs2.kafka.AdminClientSettings#withProperty" id="fs2.kafka.AdminClientSettings#withProperty" class="extmbr">withProperty</a> function, except you
-can specify it with a <code>FiniteDuration</code> instead of a <code>String</code>.</p><pre>AdminClientConfig.METADATA_MAX_AGE_CONFIG</pre></div></div></li><li class="indented0 " name="fs2.kafka.AdminClientSettings#withProperties" group="Ungrouped" fullComment="yes" data-isabs="true" visbl="pub"><a id="withProperties(properties:Map[String,String]):fs2.kafka.AdminClientSettings" class="anchorToMember"></a><a id="withProperties(Map[String,String]):AdminClientSettings" class="anchorToMember"></a> <span class="permalink"><a href="../../fs2/kafka/AdminClientSettings.html#withProperties(properties:Map[String,String]):fs2.kafka.AdminClientSettings" title="Permalink"><i class="material-icons"></i></a></span> <span class="modifier_kind"><span class="modifier">abstract </span> <span class="kind">def</span></span> <span class="symbol"><span class="name">withProperties</span><span class="params">(<span name="properties">properties: <span name="scala.Predef.Map" class="extype">Map</span>[<span name="scala.Predef.String" class="extype">String</span>, <span name="scala.Predef.String" class="extype">String</span>]</span>)</span><span class="result">: <a href="" name="fs2.kafka.AdminClientSettings" id="fs2.kafka.AdminClientSettings" class="extype">AdminClientSettings</a></span></span><p class="shortcomment cmt">Includes the specified keys and values as properties.</p><div class="fullcomment"><div class="comment cmt"><p>Includes the specified keys and values as properties. The keys should be part of the
-<code>AdminClientConfig</code> keys, and the values should be valid choices for the keys.
-</p></div></div></li><li class="indented0 " name="fs2.kafka.AdminClientSettings#withProperties" group="Ungrouped" fullComment="yes" data-isabs="true" visbl="pub"><a id="withProperties(properties:(String,String)*):fs2.kafka.AdminClientSettings" class="anchorToMember"></a><a id="withProperties((String,String)*):AdminClientSettings" class="anchorToMember"></a> <span class="permalink"><a href="../../fs2/kafka/AdminClientSettings.html#withProperties(properties:(String,String)*):fs2.kafka.AdminClientSettings" title="Permalink"><i class="material-icons"></i></a></span> <span class="modifier_kind"><span class="modifier">abstract </span> <span class="kind">def</span></span> <span class="symbol"><span class="name">withProperties</span><span class="params">(<span name="properties">properties: (<span name="scala.Predef.String" class="extype">String</span>, <span name="scala.Predef.String" class="extype">String</span>)*</span>)</span><span class="result">: <a href="" name="fs2.kafka.AdminClientSettings" id="fs2.kafka.AdminClientSettings" class="extype">AdminClientSettings</a></span></span><p class="shortcomment cmt">Includes the specified keys and values as properties.</p><div class="fullcomment"><div class="comment cmt"><p>Includes the specified keys and values as properties. The keys should be part of the
-<code>AdminClientConfig</code> keys, and the values should be valid choices for the keys.
-</p></div></div></li><li class="indented0 " name="fs2.kafka.AdminClientSettings#withProperty" group="Ungrouped" fullComment="yes" data-isabs="true" visbl="pub"><a id="withProperty(key:String,value:String):fs2.kafka.AdminClientSettings" class="anchorToMember"></a><a id="withProperty(String,String):AdminClientSettings" class="anchorToMember"></a> <span class="permalink"><a href="../../fs2/kafka/AdminClientSettings.html#withProperty(key:String,value:String):fs2.kafka.AdminClientSettings" title="Permalink"><i class="material-icons"></i></a></span> <span class="modifier_kind"><span class="modifier">abstract </span> <span class="kind">def</span></span> <span class="symbol"><span class="name">withProperty</span><span class="params">(<span name="key">key: <span name="scala.Predef.String" class="extype">String</span></span>, <span name="value">value: <span name="scala.Predef.String" class="extype">String</span></span>)</span><span class="result">: <a href="" name="fs2.kafka.AdminClientSettings" id="fs2.kafka.AdminClientSettings" class="extype">AdminClientSettings</a></span></span><p class="shortcomment cmt">Includes a property with the specified <code>key</code> and <code>value</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Includes a property with the specified <code>key</code> and <code>value</code>. The key should be one of the keys in
-<code>AdminClientConfig</code>, and the value should be a valid choice for the key.
-</p></div></div></li><li class="indented0 " name="fs2.kafka.AdminClientSettings#withReconnectBackoff" group="Ungrouped" fullComment="yes" data-isabs="true" visbl="pub"><a id="withReconnectBackoff(reconnectBackoff:scala.concurrent.duration.FiniteDuration):fs2.kafka.AdminClientSettings" class="anchorToMember"></a><a id="withReconnectBackoff(FiniteDuration):AdminClientSettings" class="anchorToMember"></a> <span class="permalink"><a href="../../fs2/kafka/AdminClientSettings.html#withReconnectBackoff(reconnectBackoff:scala.concurrent.duration.FiniteDuration):fs2.kafka.AdminClientSettings" title="Permalink"><i class="material-icons"></i></a></span> <span class="modifier_kind"><span class="modifier">abstract </span> <span class="kind">def</span></span> <span class="symbol"><span class="name">withReconnectBackoff</span><span class="params">(<span name="reconnectBackoff">reconnectBackoff: <a href="https://www.scala-lang.org/api/2.13.18/scala/concurrent/duration/FiniteDuration.html#scala.concurrent.duration.FiniteDuration" name="scala.concurrent.duration.FiniteDuration" id="scala.concurrent.duration.FiniteDuration" class="extype">FiniteDuration</a></span>)</span><span class="result">: <a href="" name="fs2.kafka.AdminClientSettings" id="fs2.kafka.AdminClientSettings" class="extype">AdminClientSettings</a></span></span><p class="shortcomment cmt">Returns a new <a href="" name="fs2.kafka.AdminClientSettings" id="fs2.kafka.AdminClientSettings" class="extype">AdminClientSettings</a> instance with the specified reconnect backoff.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new <a href="" name="fs2.kafka.AdminClientSettings" id="fs2.kafka.AdminClientSettings" class="extype">AdminClientSettings</a> instance with the specified reconnect backoff. This is
-equivalent to setting the following property using the <a href="#withProperty(key:String,value:String):fs2.kafka.AdminClientSettings" name="fs2.kafka.AdminClientSettings#withProperty" id="fs2.kafka.AdminClientSettings#withProperty" class="extmbr">withProperty</a> function, except you
-can specify it with a <code>FiniteDuration</code> instead of a <code>String</code>.</p><pre>AdminClientConfig.RECONNECT_BACKOFF_MS_CONFIG</pre></div></div></li><li class="indented0 " name="fs2.kafka.AdminClientSettings#withReconnectBackoffMax" group="Ungrouped" fullComment="yes" data-isabs="true" visbl="pub"><a id="withReconnectBackoffMax(reconnectBackoffMax:scala.concurrent.duration.FiniteDuration):fs2.kafka.AdminClientSettings" class="anchorToMember"></a><a id="withReconnectBackoffMax(FiniteDuration):AdminClientSettings" class="anchorToMember"></a> <span class="permalink"><a href="../../fs2/kafka/AdminClientSettings.html#withReconnectBackoffMax(reconnectBackoffMax:scala.concurrent.duration.FiniteDuration):fs2.kafka.AdminClientSettings" title="Permalink"><i class="material-icons"></i></a></span> <span class="modifier_kind"><span class="modifier">abstract </span> <span class="kind">def</span></span> <span class="symbol"><span class="name">withReconnectBackoffMax</span><span class="params">(<span name="reconnectBackoffMax">reconnectBackoffMax: <a href="https://www.scala-lang.org/api/2.13.18/scala/concurrent/duration/FiniteDuration.html#scala.concurrent.duration.FiniteDuration" name="scala.concurrent.duration.FiniteDuration" id="scala.concurrent.duration.FiniteDuration" class="extype">FiniteDuration</a></span>)</span><span class="result">: <a href="" name="fs2.kafka.AdminClientSettings" id="fs2.kafka.AdminClientSettings" class="extype">AdminClientSettings</a></span></span><p class="shortcomment cmt">Returns a new <a href="" name="fs2.kafka.AdminClientSettings" id="fs2.kafka.AdminClientSettings" class="extype">AdminClientSettings</a> instance with the specified max reconnect backoff.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new <a href="" name="fs2.kafka.AdminClientSettings" id="fs2.kafka.AdminClientSettings" class="extype">AdminClientSettings</a> instance with the specified max reconnect backoff. This
-is equivalent to setting the following property using the <a href="#withProperty(key:String,value:String):fs2.kafka.AdminClientSettings" name="fs2.kafka.AdminClientSettings#withProperty" id="fs2.kafka.AdminClientSettings#withProperty" class="extmbr">withProperty</a> function, except
-you can specify it with a <code>FiniteDuration</code> instead of a <code>String</code>.</p><pre>AdminClientConfig.RECONNECT_BACKOFF_MAX_MS_CONFIG</pre></div></div></li><li class="indented0 " name="fs2.kafka.AdminClientSettings#withRequestTimeout" group="Ungrouped" fullComment="yes" data-isabs="true" visbl="pub"><a id="withRequestTimeout(requestTimeout:scala.concurrent.duration.FiniteDuration):fs2.kafka.AdminClientSettings" class="anchorToMember"></a><a id="withRequestTimeout(FiniteDuration):AdminClientSettings" class="anchorToMember"></a> <span class="permalink"><a href="../../fs2/kafka/AdminClientSettings.html#withRequestTimeout(requestTimeout:scala.concurrent.duration.FiniteDuration):fs2.kafka.AdminClientSettings" title="Permalink"><i class="material-icons"></i></a></span> <span class="modifier_kind"><span class="modifier">abstract </span> <span class="kind">def</span></span> <span class="symbol"><span class="name">withRequestTimeout</span><span class="params">(<span name="requestTimeout">requestTimeout: <a href="https://www.scala-lang.org/api/2.13.18/scala/concurrent/duration/FiniteDuration.html#scala.concurrent.duration.FiniteDuration" name="scala.concurrent.duration.FiniteDuration" id="scala.concurrent.duration.FiniteDuration" class="extype">FiniteDuration</a></span>)</span><span class="result">: <a href="" name="fs2.kafka.AdminClientSettings" id="fs2.kafka.AdminClientSettings" class="extype">AdminClientSettings</a></span></span><p class="shortcomment cmt">Returns a new <a href="" name="fs2.kafka.AdminClientSettings" id="fs2.kafka.AdminClientSettings" class="extype">AdminClientSettings</a> instance with the specified request timeout.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new <a href="" name="fs2.kafka.AdminClientSettings" id="fs2.kafka.AdminClientSettings" class="extype">AdminClientSettings</a> instance with the specified request timeout. This is
-equivalent to setting the following property using the <a href="#withProperty(key:String,value:String):fs2.kafka.AdminClientSettings" name="fs2.kafka.AdminClientSettings#withProperty" id="fs2.kafka.AdminClientSettings#withProperty" class="extmbr">withProperty</a> function, except you
-can specify it with a <code>FiniteDuration</code> instead of a <code>String</code>.</p><pre>AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG</pre></div></div></li><li class="indented0 " name="fs2.kafka.AdminClientSettings#withRetries" group="Ungrouped" fullComment="yes" data-isabs="true" visbl="pub"><a id="withRetries(retries:Int):fs2.kafka.AdminClientSettings" class="anchorToMember"></a><a id="withRetries(Int):AdminClientSettings" class="anchorToMember"></a> <span class="permalink"><a href="../../fs2/kafka/AdminClientSettings.html#withRetries(retries:Int):fs2.kafka.AdminClientSettings" title="Permalink"><i class="material-icons"></i></a></span> <span class="modifier_kind"><span class="modifier">abstract </span> <span class="kind">def</span></span> <span class="symbol"><span class="name">withRetries</span><span class="params">(<span name="retries">retries: <a href="https://www.scala-lang.org/api/2.13.18/scala/Int.html#scala.Int" name="scala.Int" id="scala.Int" class="extype">Int</a></span>)</span><span class="result">: <a href="" name="fs2.kafka.AdminClientSettings" id="fs2.kafka.AdminClientSettings" class="extype">AdminClientSettings</a></span></span><p class="shortcomment cmt">Returns a new <a href="" name="fs2.kafka.AdminClientSettings" id="fs2.kafka.AdminClientSettings" class="extype">AdminClientSettings</a> instance with the specified retries.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new <a href="" name="fs2.kafka.AdminClientSettings" id="fs2.kafka.AdminClientSettings" class="extype">AdminClientSettings</a> instance with the specified retries. This is equivalent
-to setting the following property using the <a href="#withProperty(key:String,value:String):fs2.kafka.AdminClientSettings" name="fs2.kafka.AdminClientSettings#withProperty" id="fs2.kafka.AdminClientSettings#withProperty" class="extmbr">withProperty</a> function, except you can specify
-it with an <code>Int</code> instead of a <code>String</code>.</p><pre>AdminClientConfig.RETRIES_CONFIG</pre></div></div></li><li class="indented0 " name="fs2.kafka.AdminClientSettings#withRetryBackoff" group="Ungrouped" fullComment="yes" data-isabs="true" visbl="pub"><a id="withRetryBackoff(retryBackoff:scala.concurrent.duration.FiniteDuration):fs2.kafka.AdminClientSettings" class="anchorToMember"></a><a id="withRetryBackoff(FiniteDuration):AdminClientSettings" class="anchorToMember"></a> <span class="permalink"><a href="../../fs2/kafka/AdminClientSettings.html#withRetryBackoff(retryBackoff:scala.concurrent.duration.FiniteDuration):fs2.kafka.AdminClientSettings" title="Permalink"><i class="material-icons"></i></a></span> <span class="modifier_kind"><span class="modifier">abstract </span> <span class="kind">def</span></span> <span class="symbol"><span class="name">withRetryBackoff</span><span class="params">(<span name="retryBackoff">retryBackoff: <a href="https://www.scala-lang.org/api/2.13.18/scala/concurrent/duration/FiniteDuration.html#scala.concurrent.duration.FiniteDuration" name="scala.concurrent.duration.FiniteDuration" id="scala.concurrent.duration.FiniteDuration" class="extype">FiniteDuration</a></span>)</span><span class="result">: <a href="" name="fs2.kafka.AdminClientSettings" id="fs2.kafka.AdminClientSettings" class="extype">AdminClientSettings</a></span></span><p class="shortcomment cmt">Returns a new <a href="" name="fs2.kafka.AdminClientSettings" id="fs2.kafka.AdminClientSettings" class="extype">AdminClientSettings</a> instance with the specified retry backoff.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new <a href="" name="fs2.kafka.AdminClientSettings" id="fs2.kafka.AdminClientSettings" class="extype">AdminClientSettings</a> instance with the specified retry backoff. This is
-equivalent to setting the following property using the <a href="#withProperty(key:String,value:String):fs2.kafka.AdminClientSettings" name="fs2.kafka.AdminClientSettings#withProperty" id="fs2.kafka.AdminClientSettings#withProperty" class="extmbr">withProperty</a> function, except you
-can specify it with a <code>FiniteDuration</code> instead of a <code>String</code>.</p><pre>AdminClientConfig.RETRY_BACKOFF_MS_CONFIG</pre></div></div></li></ol></div><div class="values members"><h3>Concrete Value Members</h3><ol><li class="indented0 " name="scala.AnyRef#!=" group="Ungrouped" fullComment="yes" data-isabs="false" visbl="pub"><a id="!=(x$1:Any):Boolean" class="anchorToMember"></a><a id="!=(Any):Boolean" class="anchorToMember"></a> <span class="permalink"><a href="../../fs2/kafka/AdminClientSettings.html#!=(x$1:Any):Boolean" title="Permalink"><i class="material-icons"></i></a></span> <span class="modifier_kind"><span class="modifier">final </span> <span class="kind">def</span></span> <span class="symbol"><span class="name" title="gt4s: $bang$eq">!=</span><span class="params">(<span name="arg0">arg0: <a href="https://www.scala-lang.org/api/2.13.18/scala/Any.html#scala.Any" name="scala.Any" id="scala.Any" class="extype">Any</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.13.18/scala/Boolean.html#scala.Boolean" name="scala.Boolean" id="scala.Boolean" class="extype">Boolean</a></span></span><div class="fullcomment"><dl class="attributes block"><dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div></li><li class="indented0 " name="scala.AnyRef###" group="Ungrouped" fullComment="yes" data-isabs="false" visbl="pub"><a id="##:Int" class="anchorToMember"></a> <span class="permalink"><a href="../../fs2/kafka/AdminClientSettings.html###:Int" title="Permalink"><i class="material-icons"></i></a></span> <span class="modifier_kind"><span class="modifier">final </span> <span class="kind">def</span></span> <span class="symbol"><span class="name" title="gt4s: $hash$hash">##</span><span class="result">: <a href="https://www.scala-lang.org/api/2.13.18/scala/Int.html#scala.Int" name="scala.Int" id="scala.Int" class="extype">Int</a></span></span><div class="fullcomment"><dl class="attributes block"><dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div></li><li class="indented0 " name="scala.AnyRef#==" group="Ungrouped" fullComment="yes" data-isabs="false" visbl="pub"><a id="==(x$1:Any):Boolean" class="anchorToMember"></a><a id="==(Any):Boolean" class="anchorToMember"></a> <span class="permalink"><a href="../../fs2/kafka/AdminClientSettings.html#==(x$1:Any):Boolean" title="Permalink"><i class="material-icons"></i></a></span> <span class="modifier_kind"><span class="modifier">final </span> <span class="kind">def</span></span> <span class="symbol"><span class="name" title="gt4s: $eq$eq">==</span><span class="params">(<span name="arg0">arg0: <a href="https://www.scala-lang.org/api/2.13.18/scala/Any.html#scala.Any" name="scala.Any" id="scala.Any" class="extype">Any</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.13.18/scala/Boolean.html#scala.Boolean" name="scala.Boolean" id="scala.Boolean" class="extype">Boolean</a></span></span><div class="fullcomment"><dl class="attributes block"><dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div></li><li class="indented0 " name="scala.Any#asInstanceOf" group="Ungrouped" fullComment="yes" data-isabs="false" visbl="pub"><a id="asInstanceOf[T0]:T0" class="anchorToMember"></a> <span class="permalink"><a href="../../fs2/kafka/AdminClientSettings.html#asInstanceOf[T0]:T0" title="Permalink"><i class="material-icons"></i></a></span> <span class="modifier_kind"><span class="modifier">final </span> <span class="kind">def</span></span> <span class="symbol"><span class="name">asInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span name="scala.Any.asInstanceOf.T0" class="extype">T0</span></span></span><div class="fullcomment"><dl class="attributes block"><dt>Definition Classes</dt><dd>Any</dd></dl></div></li><li class="indented0 " name="scala.AnyRef#clone" group="Ungrouped" fullComment="yes" data-isabs="false" visbl="prt"><a id="clone():Object" class="anchorToMember"></a><a id="clone():AnyRef" class="anchorToMember"></a> <span class="permalink"><a href="../../fs2/kafka/AdminClientSettings.html#clone():Object" title="Permalink"><i class="material-icons"></i></a></span> <span class="modifier_kind"><span class="modifier"></span> <span class="kind">def</span></span> <span class="symbol"><span class="name">clone</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.13.18/scala/AnyRef.html#scala.AnyRef" name="scala.AnyRef" id="scala.AnyRef" class="extype">AnyRef</a></span></span><div class="fullcomment"><dl class="attributes block"><dt>Attributes</dt><dd>protected[<span name="java.lang" class="extype">lang</span>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd><span class="name">@throws</span><span class="args">(<span><span class="defval">classOf[java.lang.CloneNotSupportedException]</span></span>)</span> <span class="name">@native</span><span class="args">()</span> </dd></dl></div></li><li class="indented0 " name="scala.AnyRef#eq" group="Ungrouped" fullComment="yes" data-isabs="false" visbl="pub"><a id="eq(x$1:AnyRef):Boolean" class="anchorToMember"></a><a id="eq(AnyRef):Boolean" class="anchorToMember"></a> <span class="permalink"><a href="../../fs2/kafka/AdminClientSettings.html#eq(x$1:AnyRef):Boolean" title="Permalink"><i class="material-icons"></i></a></span> <span class="modifier_kind"><span class="modifier">final </span> <span class="kind">def</span></span> <span class="symbol"><span class="name">eq</span><span class="params">(<span name="arg0">arg0: <a href="https://www.scala-lang.org/api/2.13.18/scala/AnyRef.html#scala.AnyRef" name="scala.AnyRef" id="scala.AnyRef" class="extype">AnyRef</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.13.18/scala/Boolean.html#scala.Boolean" name="scala.Boolean" id="scala.Boolean" class="extype">Boolean</a></span></span><div class="fullcomment"><dl class="attributes block"><dt>Definition Classes</dt><dd>AnyRef</dd></dl></div></li><li class="indented0 " name="scala.AnyRef#equals" group="Ungrouped" fullComment="yes" data-isabs="false" visbl="pub"><a id="equals(x$1:Object):Boolean" class="anchorToMember"></a><a id="equals(AnyRef):Boolean" class="anchorToMember"></a> <span class="permalink"><a href="../../fs2/kafka/AdminClientSettings.html#equals(x$1:Object):Boolean" title="Permalink"><i class="material-icons"></i></a></span> <span class="modifier_kind"><span class="modifier"></span> <span class="kind">def</span></span> <span class="symbol"><span class="name">equals</span><span class="params">(<span name="arg0">arg0: <a href="https://www.scala-lang.org/api/2.13.18/scala/AnyRef.html#scala.AnyRef" name="scala.AnyRef" id="scala.AnyRef" class="extype">AnyRef</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.13.18/scala/Boolean.html#scala.Boolean" name="scala.Boolean" id="scala.Boolean" class="extype">Boolean</a></span></span><div class="fullcomment"><dl class="attributes block"><dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div></li><li class="indented0 " name="scala.AnyRef#finalize" group="Ungrouped" fullComment="yes" data-isabs="false" visbl="prt"><a id="finalize():Unit" class="anchorToMember"></a> <span class="permalink"><a href="../../fs2/kafka/AdminClientSettings.html#finalize():Unit" title="Permalink"><i class="material-icons"></i></a></span> <span class="modifier_kind"><span class="modifier"></span> <span class="kind">def</span></span> <span class="symbol"><span class="name">finalize</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.13.18/scala/Unit.html#scala.Unit" name="scala.Unit" id="scala.Unit" class="extype">Unit</a></span></span><div class="fullcomment"><dl class="attributes block"><dt>Attributes</dt><dd>protected[<span name="java.lang" class="extype">lang</span>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd><span class="name">@throws</span><span class="args">(<span><span class="symbol">classOf[java.lang.Throwable]</span></span>)</span> </dd></dl></div></li><li class="indented0 " name="scala.AnyRef#getClass" group="Ungrouped" fullComment="yes" data-isabs="false" visbl="pub"><a id="getClass():Class[_]" class="anchorToMember"></a><a id="getClass():Class[_&lt;:AnyRef]" class="anchorToMember"></a> <span class="permalink"><a href="../../fs2/kafka/AdminClientSettings.html#getClass():Class[_]" title="Permalink"><i class="material-icons"></i></a></span> <span class="modifier_kind"><span class="modifier">final </span> <span class="kind">def</span></span> <span class="symbol"><span class="name">getClass</span><span class="params">()</span><span class="result">: <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Class.html#java.lang.Class" name="java.lang.Class" id="java.lang.Class" class="extype">Class</a>[_ &lt;: <a href="https://www.scala-lang.org/api/2.13.18/scala/AnyRef.html#scala.AnyRef" name="scala.AnyRef" id="scala.AnyRef" class="extype">AnyRef</a>]</span></span><div class="fullcomment"><dl class="attributes block"><dt>Definition Classes</dt><dd>AnyRef → Any</dd><dt>Annotations</dt><dd><span class="name">@native</span><span class="args">()</span> </dd></dl></div></li><li class="indented0 " name="scala.AnyRef#hashCode" group="Ungrouped" fullComment="yes" data-isabs="false" visbl="pub"><a id="hashCode():Int" class="anchorToMember"></a> <span class="permalink"><a href="../../fs2/kafka/AdminClientSettings.html#hashCode():Int" title="Permalink"><i class="material-icons"></i></a></span> <span class="modifier_kind"><span class="modifier"></span> <span class="kind">def</span></span> <span class="symbol"><span class="name">hashCode</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.13.18/scala/Int.html#scala.Int" name="scala.Int" id="scala.Int" class="extype">Int</a></span></span><div class="fullcomment"><dl class="attributes block"><dt>Definition Classes</dt><dd>AnyRef → Any</dd><dt>Annotations</dt><dd><span class="name">@native</span><span class="args">()</span> </dd></dl></div></li><li class="indented0 " name="scala.Any#isInstanceOf" group="Ungrouped" fullComment="yes" data-isabs="false" visbl="pub"><a id="isInstanceOf[T0]:Boolean" class="anchorToMember"></a> <span class="permalink"><a href="../../fs2/kafka/AdminClientSettings.html#isInstanceOf[T0]:Boolean" title="Permalink"><i class="material-icons"></i></a></span> <span class="modifier_kind"><span class="modifier">final </span> <span class="kind">def</span></span> <span class="symbol"><span class="name">isInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <a href="https://www.scala-lang.org/api/2.13.18/scala/Boolean.html#scala.Boolean" name="scala.Boolean" id="scala.Boolean" class="extype">Boolean</a></span></span><div class="fullcomment"><dl class="attributes block"><dt>Definition Classes</dt><dd>Any</dd></dl></div></li><li class="indented0 " name="scala.AnyRef#ne" group="Ungrouped" fullComment="yes" data-isabs="false" visbl="pub"><a id="ne(x$1:AnyRef):Boolean" class="anchorToMember"></a><a id="ne(AnyRef):Boolean" class="anchorToMember"></a> <span class="permalink"><a href="../../fs2/kafka/AdminClientSettings.html#ne(x$1:AnyRef):Boolean" title="Permalink"><i class="material-icons"></i></a></span> <span class="modifier_kind"><span class="modifier">final </span> <span class="kind">def</span></span> <span class="symbol"><span class="name">ne</span><span class="params">(<span name="arg0">arg0: <a href="https://www.scala-lang.org/api/2.13.18/scala/AnyRef.html#scala.AnyRef" name="scala.AnyRef" id="scala.AnyRef" class="extype">AnyRef</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.13.18/scala/Boolean.html#scala.Boolean" name="scala.Boolean" id="scala.Boolean" class="extype">Boolean</a></span></span><div class="fullcomment"><dl class="attributes block"><dt>Definition Classes</dt><dd>AnyRef</dd></dl></div></li><li class="indented0 " name="scala.AnyRef#notify" group="Ungrouped" fullComment="yes" data-isabs="false" visbl="pub"><a id="notify():Unit" class="anchorToMember"></a> <span class="permalink"><a href="../../fs2/kafka/AdminClientSettings.html#notify():Unit" title="Permalink"><i class="material-icons"></i></a></span> <span class="modifier_kind"><span class="modifier">final </span> <span class="kind">def</span></span> <span class="symbol"><span class="name">notify</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.13.18/scala/Unit.html#scala.Unit" name="scala.Unit" id="scala.Unit" class="extype">Unit</a></span></span><div class="fullcomment"><dl class="attributes block"><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd><span class="name">@native</span><span class="args">()</span> </dd></dl></div></li><li class="indented0 " name="scala.AnyRef#notifyAll" group="Ungrouped" fullComment="yes" data-isabs="false" visbl="pub"><a id="notifyAll():Unit" class="anchorToMember"></a> <span class="permalink"><a href="../../fs2/kafka/AdminClientSettings.html#notifyAll():Unit" title="Permalink"><i class="material-icons"></i></a></span> <span class="modifier_kind"><span class="modifier">final </span> <span class="kind">def</span></span> <span class="symbol"><span class="name">notifyAll</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.13.18/scala/Unit.html#scala.Unit" name="scala.Unit" id="scala.Unit" class="extype">Unit</a></span></span><div class="fullcomment"><dl class="attributes block"><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd><span class="name">@native</span><span class="args">()</span> </dd></dl></div></li><li class="indented0 " name="scala.AnyRef#synchronized" group="Ungrouped" fullComment="yes" data-isabs="false" visbl="pub"><a id="synchronized[T0](x$1:=&gt;T0):T0" class="anchorToMember"></a><a id="synchronized[T0](=&gt;T0):T0" class="anchorToMember"></a> <span class="permalink"><a href="../../fs2/kafka/AdminClientSettings.html#synchronized[T0](x$1:=&gt;T0):T0" title="Permalink"><i class="material-icons"></i></a></span> <span class="modifier_kind"><span class="modifier">final </span> <span class="kind">def</span></span> <span class="symbol"><span class="name">synchronized</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="params">(<span name="arg0">arg0: =&gt; <span name="java.lang.AnyRef.synchronized.T0" class="extype">T0</span></span>)</span><span class="result">: <span name="java.lang.AnyRef.synchronized.T0" class="extype">T0</span></span></span><div class="fullcomment"><dl class="attributes block"><dt>Definition Classes</dt><dd>AnyRef</dd></dl></div></li><li class="indented0 " name="scala.AnyRef#toString" group="Ungrouped" fullComment="yes" data-isabs="false" visbl="pub"><a id="toString():String" class="anchorToMember"></a> <span class="permalink"><a href="../../fs2/kafka/AdminClientSettings.html#toString():String" title="Permalink"><i class="material-icons"></i></a></span> <span class="modifier_kind"><span class="modifier"></span> <span class="kind">def</span></span> <span class="symbol"><span class="name">toString</span><span class="params">()</span><span class="result">: <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html#java.lang.String" name="java.lang.String" id="java.lang.String" class="extype">String</a></span></span><div class="fullcomment"><dl class="attributes block"><dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div></li><li class="indented0 " name="scala.AnyRef#wait" group="Ungrouped" fullComment="yes" data-isabs="false" visbl="pub"><a id="wait():Unit" class="anchorToMember"></a> <span class="permalink"><a href="../../fs2/kafka/AdminClientSettings.html#wait():Unit" title="Permalink"><i class="material-icons"></i></a></span> <span class="modifier_kind"><span class="modifier">final </span> <span class="kind">def</span></span> <span class="symbol"><span class="name">wait</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.13.18/scala/Unit.html#scala.Unit" name="scala.Unit" id="scala.Unit" class="extype">Unit</a></span></span><div class="fullcomment"><dl class="attributes block"><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd><span class="name">@throws</span><span class="args">(<span><span class="defval">classOf[java.lang.InterruptedException]</span></span>)</span> </dd></dl></div></li><li class="indented0 " name="scala.AnyRef#wait" group="Ungrouped" fullComment="yes" data-isabs="false" visbl="pub"><a id="wait(x$1:Long,x$2:Int):Unit" class="anchorToMember"></a><a id="wait(Long,Int):Unit" class="anchorToMember"></a> <span class="permalink"><a href="../../fs2/kafka/AdminClientSettings.html#wait(x$1:Long,x$2:Int):Unit" title="Permalink"><i class="material-icons"></i></a></span> <span class="modifier_kind"><span class="modifier">final </span> <span class="kind">def</span></span> <span class="symbol"><span class="name">wait</span><span class="params">(<span name="arg0">arg0: <a href="https://www.scala-lang.org/api/2.13.18/scala/Long.html#scala.Long" name="scala.Long" id="scala.Long" class="extype">Long</a></span>, <span name="arg1">arg1: <a href="https://www.scala-lang.org/api/2.13.18/scala/Int.html#scala.Int" name="scala.Int" id="scala.Int" class="extype">Int</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.13.18/scala/Unit.html#scala.Unit" name="scala.Unit" id="scala.Unit" class="extype">Unit</a></span></span><div class="fullcomment"><dl class="attributes block"><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd><span class="name">@throws</span><span class="args">(<span><span class="defval">classOf[java.lang.InterruptedException]</span></span>)</span> </dd></dl></div></li><li class="indented0 " name="scala.AnyRef#wait" group="Ungrouped" fullComment="yes" data-isabs="false" visbl="pub"><a id="wait(x$1:Long):Unit" class="anchorToMember"></a><a id="wait(Long):Unit" class="anchorToMember"></a> <span class="permalink"><a href="../../fs2/kafka/AdminClientSettings.html#wait(x$1:Long):Unit" title="Permalink"><i class="material-icons"></i></a></span> <span class="modifier_kind"><span class="modifier">final </span> <span class="kind">def</span></span> <span class="symbol"><span class="name">wait</span><span class="params">(<span name="arg0">arg0: <a href="https://www.scala-lang.org/api/2.13.18/scala/Long.html#scala.Long" name="scala.Long" id="scala.Long" class="extype">Long</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.13.18/scala/Unit.html#scala.Unit" name="scala.Unit" id="scala.Unit" class="extype">Unit</a></span></span><div class="fullcomment"><dl class="attributes block"><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd><span class="name">@throws</span><span class="args">(<span><span class="defval">classOf[java.lang.InterruptedException]</span></span>)</span> <span class="name">@native</span><span class="args">()</span> </dd></dl></div></li></ol></div></div><div id="inheritedMembers"><div name="scala.AnyRef" class="parent"><h3>Inherited from <a href="https://www.scala-lang.org/api/2.13.18/scala/AnyRef.html#scala.AnyRef" name="scala.AnyRef" id="scala.AnyRef" class="extype">AnyRef</a></h3></div><div name="scala.Any" class="parent"><h3>Inherited from <a href="https://www.scala-lang.org/api/2.13.18/scala/Any.html#scala.Any" name="scala.Any" id="scala.Any" class="extype">Any</a></h3></div></div><div id="groupedMembers"><div name="Ungrouped" class="group"><h3>Ungrouped</h3></div></div></div><div id="tooltip"></div><div id="footer"></div></body></div></div></div></body></html>
+<!DOCTYPE html><html data-pathToRoot="../../" data-rawLocation="fs2/kafka/AdminClientSettings" data-dynamicSideMenu="false"><head><meta charset="utf-8"></meta><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"></meta><title>AdminClientSettings</title><link rel="canonical" href="https://typelevel.org/fs2-kafka/api/fs2/kafka/AdminClientSettings.html"></link><link rel="shortcut icon" type="image/x-icon" href="../../favicon.ico"></link><script type="text/javascript" src="../../scripts/theme.js"></script><script type="text/javascript" src="../../scripts/searchData.js" defer="true"></script><script type="text/javascript" src="../../scripts/scastieConfiguration.js" defer="true"></script><link rel="stylesheet" href="../../styles/theme/bundle.css"></link><link rel="stylesheet" href="../../styles/theme/components/bundle.css"></link><link rel="stylesheet" href="../../styles/theme/components/button/bundle.css"></link><link rel="stylesheet" href="../../styles/theme/layout/bundle.css"></link><link rel="stylesheet" href="../../styles/dotty-icons.css"></link><link rel="stylesheet" href="../../styles/filter-bar.css"></link><link rel="stylesheet" href="../../styles/searchbar.css"></link><link rel="stylesheet" href="../../styles/social-links.css"></link><link rel="stylesheet" href="../../styles/versions-dropdown.css"></link><link rel="stylesheet" href="../../styles/content-contributors.css"></link><script type="text/javascript" src="../../hljs/highlight.pack.js" defer="true"></script><script type="text/javascript" src="../../scripts/hljs-scala3.js" defer="true"></script><script type="text/javascript" src="../../scripts/ux.js" defer="true"></script><script type="text/javascript" src="../../scripts/common/component.js" defer="true"></script><script type="text/javascript" src="../../scripts/common/utils.js" defer="true"></script><script type="text/javascript" src="../../scripts/components/FilterBar.js" defer="true"></script><script type="text/javascript" src="../../scripts/components/DocumentableList.js" defer="true"></script><script type="text/javascript" src="../../scripts/components/Input.js" defer="true"></script><script type="text/javascript" src="../../scripts/components/FilterGroup.js" defer="true"></script><script type="text/javascript" src="../../scripts/components/Filter.js" defer="true"></script><script type="text/javascript" src="../../scripts/scaladoc-scalajs.js" defer="true"></script><script type="text/javascript" src="../../scripts/contributors.js" defer="true"></script><script type="text/javascript" src="https://d3js.org/d3.v6.min.js" defer="true"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/graphlib-dot@0.6.2/dist/graphlib-dot.min.js" defer="true"></script><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/dagre-d3/0.6.1/dagre-d3.min.js" defer="true"></script><script type="text/javascript" src="https://scastie.scala-lang.org/embedded.js" defer="true"></script><script type="text/javascript" src="../../scripts/data.js" defer="true"></script><script>var pathToRoot = "../../";</script></head><body><div id=""><div id="header" class="body-small"><div class="header-container-left"><a href="../../" class="logo-container"><span id="project-logo" class="project-logo"><img src="../../project-logo/logo.svg"></img></span><span id="dark-project-logo" class="project-logo"><img src="../../project-logo/logo.svg"></img></span><span class="project-name h300">FS2 Kafka</span></a><span onclick="dropdownHandler(event)" class="text-button with-arrow" id="dropdown-trigger"><a><div class="projectVersion">v4.1.3</div></a></span><div id="version-dropdown" class="dropdown-menu"></div></div><div class="header-container-right"><button id="search-toggle" class="icon-button"></button><span id="theme-toggle" class="icon-button"></span><span id="mobile-menu-toggle" class="icon-button hamburger"></span></div></div><div id="mobile-menu"><div class="mobile-menu-header body-small"><span class="mobile-menu-logo"><span id="project-logo" class="project-logo"><img src="../../project-logo/logo.svg"></img></span><span id="dark-project-logo" class="project-logo"><img src="../../project-logo/logo.svg"></img></span><span class="project-name h300">FS2 Kafka</span></span><button id="mobile-menu-close" class="icon-button close"></button></div><div class="mobile-menu-container body-medium"><input id="mobile-scaladoc-searchbar-input" class="scaladoc-searchbar-input" type="search" placeholder="Find anything"></input><span id="mobile-theme-toggle" class="mobile-menu-item mode"></span></div></div><span id="mobile-sidebar-toggle" class="floating-button"></span><div id="leftColumn" class="body-small"><div class="switcher-container"><a id="api-nav-button" class="switcher h100 selected" href="../../index.html">API</a></div><nav id="api-nav" class="side-menu"><div class="ni n0 expanded"><span class="nh h100 expanded cs"><button class="ar icon-button expanded"></button><a href="../kafka.html"><span class="micon pa"></span><span>fs2.kafka</span></a></span><div class="ni n1"><span class="nh "><button class="ar icon-button "></button><a href="admin.html"><span class="micon pa"></span><span>admin</span></a></span><div class="ni n2 "><span class="nh "><a href="admin/MkAdminClient$.html"><span class="micon ob"></span><span>MkAdminClient</span></a></span></div><div class="ni n2 "><span class="nh "><a href="admin/MkAdminClient.html"><span class="micon tr"></span><span>MkAdminClient</span></a></span></div></div><div class="ni n1"><span class="nh "><button class="ar icon-button "></button><a href="consumer.html"><span class="micon pa"></span><span>consumer</span></a></span><div class="ni n2 "><span class="nh "><a href="consumer/KafkaAssignment.html"><span class="micon tr"></span><span>KafkaAssignment</span></a></span></div><div class="ni n2 "><span class="nh "><a href="consumer/KafkaCommit.html"><span class="micon tr"></span><span>KafkaCommit</span></a></span></div><div class="ni n2 "><span class="nh "><a href="consumer/KafkaConsume.html"><span class="micon tr"></span><span>KafkaConsume</span></a></span></div><div class="ni n2 "><span class="nh "><a href="consumer/KafkaConsumeChunk.html"><span class="micon tr"></span><span>KafkaConsumeChunk</span></a></span></div><div class="ni n2"><span class="nh "><button class="ar icon-button "></button><a href="consumer/KafkaConsumeChunk$.html"><span class="micon ob"></span><span>KafkaConsumeChunk</span></a></span><div class="ni n3 "><span class="nh "><a href="consumer/KafkaConsumeChunk$$CommitNow$.html"><span class="micon ob"></span><span>CommitNow</span></a></span></div></div><div class="ni n2 "><span class="nh "><a href="consumer/KafkaConsumeGrouped.html"><span class="micon tr"></span><span>KafkaConsumeGrouped</span></a></span></div><div class="ni n2 "><span class="nh "><a href="consumer/KafkaConsumerLifecycle.html"><span class="micon tr"></span><span>KafkaConsumerLifecycle</span></a></span></div><div class="ni n2 "><span class="nh "><a href="consumer/KafkaMetrics.html"><span class="micon tr"></span><span>KafkaMetrics</span></a></span></div><div class="ni n2 "><span class="nh "><a href="consumer/KafkaOffsets.html"><span class="micon tr"></span><span>KafkaOffsets</span></a></span></div><div class="ni n2 "><span class="nh "><a href="consumer/KafkaSubscription.html"><span class="micon tr"></span><span>KafkaSubscription</span></a></span></div><div class="ni n2 "><span class="nh "><a href="consumer/KafkaTopics.html"><span class="micon tr"></span><span>KafkaTopics</span></a></span></div><div class="ni n2 "><span class="nh "><a href="consumer/MkConsumer$.html"><span class="micon ob"></span><span>MkConsumer</span></a></span></div><div class="ni n2 "><span class="nh "><a href="consumer/MkConsumer.html"><span class="micon tr"></span><span>MkConsumer</span></a></span></div></div><div class="ni n1"><span class="nh "><button class="ar icon-button "></button><a href="producer.html"><span class="micon pa"></span><span>producer</span></a></span><div class="ni n2 "><span class="nh "><a href="producer/MkProducer$.html"><span class="micon ob"></span><span>MkProducer</span></a></span></div><div class="ni n2 "><span class="nh "><a href="producer/MkProducer.html"><span class="micon tr"></span><span>MkProducer</span></a></span></div></div><div class="ni n1"><span class="nh "><button class="ar icon-button "></button><a href="security.html"><span class="micon pa"></span><span>security</span></a></span><div class="ni n2 "><span class="nh "><a href="security/KafkaCredentialStore.html"><span class="micon tr"></span><span>KafkaCredentialStore</span></a></span></div><div class="ni n2 "><span class="nh "><a href="security/KafkaCredentialStore$.html"><span class="micon ob"></span><span>KafkaCredentialStore</span></a></span></div></div><div class="ni n1"><span class="nh "><button class="ar icon-button "></button><a href="vulcan.html"><span class="micon pa"></span><span>vulcan</span></a></span><div class="ni n2 "><span class="nh "><a href="vulcan/Auth$.html"><span class="micon ob"></span><span>Auth</span></a></span></div><div class="ni n2 "><span class="nh "><a href="vulcan/Auth.html"><span class="micon cl"></span><span>Auth</span></a></span></div><div class="ni n2 "><span class="nh "><a href="vulcan/AvroDeserializer.html"><span class="micon cl"></span><span>AvroDeserializer</span></a></span></div><div class="ni n2 "><span class="nh "><a href="vulcan/AvroDeserializer$.html"><span class="micon ob"></span><span>AvroDeserializer</span></a></span></div><div class="ni n2 "><span class="nh "><a href="vulcan/AvroSerializer$.html"><span class="micon ob"></span><span>AvroSerializer</span></a></span></div><div class="ni n2 "><span class="nh "><a href="vulcan/AvroSerializer.html"><span class="micon cl"></span><span>AvroSerializer</span></a></span></div><div class="ni n2 "><span class="nh "><a href="vulcan/AvroSettings$.html"><span class="micon ob"></span><span>AvroSettings</span></a></span></div><div class="ni n2 "><span class="nh "><a href="vulcan/AvroSettings.html"><span class="micon cl"></span><span>AvroSettings</span></a></span></div><div class="ni n2 "><span class="nh "><a href="vulcan/SchemaRegistryClientSettings$.html"><span class="micon ob"></span><span>SchemaRegistryClientSettings</span></a></span></div><div class="ni n2 "><span class="nh "><a href="vulcan/SchemaRegistryClientSettings.html"><span class="micon cl"></span><span>SchemaRegistryClientSettings</span></a></span></div></div><div class="ni n1 "><span class="nh "><a href="Acks$.html"><span class="micon ob"></span><span>Acks</span></a></span></div><div class="ni n1 "><span class="nh "><a href="Acks.html"><span class="micon cl"></span><span>Acks</span></a></span></div><div class="ni n1 "><span class="nh "><a href="AdminClientSettings$.html"><span class="micon ob"></span><span>AdminClientSettings</span></a></span></div><div class="ni n1 expanded"><span class="nh h100 selected"><a href="#"><span class="micon cl"></span><span>AdminClientSettings</span></a></span></div><div class="ni n1 "><span class="nh "><a href="AutoOffsetReset$.html"><span class="micon ob"></span><span>AutoOffsetReset</span></a></span></div><div class="ni n1 "><span class="nh "><a href="AutoOffsetReset.html"><span class="micon cl"></span><span>AutoOffsetReset</span></a></span></div><div class="ni n1 "><span class="nh "><a href="CommitRecovery$.html"><span class="micon ob"></span><span>CommitRecovery</span></a></span></div><div class="ni n1 "><span class="nh "><a href="CommitRecovery.html"><span class="micon cl"></span><span>CommitRecovery</span></a></span></div><div class="ni n1 "><span class="nh "><a href="CommitRecoveryException.html"><span class="micon cl"></span><span>CommitRecoveryException</span></a></span></div><div class="ni n1 "><span class="nh "><a href="CommitRecoveryException$.html"><span class="micon ob"></span><span>CommitRecoveryException</span></a></span></div><div class="ni n1 "><span class="nh "><a href="CommitTimeoutException.html"><span class="micon cl"></span><span>CommitTimeoutException</span></a></span></div><div class="ni n1 "><span class="nh "><a href="CommittableConsumerRecord$.html"><span class="micon ob"></span><span>CommittableConsumerRecord</span></a></span></div><div class="ni n1 "><span class="nh "><a href="CommittableConsumerRecord.html"><span class="micon cl"></span><span>CommittableConsumerRecord</span></a></span></div><div class="ni n1 "><span class="nh "><a href="CommittableOffset.html"><span class="micon cl"></span><span>CommittableOffset</span></a></span></div><div class="ni n1 "><span class="nh "><a href="CommittableOffset$.html"><span class="micon ob"></span><span>CommittableOffset</span></a></span></div><div class="ni n1 "><span class="nh "><a href="CommittableOffsetBatch$.html"><span class="micon ob"></span><span>CommittableOffsetBatch</span></a></span></div><div class="ni n1 "><span class="nh "><a href="CommittableOffsetBatch.html"><span class="micon cl"></span><span>CommittableOffsetBatch</span></a></span></div><div class="ni n1 "><span class="nh "><a href="CommittableProducerRecords.html"><span class="micon cl"></span><span>CommittableProducerRecords</span></a></span></div><div class="ni n1 "><span class="nh "><a href="CommittableProducerRecords$.html"><span class="micon ob"></span><span>CommittableProducerRecords</span></a></span></div><div class="ni n1 "><span class="nh "><a href="ConsumerRecord.html"><span class="micon cl"></span><span>ConsumerRecord</span></a></span></div><div class="ni n1 "><span class="nh "><a href="ConsumerRecord$.html"><span class="micon ob"></span><span>ConsumerRecord</span></a></span></div><div class="ni n1 "><span class="nh "><a href="ConsumerSettings.html"><span class="micon cl"></span><span>ConsumerSettings</span></a></span></div><div class="ni n1 "><span class="nh "><a href="ConsumerSettings$.html"><span class="micon ob"></span><span>ConsumerSettings</span></a></span></div><div class="ni n1 "><span class="nh "><a href="ConsumerShutdownException.html"><span class="micon cl"></span><span>ConsumerShutdownException</span></a></span></div><div class="ni n1 "><span class="nh "><a href="DeserializationException.html"><span class="micon cl"></span><span>DeserializationException</span></a></span></div><div class="ni n1 "><span class="nh "><a href="GenericDeserializer$.html"><span class="micon ob"></span><span>GenericDeserializer</span></a></span></div><div class="ni n1 "><span class="nh "><a href="GenericDeserializer.html"><span class="micon cl"></span><span>GenericDeserializer</span></a></span></div><div class="ni n1 "><span class="nh "><a href="GenericSerializer$.html"><span class="micon ob"></span><span>GenericSerializer</span></a></span></div><div class="ni n1 "><span class="nh "><a href="GenericSerializer.html"><span class="micon cl"></span><span>GenericSerializer</span></a></span></div><div class="ni n1 "><span class="nh "><a href="Header$.html"><span class="micon ob"></span><span>Header</span></a></span></div><div class="ni n1 "><span class="nh "><a href="Header.html"><span class="micon cl"></span><span>Header</span></a></span></div><div class="ni n1 "><span class="nh "><a href="HeaderDeserializer.html"><span class="micon cl"></span><span>HeaderDeserializer</span></a></span></div><div class="ni n1 "><span class="nh "><a href="HeaderDeserializer$.html"><span class="micon ob"></span><span>HeaderDeserializer</span></a></span></div><div class="ni n1 "><span class="nh "><a href="HeaderSerializer.html"><span class="micon cl"></span><span>HeaderSerializer</span></a></span></div><div class="ni n1 "><span class="nh "><a href="HeaderSerializer$.html"><span class="micon ob"></span><span>HeaderSerializer</span></a></span></div><div class="ni n1 "><span class="nh "><a href="Headers$.html"><span class="micon ob"></span><span>Headers</span></a></span></div><div class="ni n1 "><span class="nh "><a href="Headers.html"><span class="micon cl"></span><span>Headers</span></a></span></div><div class="ni n1 "><span class="nh "><a href="IsolationLevel.html"><span class="micon cl"></span><span>IsolationLevel</span></a></span></div><div class="ni n1 "><span class="nh "><a href="IsolationLevel$.html"><span class="micon ob"></span><span>IsolationLevel</span></a></span></div><div class="ni n1 "><span class="nh "><a href="Jitter.html"><span class="micon cl"></span><span>Jitter</span></a></span></div><div class="ni n1 "><span class="nh "><a href="Jitter$.html"><span class="micon ob"></span><span>Jitter</span></a></span></div><div class="ni n1 "><span class="nh "><a href="KafkaAdminClient.html"><span class="micon cl"></span><span>KafkaAdminClient</span></a></span></div><div class="ni n1"><span class="nh "><button class="ar icon-button "></button><a href="KafkaAdminClient$.html"><span class="micon ob"></span><span>KafkaAdminClient</span></a></span><div class="ni n2 "><span class="nh "><a href="KafkaAdminClient$$DescribeCluster.html"><span class="micon cl"></span><span>DescribeCluster</span></a></span></div><div class="ni n2 "><span class="nh "><a href="KafkaAdminClient$$ListConsumerGroupOffsets.html"><span class="micon cl"></span><span>ListConsumerGroupOffsets</span></a></span></div><div class="ni n2 "><span class="nh "><a href="KafkaAdminClient$$ListConsumerGroupOffsetsForPartitions.html"><span class="micon cl"></span><span>ListConsumerGroupOffsetsForPartitions</span></a></span></div><div class="ni n2 "><span class="nh "><a href="KafkaAdminClient$$ListConsumerGroups.html"><span class="micon cl"></span><span>ListConsumerGroups</span></a></span></div><div class="ni n2 "><span class="nh "><a href="KafkaAdminClient$$ListTopics.html"><span class="micon cl"></span><span>ListTopics</span></a></span></div><div class="ni n2 "><span class="nh "><a href="KafkaAdminClient$$ListTopicsIncludeInternal.html"><span class="micon cl"></span><span>ListTopicsIncludeInternal</span></a></span></div></div><div class="ni n1 "><span class="nh "><a href="KafkaCommitter.html"><span class="micon cl"></span><span>KafkaCommitter</span></a></span></div><div class="ni n1 "><span class="nh "><a href="KafkaCommitter$.html"><span class="micon ob"></span><span>KafkaCommitter</span></a></span></div><div class="ni n1"><span class="nh "><button class="ar icon-button "></button><a href="KafkaConsumer$.html"><span class="micon ob"></span><span>KafkaConsumer</span></a></span><div class="ni n2 "><span class="nh "><a href="KafkaConsumer$$StreamOps.html"><span class="micon cl"></span><span>StreamOps</span></a></span></div></div><div class="ni n1 "><span class="nh "><a href="KafkaConsumer.html"><span class="micon cl"></span><span>KafkaConsumer</span></a></span></div><div class="ni n1"><span class="nh "><button class="ar icon-button "></button><a href="KafkaProducer$.html"><span class="micon ob"></span><span>KafkaProducer</span></a></span><div class="ni n2 "><span class="nh "><a href="KafkaProducer$$ProducerOps.html"><span class="micon cl"></span><span>ProducerOps</span></a></span></div><div class="ni n2 "><span class="nh "><a href="KafkaProducer$$WithSettings.html"><span class="micon tr"></span><span>WithSettings</span></a></span></div></div><div class="ni n1 "><span class="nh "><a href="KafkaProducer.html"><span class="micon cl"></span><span>KafkaProducer</span></a></span></div><div class="ni n1 "><span class="nh "><a href="Key.html"><span class="micon tr"></span><span>Key</span></a></span></div><div class="ni n1 "><span class="nh "><a href="KeyOrValue.html"><span class="micon tr"></span><span>KeyOrValue</span></a></span></div><div class="ni n1 "><span class="nh "><a href="NotSubscribedException.html"><span class="micon cl"></span><span>NotSubscribedException</span></a></span></div><div class="ni n1 "><span class="nh "><a href="ProducerRecord.html"><span class="micon cl"></span><span>ProducerRecord</span></a></span></div><div class="ni n1 "><span class="nh "><a href="ProducerRecord$.html"><span class="micon ob"></span><span>ProducerRecord</span></a></span></div><div class="ni n1 "><span class="nh "><a href="ProducerRecords$.html"><span class="micon ob"></span><span>ProducerRecords</span></a></span></div><div class="ni n1 "><span class="nh "><a href="ProducerSettings$.html"><span class="micon ob"></span><span>ProducerSettings</span></a></span></div><div class="ni n1 "><span class="nh "><a href="ProducerSettings.html"><span class="micon cl"></span><span>ProducerSettings</span></a></span></div><div class="ni n1 "><span class="nh "><a href="RebalanceRevokeMode.html"><span class="micon cl"></span><span>RebalanceRevokeMode</span></a></span></div><div class="ni n1 "><span class="nh "><a href="RebalanceRevokeMode$.html"><span class="micon ob"></span><span>RebalanceRevokeMode</span></a></span></div><div class="ni n1 "><span class="nh "><a href="SerializationException.html"><span class="micon cl"></span><span>SerializationException</span></a></span></div><div class="ni n1 "><span class="nh "><a href="Timestamp.html"><span class="micon cl"></span><span>Timestamp</span></a></span></div><div class="ni n1"><span class="nh "><button class="ar icon-button "></button><a href="Timestamp$.html"><span class="micon ob"></span><span>Timestamp</span></a></span><div class="ni n2 "><span class="nh "><a href="Timestamp$$CreateTime.html"><span class="micon cl"></span><span>CreateTime</span></a></span></div><div class="ni n2 "><span class="nh "><a href="Timestamp$$LogAppendTime.html"><span class="micon cl"></span><span>LogAppendTime</span></a></span></div><div class="ni n2 "><span class="nh "><a href="Timestamp$$NoTimestamp$.html"><span class="micon ob"></span><span>NoTimestamp</span></a></span></div><div class="ni n2 "><span class="nh "><a href="Timestamp$$UnknownTime.html"><span class="micon cl"></span><span>UnknownTime</span></a></span></div></div><div class="ni n1 "><span class="nh "><a href="TransactionalProducerRecords$.html"><span class="micon ob"></span><span>TransactionalProducerRecords</span></a></span></div><div class="ni n1 "><span class="nh "><a href="UnexpectedTopicException.html"><span class="micon cl"></span><span>UnexpectedTopicException</span></a></span></div><div class="ni n1 "><span class="nh "><a href="Value.html"><span class="micon tr"></span><span>Value</span></a></span></div><div class="ni n1 "><span class="nh "><a href="instances$.html"><span class="micon ob"></span><span>instances</span></a></span></div></div></nav></div><div id="footer" class="body-small"><div class="left-container">Generated with</div><div class="right-container"><a href="https://github.com/typelevel/fs2-kafka"><button class="icon-button gh"></button></a><a href="https://discord.gg/fjqZMuqzAp"><button class="icon-button discord"></button></a><div class="text">Licensed under Apache License, Version 2.0.</div></div><div class="text-mobile">Licensed under Apache License, Version 2.0.</div></div><div id="scaladoc-searchBar"></div><div id="main"><div class="breadcrumbs container"><a href="../../index.html">FS2 Kafka</a>/<a href="../kafka.html">fs2.kafka</a>/<a href="AdminClientSettings.html">AdminClientSettings</a></div><div id="content" class="body-medium"><div><div class="cover-header">
+ <a href="AdminClientSettings$.html"><span class="icon"><span class="micon cl"></span><span class="micon companion ob"></span></span></a>
+ <h1 class="h600 multi">AdminClientSettings</h1>
+</div>
+<div class="fqname body-large">
+ <span>fs2.kafka.AdminClientSettings</span>
+</div>
+<div class="companion-badge body-small">
+ <span>See the<span class="micon ob"></span><a href="AdminClientSettings$.html">AdminClientSettings</a> companion object</span>
+</div>
+<div class="main-signature mono-small-block">
+ <div class="signature">
+  <span class="modifiers"><span t="k">sealed abstract </span></span><span class="kind"><span t="k">class </span></span><a href="AdminClientSettings.html" t="n" class="documentableName ">AdminClientSettings</a>
+ </div>
+</div>
+<div class="cover">
+ <div class="doc">
+  <div>
+   <p><span><span><span><a href="AdminClientSettings.html">AdminClientSettings</a> contain settings necessary to create a <a href="KafkaAdminClient.html">KafkaAdminClient</a></span>.</span><span> Several convenience functions are provided so that you don't have to work with <code>String</code> values and keys from <code>AdminClientConfig</code>. It's still possible to set <code>AdminClientConfig</code> values with functions like <a href="AdminClientSettings.html#withProperty-fffff122">withProperty</a>.
+      <br>
+      <br></span></span></p>
+   <p><span><a href="AdminClientSettings.html">AdminClientSettings</a> instances are immutable and all modification functions return a new <a href="AdminClientSettings.html">AdminClientSettings</a> instance.
+     <br>
+     <br></span></p>
+   <p><span>Use <a href="AdminClientSettings$.html#apply-767">AdminClientSettings#apply</a> for the default settings, and then apply any desired modifications on top of that instance. </span></p>
+  </div>
+ </div>
+ <section id="attributes">
+  <h2 class="h500">Attributes</h2>
+  <dl class="attributes">
+   <dt class="body-small">Companion</dt>
+   <dd class="body-medium">
+    <a href="AdminClientSettings$.html">object</a>
+   </dd>
+   <dt class="body-small">Source</dt>
+   <dd class="body-medium">
+    <a href="https://github.com/typelevel/fs2-kafka/blob/7e381c3b3551203bf1ba925ef525d854d4a1bfab/modules/core/src/main/scala/fs2/kafka/AdminClientSettings.scala#L28" target="_blank">AdminClientSettings.scala</a>
+   </dd>
+   <dt class="body-small">Graph</dt>
+   <dd class="body-medium">
+    <div id="inheritance-diagram" class="diagram-class showGraph">
+     <button type="button" class="label-only-button" onclick="zoomOut()">Reset zoom</button><button type="button" class="label-only-button" onclick="hideGraph()">Hide graph</button><button type="button" class="label-only-button" onclick="showGraph()">Show graph</button>
+     <svg id="graph"></svg>
+     <script type="text/dot" id="dot"> digraph g {
+ node0 [id=node0, label="<span style=\"color: #FFFFFF;\">sealed class <a href=\"AdminClientSettings.html\" t=\"n\">AdminClientSettings</a></span>", class="class vertex"];
+node1 [id=node1, label="<span style=\"color: #FFFFFF;\">class <span data-unresolved-link=\"\" t=\"n\">Object</span></span>", class="class vertex"];
+node2 [id=node2, label="<span style=\"color: #FFFFFF;\">class <span data-unresolved-link=\"\" t=\"n\">Any</span></span>", class="class vertex"];
+node3 [id=node3, label="<span style=\"color: #FFFFFF;\">trait <span data-unresolved-link=\"\" t=\"n\">Matchable</span></span>", class="trait vertex"];
+
+
+ node0 -> node1;
+node1 -> node2;
+node1 -> node3;
+node3 -> node2;
+
+}
+</script>
+    </div>
+   </dd>
+   <dt class="body-small">Supertypes</dt>
+   <dd class="body-medium">
+    <div class="mono-small-block supertypes">
+     <div>
+      class <span data-unresolved-link="" t="n">Object</span>
+     </div>
+     <div>
+      trait <span data-unresolved-link="" t="n">Matchable</span>
+     </div>
+     <div>
+      class <span data-unresolved-link="" t="n">Any</span>
+     </div>
+     <span></span>
+    </div>
+   </dd>
+  </dl>
+ </section>
+</div>
+<section id="members-list">
+ <h2 class="h500">Members list</h2>
+ <div class="documentableFilter">
+  <div class="filtersContainer"></div>
+  <input class="filterableInput" placeholder="Filter by any phrase" data-test-id="filterBarInput" type="search"><button class="clearButton label-only-button" data-test-id="filterBarClearButton">Clear all</button>
+ </div>
+ <div class="membersList expand">
+  <div class="tabs">
+   <div class="contents">
+    <section id="Value-members">
+     <div data-togglable="Value members" class="tab expand">
+      <div class="member-group-header">
+       <h3 data-togglable="Value members" class="h400">Value members</h3>
+      </div>
+      <section id="Abstract-methods">
+       <div class="documentableList expand">
+        <div class="documentableList-expander">
+         <button class="icon-button show-content expand"></button>
+         <h4 class="groupHeader h200">Abstract methods</h4>
+        </div>
+        <div class="documentableElement" id="closeTimeout-0">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="AdminClientSettings.html#closeTimeout-0" t="n" class="documentableName ">closeTimeout</a>: <a href="https://www.scala-lang.org/api/2.13.18/scala/concurrent/duration/FiniteDuration.html" t="t">FiniteDuration</a>
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="documentableBrief doc">
+             <p><span>The time to wait for the Java <code>KafkaAdminClient</code> to shutdown.
+               <br>
+               <br></span></p>
+            </div>
+            <div class="cover">
+             <div class="doc">
+              <div>
+               <p><span><span>The time to wait for the Java <code>KafkaAdminClient</code> to shutdown.
+                  <br>
+                  <br></span></span></p>
+               <p>The default value is 20 seconds.</p>
+              </div>
+             </div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">Source</dt>
+              <dd class="body-medium">
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7e381c3b3551203bf1ba925ef525d854d4a1bfab/modules/core/src/main/scala/fs2/kafka/AdminClientSettings.scala#L157" target="_blank">AdminClientSettings.scala</a>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement" id="properties-0">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="AdminClientSettings.html#properties-0" t="n" class="documentableName ">properties</a>: <a href="https://www.scala-lang.org/api/2.13.18/scala/collection/immutable/Map.html" t="t">Map</a>[<a href="https://www.scala-lang.org/api/2.13.18/scala/Predef$.html#String" t="t">String</a>, <a href="https://www.scala-lang.org/api/2.13.18/scala/Predef$.html#String" t="t">String</a>]
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="documentableBrief doc">
+             <p><span><span>Properties which can be provided when creating a Java <code>KafkaAdminClient</code> instance</span>.</span></p>
+            </div>
+            <div class="cover">
+             <div class="doc">
+              <p><span><span><span>Properties which can be provided when creating a Java <code>KafkaAdminClient</code> instance</span>.</span><span> Numerous functions in <a href="AdminClientSettings.html">AdminClientSettings</a> add properties here if the settings are used by the Java <code>KafkaAdminClient</code>. </span></span></p>
+             </div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">Source</dt>
+              <dd class="body-medium">
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7e381c3b3551203bf1ba925ef525d854d4a1bfab/modules/core/src/main/scala/fs2/kafka/AdminClientSettings.scala#L35" target="_blank">AdminClientSettings.scala</a>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement" id="withBootstrapServers-767">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="AdminClientSettings.html#withBootstrapServers-767" t="n" class="documentableName ">withBootstrapServers</a>(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">bootstrapServers</span>: <a href="https://www.scala-lang.org/api/2.13.18/scala/Predef$.html#String" t="t">String</a>): <a href="AdminClientSettings.html" t="t">AdminClientSettings</a>
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="documentableBrief doc">
+             <p><span><span>Returns a new <a href="AdminClientSettings.html">AdminClientSettings</a> instance with the specified bootstrap servers</span>.</span></p>
+            </div>
+            <div class="cover">
+             <div class="doc">
+              <div>
+               <p><span><span><span>Returns a new <a href="AdminClientSettings.html">AdminClientSettings</a> instance with the specified bootstrap servers</span>.</span><span> This is equivalent to setting the following property using the <a href="AdminClientSettings.html#withProperty-fffff122">withProperty</a> function.</span></span></p>
+               <div class="snippet mono-small-block">
+                <pre><code><span line-number="1" class=""><span class="tooltip-container"></span>AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG
+</span></code></pre>
+                <div class="buttons"></div>
+               </div>
+              </div>
+             </div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">Source</dt>
+              <dd class="body-medium">
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7e381c3b3551203bf1ba925ef525d854d4a1bfab/modules/core/src/main/scala/fs2/kafka/AdminClientSettings.scala#L45" target="_blank">AdminClientSettings.scala</a>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement" id="withClientId-767">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="AdminClientSettings.html#withClientId-767" t="n" class="documentableName ">withClientId</a>(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">clientId</span>: <a href="https://www.scala-lang.org/api/2.13.18/scala/Predef$.html#String" t="t">String</a>): <a href="AdminClientSettings.html" t="t">AdminClientSettings</a>
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="documentableBrief doc">
+             <p><span><span>Returns a new <a href="AdminClientSettings.html">AdminClientSettings</a> instance with the specified client id</span>.</span></p>
+            </div>
+            <div class="cover">
+             <div class="doc">
+              <div>
+               <p><span><span><span>Returns a new <a href="AdminClientSettings.html">AdminClientSettings</a> instance with the specified client id</span>.</span><span> This is equivalent to setting the following property using the <a href="AdminClientSettings.html#withProperty-fffff122">withProperty</a> function.</span></span></p>
+               <div class="snippet mono-small-block">
+                <pre><code><span line-number="1" class=""><span class="tooltip-container"></span>AdminClientConfig.CLIENT_ID_CONFIG
+</span></code></pre>
+                <div class="buttons"></div>
+               </div>
+              </div>
+             </div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">Source</dt>
+              <dd class="body-medium">
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7e381c3b3551203bf1ba925ef525d854d4a1bfab/modules/core/src/main/scala/fs2/kafka/AdminClientSettings.scala#L55" target="_blank">AdminClientSettings.scala</a>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement" id="withCloseTimeout-fffffcde">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="AdminClientSettings.html#withCloseTimeout-fffffcde" t="n" class="documentableName ">withCloseTimeout</a>(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">closeTimeout</span>: <a href="https://www.scala-lang.org/api/2.13.18/scala/concurrent/duration/FiniteDuration.html" t="t">FiniteDuration</a>): <a href="AdminClientSettings.html" t="t">AdminClientSettings</a>
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="documentableBrief doc">
+             <p><span><span>Creates a new <a href="AdminClientSettings.html">AdminClientSettings</a> with the specified <a href="AdminClientSettings.html#closeTimeout-0">closeTimeout</a></span>.</span></p>
+            </div>
+            <div class="cover">
+             <div class="doc">
+              <p><span><span><span>Creates a new <a href="AdminClientSettings.html">AdminClientSettings</a> with the specified <a href="AdminClientSettings.html#closeTimeout-0">closeTimeout</a></span>.</span> </span></p>
+             </div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">Source</dt>
+              <dd class="body-medium">
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7e381c3b3551203bf1ba925ef525d854d4a1bfab/modules/core/src/main/scala/fs2/kafka/AdminClientSettings.scala#L162" target="_blank">AdminClientSettings.scala</a>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement" id="withConnectionsMaxIdle-fffffcde">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="AdminClientSettings.html#withConnectionsMaxIdle-fffffcde" t="n" class="documentableName ">withConnectionsMaxIdle</a>(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">connectionsMaxIdle</span>: <a href="https://www.scala-lang.org/api/2.13.18/scala/concurrent/duration/FiniteDuration.html" t="t">FiniteDuration</a>): <a href="AdminClientSettings.html" t="t">AdminClientSettings</a>
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="documentableBrief doc">
+             <p><span><span>Returns a new <a href="AdminClientSettings.html">AdminClientSettings</a> instance with the specified max connection idle time</span>.</span></p>
+            </div>
+            <div class="cover">
+             <div class="doc">
+              <div>
+               <p><span><span><span>Returns a new <a href="AdminClientSettings.html">AdminClientSettings</a> instance with the specified max connection idle time</span>.</span><span> This is equivalent to setting the following property using the <a href="AdminClientSettings.html#withProperty-fffff122">withProperty</a> function, except you can specify it with a <code>FiniteDuration</code> instead of a <code>String</code>.</span></span></p>
+               <div class="snippet mono-small-block">
+                <pre><code><span line-number="1" class=""><span class="tooltip-container"></span>AdminClientConfig.CONNECTIONS_MAX_IDLE_MS_CONFIG
+</span></code></pre>
+                <div class="buttons"></div>
+               </div>
+              </div>
+             </div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">Source</dt>
+              <dd class="body-medium">
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7e381c3b3551203bf1ba925ef525d854d4a1bfab/modules/core/src/main/scala/fs2/kafka/AdminClientSettings.scala#L99" target="_blank">AdminClientSettings.scala</a>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement" id="withCredentials-fab">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="AdminClientSettings.html#withCredentials-fab" t="n" class="documentableName ">withCredentials</a>(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">credentialsStore</span>: <a href="security/KafkaCredentialStore.html" t="t">KafkaCredentialStore</a>): <a href="AdminClientSettings.html" t="t">AdminClientSettings</a>
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="documentableBrief doc">
+             <p><span>Includes the credentials properties from the provided <a href="security/KafkaCredentialStore.html">fs2.kafka.security.KafkaCredentialStore</a> </span></p>
+            </div>
+            <div class="cover">
+             <div class="doc">
+              <p><span><span>Includes the credentials properties from the provided <a href="security/KafkaCredentialStore.html">fs2.kafka.security.KafkaCredentialStore</a> </span></span></p>
+             </div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">Source</dt>
+              <dd class="body-medium">
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7e381c3b3551203bf1ba925ef525d854d4a1bfab/modules/core/src/main/scala/fs2/kafka/AdminClientSettings.scala#L168" target="_blank">AdminClientSettings.scala</a>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement" id="withMetadataMaxAge-fffffcde">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="AdminClientSettings.html#withMetadataMaxAge-fffffcde" t="n" class="documentableName ">withMetadataMaxAge</a>(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">metadataMaxAge</span>: <a href="https://www.scala-lang.org/api/2.13.18/scala/concurrent/duration/FiniteDuration.html" t="t">FiniteDuration</a>): <a href="AdminClientSettings.html" t="t">AdminClientSettings</a>
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="documentableBrief doc">
+             <p><span><span>Returns a new <a href="AdminClientSettings.html">AdminClientSettings</a> instance with the specified max metadata age</span>.</span></p>
+            </div>
+            <div class="cover">
+             <div class="doc">
+              <div>
+               <p><span><span><span>Returns a new <a href="AdminClientSettings.html">AdminClientSettings</a> instance with the specified max metadata age</span>.</span><span> This is equivalent to setting the following property using the <a href="AdminClientSettings.html#withProperty-fffff122">withProperty</a> function, except you can specify it with a <code>FiniteDuration</code> instead of a <code>String</code>.</span></span></p>
+               <div class="snippet mono-small-block">
+                <pre><code><span line-number="1" class=""><span class="tooltip-container"></span>AdminClientConfig.METADATA_MAX_AGE_CONFIG
+</span></code></pre>
+                <div class="buttons"></div>
+               </div>
+              </div>
+             </div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">Source</dt>
+              <dd class="body-medium">
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7e381c3b3551203bf1ba925ef525d854d4a1bfab/modules/core/src/main/scala/fs2/kafka/AdminClientSettings.scala#L121" target="_blank">AdminClientSettings.scala</a>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement" id="withProperties-fffff161">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="AdminClientSettings.html#withProperties-fffff161" t="n" class="documentableName ">withProperties</a>(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">properties</span>: (<a href="https://www.scala-lang.org/api/2.13.18/scala/Predef$.html#String" t="t">String</a>, <a href="https://www.scala-lang.org/api/2.13.18/scala/Predef$.html#String" t="t">String</a>)*): <a href="AdminClientSettings.html" t="t">AdminClientSettings</a>
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="documentableBrief doc">
+             <p><span>Includes the specified keys and values as properties.</span></p>
+            </div>
+            <div class="cover">
+             <div class="doc">
+              <p><span><span>Includes the specified keys and values as properties.</span><span> The keys should be part of the <code>AdminClientConfig</code> keys, and the values should be valid choices for the keys. </span></span></p>
+             </div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">Source</dt>
+              <dd class="body-medium">
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7e381c3b3551203bf1ba925ef525d854d4a1bfab/modules/core/src/main/scala/fs2/kafka/AdminClientSettings.scala#L144" target="_blank">AdminClientSettings.scala</a>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement" id="withProperties-584">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="AdminClientSettings.html#withProperties-584" t="n" class="documentableName ">withProperties</a>(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">properties</span>: <a href="https://www.scala-lang.org/api/2.13.18/scala/collection/immutable/Map.html" t="t">Map</a>[<a href="https://www.scala-lang.org/api/2.13.18/scala/Predef$.html#String" t="t">String</a>, <a href="https://www.scala-lang.org/api/2.13.18/scala/Predef$.html#String" t="t">String</a>]): <a href="AdminClientSettings.html" t="t">AdminClientSettings</a>
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="documentableBrief doc">
+             <p><span>Includes the specified keys and values as properties.</span></p>
+            </div>
+            <div class="cover">
+             <div class="doc">
+              <p><span><span>Includes the specified keys and values as properties.</span><span> The keys should be part of the <code>AdminClientConfig</code> keys, and the values should be valid choices for the keys. </span></span></p>
+             </div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">Source</dt>
+              <dd class="body-medium">
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7e381c3b3551203bf1ba925ef525d854d4a1bfab/modules/core/src/main/scala/fs2/kafka/AdminClientSettings.scala#L150" target="_blank">AdminClientSettings.scala</a>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement" id="withProperty-fffff122">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="AdminClientSettings.html#withProperty-fffff122" t="n" class="documentableName ">withProperty</a>(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">key</span>: <a href="https://www.scala-lang.org/api/2.13.18/scala/Predef$.html#String" t="t">String</a>, <span t="k"></span><span data-unresolved-link="" t="n">value</span>: <a href="https://www.scala-lang.org/api/2.13.18/scala/Predef$.html#String" t="t">String</a>): <a href="AdminClientSettings.html" t="t">AdminClientSettings</a>
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="documentableBrief doc">
+             <p><span><span>Includes a property with the specified <code>key</code> and <code>value</code></span>.</span></p>
+            </div>
+            <div class="cover">
+             <div class="doc">
+              <p><span><span><span>Includes a property with the specified <code>key</code> and <code>value</code></span>.</span><span> The key should be one of the keys in <code>AdminClientConfig</code>, and the value should be a valid choice for the key. </span></span></p>
+             </div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">Source</dt>
+              <dd class="body-medium">
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7e381c3b3551203bf1ba925ef525d854d4a1bfab/modules/core/src/main/scala/fs2/kafka/AdminClientSettings.scala#L138" target="_blank">AdminClientSettings.scala</a>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement" id="withReconnectBackoff-fffffcde">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="AdminClientSettings.html#withReconnectBackoff-fffffcde" t="n" class="documentableName ">withReconnectBackoff</a>(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">reconnectBackoff</span>: <a href="https://www.scala-lang.org/api/2.13.18/scala/concurrent/duration/FiniteDuration.html" t="t">FiniteDuration</a>): <a href="AdminClientSettings.html" t="t">AdminClientSettings</a>
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="documentableBrief doc">
+             <p><span><span>Returns a new <a href="AdminClientSettings.html">AdminClientSettings</a> instance with the specified reconnect backoff</span>.</span></p>
+            </div>
+            <div class="cover">
+             <div class="doc">
+              <div>
+               <p><span><span><span>Returns a new <a href="AdminClientSettings.html">AdminClientSettings</a> instance with the specified reconnect backoff</span>.</span><span> This is equivalent to setting the following property using the <a href="AdminClientSettings.html#withProperty-fffff122">withProperty</a> function, except you can specify it with a <code>FiniteDuration</code> instead of a <code>String</code>.</span></span></p>
+               <div class="snippet mono-small-block">
+                <pre><code><span line-number="1" class=""><span class="tooltip-container"></span>AdminClientConfig.RECONNECT_BACKOFF_MS_CONFIG
+</span></code></pre>
+                <div class="buttons"></div>
+               </div>
+              </div>
+             </div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">Source</dt>
+              <dd class="body-medium">
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7e381c3b3551203bf1ba925ef525d854d4a1bfab/modules/core/src/main/scala/fs2/kafka/AdminClientSettings.scala#L66" target="_blank">AdminClientSettings.scala</a>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement" id="withReconnectBackoffMax-fffffcde">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="AdminClientSettings.html#withReconnectBackoffMax-fffffcde" t="n" class="documentableName ">withReconnectBackoffMax</a>(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">reconnectBackoffMax</span>: <a href="https://www.scala-lang.org/api/2.13.18/scala/concurrent/duration/FiniteDuration.html" t="t">FiniteDuration</a>): <a href="AdminClientSettings.html" t="t">AdminClientSettings</a>
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="documentableBrief doc">
+             <p><span><span>Returns a new <a href="AdminClientSettings.html">AdminClientSettings</a> instance with the specified max reconnect backoff</span>.</span></p>
+            </div>
+            <div class="cover">
+             <div class="doc">
+              <div>
+               <p><span><span><span>Returns a new <a href="AdminClientSettings.html">AdminClientSettings</a> instance with the specified max reconnect backoff</span>.</span><span> This is equivalent to setting the following property using the <a href="AdminClientSettings.html#withProperty-fffff122">withProperty</a> function, except you can specify it with a <code>FiniteDuration</code> instead of a <code>String</code>.</span></span></p>
+               <div class="snippet mono-small-block">
+                <pre><code><span line-number="1" class=""><span class="tooltip-container"></span>AdminClientConfig.RECONNECT_BACKOFF_MAX_MS_CONFIG
+</span></code></pre>
+                <div class="buttons"></div>
+               </div>
+              </div>
+             </div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">Source</dt>
+              <dd class="body-medium">
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7e381c3b3551203bf1ba925ef525d854d4a1bfab/modules/core/src/main/scala/fs2/kafka/AdminClientSettings.scala#L77" target="_blank">AdminClientSettings.scala</a>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement" id="withRequestTimeout-fffffcde">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="AdminClientSettings.html#withRequestTimeout-fffffcde" t="n" class="documentableName ">withRequestTimeout</a>(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">requestTimeout</span>: <a href="https://www.scala-lang.org/api/2.13.18/scala/concurrent/duration/FiniteDuration.html" t="t">FiniteDuration</a>): <a href="AdminClientSettings.html" t="t">AdminClientSettings</a>
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="documentableBrief doc">
+             <p><span><span>Returns a new <a href="AdminClientSettings.html">AdminClientSettings</a> instance with the specified request timeout</span>.</span></p>
+            </div>
+            <div class="cover">
+             <div class="doc">
+              <div>
+               <p><span><span><span>Returns a new <a href="AdminClientSettings.html">AdminClientSettings</a> instance with the specified request timeout</span>.</span><span> This is equivalent to setting the following property using the <a href="AdminClientSettings.html#withProperty-fffff122">withProperty</a> function, except you can specify it with a <code>FiniteDuration</code> instead of a <code>String</code>.</span></span></p>
+               <div class="snippet mono-small-block">
+                <pre><code><span line-number="1" class=""><span class="tooltip-container"></span>AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG
+</span></code></pre>
+                <div class="buttons"></div>
+               </div>
+              </div>
+             </div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">Source</dt>
+              <dd class="body-medium">
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7e381c3b3551203bf1ba925ef525d854d4a1bfab/modules/core/src/main/scala/fs2/kafka/AdminClientSettings.scala#L110" target="_blank">AdminClientSettings.scala</a>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement" id="withRetries-de5">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="AdminClientSettings.html#withRetries-de5" t="n" class="documentableName ">withRetries</a>(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">retries</span>: <a href="https://www.scala-lang.org/api/2.13.18/scala/Int.html" t="t">Int</a>): <a href="AdminClientSettings.html" t="t">AdminClientSettings</a>
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="documentableBrief doc">
+             <p><span><span>Returns a new <a href="AdminClientSettings.html">AdminClientSettings</a> instance with the specified retries</span>.</span></p>
+            </div>
+            <div class="cover">
+             <div class="doc">
+              <div>
+               <p><span><span><span>Returns a new <a href="AdminClientSettings.html">AdminClientSettings</a> instance with the specified retries</span>.</span><span> This is equivalent to setting the following property using the <a href="AdminClientSettings.html#withProperty-fffff122">withProperty</a> function, except you can specify it with an <code>Int</code> instead of a <code>String</code>.</span></span></p>
+               <div class="snippet mono-small-block">
+                <pre><code><span line-number="1" class=""><span class="tooltip-container"></span>AdminClientConfig.RETRIES_CONFIG
+</span></code></pre>
+                <div class="buttons"></div>
+               </div>
+              </div>
+             </div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">Source</dt>
+              <dd class="body-medium">
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7e381c3b3551203bf1ba925ef525d854d4a1bfab/modules/core/src/main/scala/fs2/kafka/AdminClientSettings.scala#L132" target="_blank">AdminClientSettings.scala</a>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement" id="withRetryBackoff-fffffcde">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="AdminClientSettings.html#withRetryBackoff-fffffcde" t="n" class="documentableName ">withRetryBackoff</a>(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">retryBackoff</span>: <a href="https://www.scala-lang.org/api/2.13.18/scala/concurrent/duration/FiniteDuration.html" t="t">FiniteDuration</a>): <a href="AdminClientSettings.html" t="t">AdminClientSettings</a>
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="documentableBrief doc">
+             <p><span><span>Returns a new <a href="AdminClientSettings.html">AdminClientSettings</a> instance with the specified retry backoff</span>.</span></p>
+            </div>
+            <div class="cover">
+             <div class="doc">
+              <div>
+               <p><span><span><span>Returns a new <a href="AdminClientSettings.html">AdminClientSettings</a> instance with the specified retry backoff</span>.</span><span> This is equivalent to setting the following property using the <a href="AdminClientSettings.html#withProperty-fffff122">withProperty</a> function, except you can specify it with a <code>FiniteDuration</code> instead of a <code>String</code>.</span></span></p>
+               <div class="snippet mono-small-block">
+                <pre><code><span line-number="1" class=""><span class="tooltip-container"></span>AdminClientConfig.RETRY_BACKOFF_MS_CONFIG
+</span></code></pre>
+                <div class="buttons"></div>
+               </div>
+              </div>
+             </div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">Source</dt>
+              <dd class="body-medium">
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7e381c3b3551203bf1ba925ef525d854d4a1bfab/modules/core/src/main/scala/fs2/kafka/AdminClientSettings.scala#L88" target="_blank">AdminClientSettings.scala</a>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+       </div>
+      </section>
+     </div>
+    </section>
+   </div>
+  </div>
+ </div>
+</section></div><div id="toc" class="body-small"><div id="toc-container"><span class="toc-title h200">In this article</span><nav class="toc-nav"><ul class="toc-list"><li><a href="#attributes">Attributes</a></li><li><a href="#members-list">Members list</a><ul><li><a href="#Value-members">Value members</a><ul><li><a href="#Abstract-methods">Abstract methods</a></li></ul></li></ul></li></ul></nav></div></div></div><div id="footer" class="body-small mobile-footer"><div class="left-container">Generated with</div><div class="right-container"><a href="https://github.com/typelevel/fs2-kafka"><button class="icon-button gh"></button></a><a href="https://discord.gg/fjqZMuqzAp"><button class="icon-button discord"></button></a><div class="text">Licensed under Apache License, Version 2.0.</div></div><div class="text-mobile">Licensed under Apache License, Version 2.0.</div></div></div></div></body></html>

@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+  
+  <head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="generator" content="Typelevel Laika + Helium Theme" />
+  <title>Admin · FS2 Kafka</title>
+  
+  <meta name="author" content="Viktor Rudebeck"/>
+  
+  <meta name="author" content="Ben Plommer"/>
+  
+  <meta name="author" content="Yuriy Badalyantc"/>
+  
+  <meta name="author" content="Alan Artigao"/>
+  
+  
+  <meta name="description" content="Functional streams for Kafka with FS2 and the official Apache Kafka client."/>
+  <meta property="og:description" content="Functional streams for Kafka with FS2 and the official Apache Kafka client."/>
+  
+  <meta name="theme-color" content="#122932"/>
+  <meta property="og:type" content="website"/>
+  <meta property="og:site_name" content="FS2 Kafka"/>
+  <meta property="og:title" content="Admin"/>
+  <meta property="og:image" content="https://typelevel.org/fs2-kafka/img/social-preview.png"/>
+  <meta property="og:image:width" content="1200"/>
+  <meta property="og:image:height" content="630"/>
+  <meta property="og:image:alt" content="FS2 Kafka · Functional Kafka for Scala"/>
+  <meta name="twitter:card" content="summary_large_image"/>
+  <meta name="theme-color" content="#2e8c7f"/>
+  
+  
+  <link rel="icon" sizes="180x180" type="image/png" href="https://typelevel.org/fs2-kafka/img/logo.png"/>
+  
+  <link rel="icon"  type="image/svg+xml" href="img/logo.svg"/>
+  
+  <link rel="apple-touch-icon" href="https://typelevel.org/fs2-kafka/img/logo.png"/>
+  
+  <link rel="stylesheet" type="text/css" href="helium/site/icofont.min.css" />
+    <link rel="stylesheet" type="text/css" href="helium/site/laika-helium.css" />
+    <link rel="stylesheet" type="text/css" href="css/site.css" />
+  <script src="helium/site/laika-helium.js"></script>
+  
+  
+  <script> /* for avoiding page load transitions */ </script>
+</head>
+
+  <body>
+
+    <header id="top-bar" class="light-inverted dark-inverted">
+
+  <div class="row">
+    <a id="nav-icon">
+      <i class="icofont-laika navigationMenu" title="Navigation">&#xefa2;</i>
+    </a>
+    
+    
+  </div>
+
+  <a class="icon-link svg-link home-link" href="index.html"><span><svg xmlns="http://www.w3.org/2000/svg" width="433" height="500" viewBox="0 0 433.013 500" role="img" aria-labelledby="fs2-kafka-logo-title">
+  <title id="fs2-kafka-logo-title">FS2 Kafka</title>
+  <polygon points="216.506,0 433.013,125 433.013,375 216.506,500 0,375 0,125" fill="#7CD3C0"/>
+  <path d="M179.3,352.3L216.5,248.14L253.7,352.3ZM110.11,352.3L322.89,352.3L291.64,402.89L141.36,402.89Z" fill="#AD2E37"/>
+  <path d="M179.3,352.3L216.5,248.14L216.5,352.3ZM179.3,352.3L253.7,352.3L216.5,402.89Z" fill="#122932" fill-opacity="0.35"/>
+  <path d="M255.09,362.53L307.18,362.53C309.65,362.53 309.65,366.25 307.18,366.25L255.09,366.25C252.62,366.25 252.62,362.53 255.09,362.53ZM249.51,372.76L294.15,372.76C296.63,372.76 296.63,376.48 294.15,376.48L249.51,376.48C247.04,376.48 247.04,372.76 249.51,372.76ZM243.94,382.99L279.27,382.99C281.75,382.99 281.75,386.71 279.27,386.71L243.94,386.71C241.46,386.71 241.46,382.99 243.94,382.99Z" fill="#122932" fill-opacity="0.35"/>
+  <path d="M110.02,401.2C113.11,401.35 116.22,402.2 119.31,402.32C122.41,402.43 125.52,401.64 128.62,400.15C131.71,398.67 134.82,396.68 137.91,395.8C141.01,394.91 144.12,395.05 147.22,396.08C150.31,397.13 153.42,398.87 156.51,399.76C159.61,400.64 162.72,400.5 165.81,399.47C168.91,398.43 172.02,396.68 175.12,395.8C178.21,394.91 181.32,395.05 184.41,396.08C187.51,397.13 190.62,398.87 193.72,399.76C196.81,400.64 199.92,400.5 203.01,399.47C206.11,398.43 209.22,396.68 212.31,395.8C215.41,394.91 218.52,395.05 221.62,396.08C224.71,397.13 227.82,398.87 230.91,399.76C234.01,400.64 237.12,400.5 240.22,399.47C243.31,398.43 246.42,396.68 249.51,395.8C252.61,394.91 255.72,395.05 258.81,396.08C261.91,397.13 265.02,398.87 268.12,399.76C271.21,400.64 274.32,400.5 277.42,399.47C280.51,398.43 283.62,396.68 286.72,395.8C289.5,395 292.3,395 295.09,395.8C295.39,395.89 295.71,395.98 296.01,396.09C299.11,397.17 302.22,399.21 305.31,400.59C308.41,401.95 311.52,402.5 314.62,402.26C317.4,402.05 320.19,401.33 322.99,401.2C320.19,402.94 317.4,405.25 314.62,406.9C311.52,408.74 308.41,409.56 305.31,409.16C302.22,408.76 299.11,407.3 296.01,406.31C295.71,406.21 295.39,406.12 295.09,406.03C292.3,405.23 289.5,405.23 286.72,406.03C283.62,406.91 280.51,408.66 277.42,409.7C274.32,410.73 271.21,410.87 268.12,409.99C265.02,409.1 261.91,407.36 258.81,406.31C255.72,405.28 252.61,405.14 249.51,406.03C246.42,406.91 243.31,408.66 240.22,409.7C237.12,410.73 234.01,410.87 230.91,409.99C227.82,409.1 224.71,407.36 221.62,406.31C218.52,405.28 215.41,405.14 212.31,406.03C209.22,406.91 206.11,408.66 203.01,409.7C199.92,410.73 196.81,410.87 193.72,409.99C190.62,409.1 187.51,407.36 184.41,406.31C181.32,405.28 178.21,405.14 175.12,406.03C172.02,406.91 168.91,408.66 165.81,409.7C162.72,410.73 159.61,410.87 156.51,409.99C153.42,409.1 150.31,407.36 147.22,406.31C144.12,405.28 141.01,405.14 137.91,406.03C134.82,406.91 131.71,408.43 128.62,409.01C125.52,409.61 122.41,409.09 119.31,407.43C116.22,405.77 113.11,403.13 110.02,401.2ZM154.66,418.37C157.75,416.76 160.86,415.85 163.95,416.03C167.05,416.23 170.16,417.41 173.25,418.19C176.35,418.97 179.46,419.17 182.56,418.45C183.18,418.31 183.79,418.14 184.41,417.95C186.9,417.18 189.37,415.98 191.85,415.11C194.95,414.03 198.06,413.65 201.16,414.31C204.25,414.97 207.36,416.56 210.46,417.64C213.55,418.72 216.66,419.1 219.75,418.44C222.85,417.78 225.96,416.19 229.06,415.11C232.15,414.03 235.26,413.65 238.35,414.31C241.45,414.97 244.56,416.56 247.66,417.64C247.96,417.75 248.28,417.86 248.59,417.95C251.38,418.81 254.16,419.14 256.95,418.75C260.05,418.32 263.16,417.08 266.25,416.43C269.35,415.78 272.46,415.9 275.56,417.09C276.49,417.45 277.42,417.88 278.35,418.37C277.42,418.21 276.49,418.09 275.56,418.05C272.46,417.91 269.35,418.8 266.25,420.31C263.16,421.82 260.05,423.74 256.95,424.64C254.16,425.44 251.38,425.32 248.59,424.46C248.28,424.37 247.96,424.26 247.66,424.15C244.56,423.07 241.45,421.48 238.35,420.82C235.26,420.16 232.15,420.54 229.06,421.62C225.96,422.7 222.85,424.29 219.75,424.95C216.66,425.61 213.55,425.23 210.46,424.15C207.36,423.07 204.25,421.48 201.16,420.82C198.06,420.16 194.95,420.54 191.85,421.62C189.37,422.49 186.9,423.69 184.41,424.46C183.79,424.65 183.18,424.81 182.56,424.93C179.46,425.54 176.35,424.98 173.25,423.6C170.16,422.23 167.05,420.24 163.95,419.1C160.86,417.98 157.75,417.82 154.66,418.37Z" fill="#2E8C7F"/>
+  <path d="M218.86,244.83L214.46,224.17C213.33,217.77 214.42,209.36 212.6,201.18L201.34,203.69C203.15,211.85 207.7,219.01 209.39,225.31L214.14,245.87Z" fill="#122932"/>
+  <path d="M210.78,256.97L212.12,246.58C212.78,244.73 214.54,243.49 216.5,243.49C218.46,243.49 220.22,244.73 220.88,246.58L223.47,260.46C224.07,262.15 221,263.24 220.41,261.56L216.5,250.63L213.85,258.05C213.25,259.75 210.18,258.65 210.78,256.97Z" fill="#122932"/>
+  <path d="M294.29,83.74C285.74,81.61 275.79,79.21 268.27,79.59C264.23,75.49 256.31,73.8 248.05,75.93C239.28,78.2 231.64,83.93 228.57,90.01C228.16,90.82 227.77,91.63 227.39,92.43L229.08,93.23C226.14,99.45 223.9,105.55 221.31,111.48C219.52,115.55 217.22,119.26 214.62,122.53L213.16,121.38C207.67,128.32 200.56,133.82 192.91,139.41C156.29,166.15 122.83,196.96 88.6,226.68C87.63,227.51 88.46,229.08 89.7,228.75C109.95,223.35 130.27,218.21 150.49,212.69C169.2,207.57 190.68,216.71 207.3,213.47C235.78,207.94 259.05,175.8 265.89,147.4C268.88,134.99 270.89,118.1 271.74,94.63C278.43,92.79 286.28,88.55 294.29,83.74Z" fill="#122932"/>
+  <path d="M227.39,92.43C224.41,98.72 222.16,104.85 219.6,110.73C217.67,115.12 215.2,118.95 212.31,122.43C225.58,130.11 253.9,134.03 264.4,120.99C269.04,115.22 261.41,105.86 254.02,101.33C248.57,97.98 240.1,91.04 227.39,92.43Z" fill="#2E8C7F"/>
+  <path d="M253.95,144.3C244.94,162.47 202.94,181.37 108.08,213.22C205.36,186.02 250.67,167.15 253.95,144.3Z" fill="#2E8C7F"/>
+  <circle cx="257.75" cy="88.14" r="8" fill="#7CD3C0"/>
+  <circle cx="259.17" cy="87.86" r="3.72" fill="#122932"/>
+  <circle cx="260.13" cy="86.44" r="1.4" fill="#7CD3C0"/>
+</svg>
+</span>FS2 Kafka</a>
+
+  <div class="row links">
+    
+    <a class="icon-link svg-link" href="api/fs2/kafka.html"><span class="api" title="API"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+  <g class="svg-shape">
+    <path d="M75,47.5c13.246,0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm-50,-0c13.246,-0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,-0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm2.705,16.735l7.239,0l0.622,-4.904l-21.833,0l-0,4.904l7.589,0l0,22.067l6.383,0l-0,-22.067Zm58.076,7.265c-0,-8.757 -3.698,-14.166 -10.781,-14.166c-7.083,-0 -10.781,5.604 -10.781,14.166c0,8.757 3.698,14.166 10.781,14.166c7.083,0 10.781,-5.604 10.781,-14.166Zm-6.539,0c0,6.538 -1.128,9.496 -4.242,9.496c-2.997,0 -4.242,-2.88 -4.242,-9.496c-0,-6.616 1.206,-9.496 4.242,-9.496c3.036,-0 4.242,2.88 4.242,9.496Zm-29.242,-67c13.246,0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm0.512,9.834c-7.122,-0 -12.609,5.098 -12.609,14.127c-0,9.263 5.215,14.205 12.532,14.205c4.164,0 7.083,-1.634 9.068,-3.658l-2.88,-3.697c-1.518,1.206 -3.153,2.413 -5.838,2.413c-3.697,-0 -6.266,-2.763 -6.266,-9.263c-0,-6.616 2.724,-9.379 6.149,-9.379c2.102,-0 3.892,0.778 5.371,1.984l3.113,-3.775c-2.257,-1.868 -4.748,-2.957 -8.64,-2.957Z"/>
+  </g>
+</svg></span></a>
+    
+    <a class="icon-link svg-link" href="https://github.com/typelevel/fs2-kafka"><span class="github" title="Source Code"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+  <g class="svg-shape">
+    <path d="M49.995,1c-27.609,-0 -49.995,22.386 -49.995,50.002c-0,22.09 14.325,40.83 34.194,47.444c2.501,0.458 3.413,-1.086 3.413,-2.412c0,-1.185 -0.043,-4.331 -0.067,-8.503c-13.908,3.021 -16.843,-6.704 -16.843,-6.704c-2.274,-5.773 -5.552,-7.311 -5.552,-7.311c-4.54,-3.103 0.344,-3.042 0.344,-3.042c5.018,0.356 7.658,5.154 7.658,5.154c4.46,7.64 11.704,5.433 14.552,4.156c0.454,-3.232 1.744,-5.436 3.174,-6.685c-11.102,-1.262 -22.775,-5.553 -22.775,-24.713c-0,-5.457 1.949,-9.92 5.147,-13.416c-0.516,-1.265 -2.231,-6.348 0.488,-13.233c0,0 4.199,-1.344 13.751,5.126c3.988,-1.108 8.266,-1.663 12.518,-1.682c4.245,0.019 8.523,0.574 12.517,1.682c9.546,-6.47 13.736,-5.126 13.736,-5.126c2.728,6.885 1.013,11.968 0.497,13.233c3.204,3.496 5.141,7.959 5.141,13.416c0,19.209 -11.691,23.436 -22.83,24.673c1.795,1.544 3.394,4.595 3.394,9.26c0,6.682 -0.061,12.076 -0.061,13.715c0,1.338 0.899,2.894 3.438,2.406c19.853,-6.627 34.166,-25.354 34.166,-47.438c-0,-27.616 -22.389,-50.002 -50.005,-50.002"/>
+  </g>
+</svg></span></a>
+    
+    <a class="icon-link glyph-link" href="https://discord.gg/fjqZMuqzAp"><i class="icofont-laika chat" title="Chat">&#xeed5;</i></a>
+    
+  </div>  
+
+</header>
+    
+    <nav id="sidebar">
+
+  <div class="row">
+    
+    <a class="icon-link svg-link" href="api/fs2/kafka.html"><span class="api" title="API"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+  <g class="svg-shape">
+    <path d="M75,47.5c13.246,0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm-50,-0c13.246,-0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,-0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm2.705,16.735l7.239,0l0.622,-4.904l-21.833,0l-0,4.904l7.589,0l0,22.067l6.383,0l-0,-22.067Zm58.076,7.265c-0,-8.757 -3.698,-14.166 -10.781,-14.166c-7.083,-0 -10.781,5.604 -10.781,14.166c0,8.757 3.698,14.166 10.781,14.166c7.083,0 10.781,-5.604 10.781,-14.166Zm-6.539,0c0,6.538 -1.128,9.496 -4.242,9.496c-2.997,0 -4.242,-2.88 -4.242,-9.496c-0,-6.616 1.206,-9.496 4.242,-9.496c3.036,-0 4.242,2.88 4.242,9.496Zm-29.242,-67c13.246,0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm0.512,9.834c-7.122,-0 -12.609,5.098 -12.609,14.127c-0,9.263 5.215,14.205 12.532,14.205c4.164,0 7.083,-1.634 9.068,-3.658l-2.88,-3.697c-1.518,1.206 -3.153,2.413 -5.838,2.413c-3.697,-0 -6.266,-2.763 -6.266,-9.263c-0,-6.616 2.724,-9.379 6.149,-9.379c2.102,-0 3.892,0.778 5.371,1.984l3.113,-3.775c-2.257,-1.868 -4.748,-2.957 -8.64,-2.957Z"/>
+  </g>
+</svg></span></a>
+    
+    <a class="icon-link svg-link" href="https://github.com/typelevel/fs2-kafka"><span class="github" title="Source Code"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+  <g class="svg-shape">
+    <path d="M49.995,1c-27.609,-0 -49.995,22.386 -49.995,50.002c-0,22.09 14.325,40.83 34.194,47.444c2.501,0.458 3.413,-1.086 3.413,-2.412c0,-1.185 -0.043,-4.331 -0.067,-8.503c-13.908,3.021 -16.843,-6.704 -16.843,-6.704c-2.274,-5.773 -5.552,-7.311 -5.552,-7.311c-4.54,-3.103 0.344,-3.042 0.344,-3.042c5.018,0.356 7.658,5.154 7.658,5.154c4.46,7.64 11.704,5.433 14.552,4.156c0.454,-3.232 1.744,-5.436 3.174,-6.685c-11.102,-1.262 -22.775,-5.553 -22.775,-24.713c-0,-5.457 1.949,-9.92 5.147,-13.416c-0.516,-1.265 -2.231,-6.348 0.488,-13.233c0,0 4.199,-1.344 13.751,5.126c3.988,-1.108 8.266,-1.663 12.518,-1.682c4.245,0.019 8.523,0.574 12.517,1.682c9.546,-6.47 13.736,-5.126 13.736,-5.126c2.728,6.885 1.013,11.968 0.497,13.233c3.204,3.496 5.141,7.959 5.141,13.416c0,19.209 -11.691,23.436 -22.83,24.673c1.795,1.544 3.394,4.595 3.394,9.26c0,6.682 -0.061,12.076 -0.061,13.715c0,1.338 0.899,2.894 3.438,2.406c19.853,-6.627 34.166,-25.354 34.166,-47.438c-0,-27.616 -22.389,-50.002 -50.005,-50.002"/>
+  </g>
+</svg></span></a>
+    
+    <a class="icon-link glyph-link" href="https://discord.gg/fjqZMuqzAp"><i class="icofont-laika chat" title="Chat">&#xeed5;</i></a>
+    
+  </div>
+
+  <ul class="nav-list">
+    <li class="level1 nav-leaf"><a href="overview.html">Overview</a></li>
+    <li class="level1 nav-leaf"><a href="quick-example.html">Quick Example</a></li>
+    <li class="level1 nav-leaf"><a href="consumers.html">Consumers</a></li>
+    <li class="level1 nav-leaf"><a href="producers.html">Producers</a></li>
+    <li class="level1 nav-leaf"><a href="transactions.html">Transactions</a></li>
+    <li class="level1 active nav-leaf"><a href="#">Admin</a></li>
+    <li class="level1 nav-leaf"><a href="certificates.html">Security &amp; Certificates</a></li>
+    <li class="level1 nav-leaf"><a href="modules.html">Modules</a></li>
+    <li class="level1 nav-leaf"><a href="technical-details.html">Technical Details</a></li>
+  </ul>
+
+</nav>
+
+    <div id="container">
+
+      
+<nav id="page-nav">
+  <p class="header"><a href="#">Admin</a></p>
+
+  <ul class="nav-list">
+    <li class="level1 nav-node"><a href="#settings">Settings</a></li>
+    <li class="level2 nav-leaf"><a href="#default-settings">Default Settings</a></li>
+    <li class="level1 nav-leaf"><a href="#client-creation">Client Creation</a></li>
+    <li class="level1 nav-leaf"><a href="#topics">Topics</a></li>
+    <li class="level1 nav-leaf"><a href="#configurations">Configurations</a></li>
+    <li class="level1 nav-leaf"><a href="#cluster-metadata">Cluster Metadata</a></li>
+    <li class="level1 nav-leaf"><a href="#consumer-groups">Consumer Groups</a></li>
+    <li class="level1 nav-leaf"><a href="#acls">ACLs</a></li>
+  </ul>
+
+  <p class="footer"><a href="https://github.com/typelevel/fs2-kafka/tree/main/docs/admin.md"><i class="icofont-laika edit" title="Edit">&#xef10;</i>Source for this page</a></p>
+</nav>
+
+
+      <main class="content">
+
+        <h1 id="admin" class="title">Admin</h1>
+        <p>There is partial support for the Kafka admin API through <a class="api" href="api/fs2/kafka/KafkaAdminClient.html">KafkaAdminClient</a>. Internally, this relies on the Java Kafka
+        <a href="https://kafka.apache.org/43/javadoc/?org/apache/kafka/clients/admin/AdminClient.html">AdminClient</a> and supports the same settings.</p>
+        <p>The following imports are assumed throughout this page.</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">effect</span><span>.</span><span class="identifier">_</span><span>
+</span><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">syntax</span><span>.</span><span class="identifier">all</span><span>.</span><span class="identifier">_</span><span>
+</span><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">kafka</span><span>.</span><span class="identifier">_</span><span>
+</span><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="type-name">Stream</span></code></pre>
+        
+        <h2 id="settings" class="section"><a class="anchor-link left" href="#settings"><i class="icofont-laika link">&#xef71;</i></a>Settings</h2>
+        <p><a class="api" href="api/fs2/kafka/AdminClientSettings.html">AdminClientSettings</a> is provided to avoid having to deal with <code>String</code> key-value settings.</p>
+        
+        <h3 id="default-settings" class="section"><a class="anchor-link left" href="#default-settings"><i class="icofont-laika link">&#xef71;</i></a>Default Settings</h3>
+        <p>There are several settings specific to the library.</p>
+        <ul>
+          <li><code>withCloseTimeout</code> controls the timeout when waiting for admin client shutdown. Default is 20 seconds.</li>
+        </ul>
+        
+        <h2 id="client-creation" class="section"><a class="anchor-link left" href="#client-creation"><i class="icofont-laika link">&#xef71;</i></a>Client Creation</h2>
+        <p>Once settings are defined, we can use create an admin client in a <code>Stream</code>.</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">def</span><span> </span><span class="declaration-name">kafkaAdminClientStream</span><span>[</span><span class="type-name">F</span><span>[</span><span class="identifier">_</span><span>]: </span><span class="type-name">Async</span><span>](
+  </span><span class="identifier">bootstrapServers</span><span>: </span><span class="type-name">String</span><span>
+): </span><span class="type-name">Stream</span><span>[</span><span class="type-name">F</span><span>, </span><span class="type-name">KafkaAdminClient</span><span>[</span><span class="type-name">F</span><span>]] =
+  </span><span class="type-name">KafkaAdminClient</span><span>.</span><span class="identifier">stream</span><span>[</span><span class="type-name">F</span><span>](</span><span class="type-name">AdminClientSettings</span><span>(</span><span class="identifier">bootstrapServers</span><span>))</span></code></pre>
+        <p>Alternatively, we can create an admin client in a <code>Resource</code> context.</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">def</span><span> </span><span class="declaration-name">kafkaAdminClientResource</span><span>[</span><span class="type-name">F</span><span>[</span><span class="identifier">_</span><span>]: </span><span class="type-name">Async</span><span>](
+  </span><span class="identifier">bootstrapServers</span><span>: </span><span class="type-name">String</span><span>
+): </span><span class="type-name">Resource</span><span>[</span><span class="type-name">F</span><span>, </span><span class="type-name">KafkaAdminClient</span><span>[</span><span class="type-name">F</span><span>]] =
+  </span><span class="type-name">KafkaAdminClient</span><span>.</span><span class="identifier">resource</span><span>[</span><span class="type-name">F</span><span>](</span><span class="type-name">AdminClientSettings</span><span>(</span><span class="identifier">bootstrapServers</span><span>))</span></code></pre>
+        
+        <h2 id="topics" class="section"><a class="anchor-link left" href="#topics"><i class="icofont-laika link">&#xef71;</i></a>Topics</h2>
+        <p>There are functions available for describing, creating, and deleting topics.</p>
+        <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">org</span><span>.</span><span class="identifier">apache</span><span>.</span><span class="identifier">kafka</span><span>.</span><span class="identifier">clients</span><span>.</span><span class="identifier">admin</span><span>.{</span><span class="type-name">NewPartitions</span><span>, </span><span class="type-name">NewTopic</span><span>}
+
+</span><span class="keyword">def</span><span> </span><span class="declaration-name">topicOperations</span><span>[</span><span class="type-name">F</span><span>[</span><span class="identifier">_</span><span>]: </span><span class="type-name">Async</span><span>]: </span><span class="type-name">F</span><span>[</span><span class="type-name">Unit</span><span>] =
+  </span><span class="identifier">kafkaAdminClientResource</span><span>[</span><span class="type-name">F</span><span>](</span><span class="string-literal">&quot;localhost:9092&quot;</span><span>).</span><span class="identifier">use</span><span> { </span><span class="identifier">client</span><span> =&gt;
+    </span><span class="keyword">for</span><span> {
+      </span><span class="identifier">topicNames</span><span> &lt;- </span><span class="identifier">client</span><span>.</span><span class="identifier">listTopics</span><span>.</span><span class="identifier">names</span><span>
+      </span><span class="identifier">_</span><span>          &lt;- </span><span class="identifier">client</span><span>.</span><span class="identifier">describeTopics</span><span>(</span><span class="identifier">topicNames</span><span>.</span><span class="identifier">toList</span><span>)
+      </span><span class="identifier">_</span><span>          &lt;- </span><span class="identifier">client</span><span>.</span><span class="identifier">createTopic</span><span>(</span><span class="keyword">new</span><span> </span><span class="type-name">NewTopic</span><span>(</span><span class="string-literal">&quot;new-topic&quot;</span><span>, </span><span class="number-literal">1</span><span>, </span><span class="number-literal">1</span><span>.</span><span class="identifier">toShort</span><span>))
+      </span><span class="identifier">_</span><span>          &lt;- </span><span class="identifier">client</span><span>.</span><span class="identifier">createTopics</span><span>(</span><span class="keyword">new</span><span> </span><span class="type-name">NewTopic</span><span>(</span><span class="string-literal">&quot;newer-topic&quot;</span><span>, </span><span class="number-literal">1</span><span>, </span><span class="number-literal">1</span><span>.</span><span class="identifier">toShort</span><span>) :: </span><span class="type-name">Nil</span><span>)
+      </span><span class="identifier">_</span><span>          &lt;- </span><span class="identifier">client</span><span>.</span><span class="identifier">createPartitions</span><span>(</span><span class="type-name">Map</span><span>(</span><span class="string-literal">&quot;new-topic&quot;</span><span> -&gt; </span><span class="type-name">NewPartitions</span><span>.</span><span class="identifier">increaseTo</span><span>(</span><span class="number-literal">4</span><span>)))
+      </span><span class="identifier">_</span><span>          &lt;- </span><span class="identifier">client</span><span>.</span><span class="identifier">deleteTopic</span><span>(</span><span class="string-literal">&quot;new-topic&quot;</span><span>)
+      </span><span class="identifier">_</span><span>          &lt;- </span><span class="identifier">client</span><span>.</span><span class="identifier">deleteTopics</span><span>(</span><span class="string-literal">&quot;newer-topic&quot;</span><span> :: </span><span class="type-name">Nil</span><span>)
+    } </span><span class="keyword">yield</span><span> ()
+  }</span></code></pre>
+        
+        <h2 id="configurations" class="section"><a class="anchor-link left" href="#configurations"><i class="icofont-laika link">&#xef71;</i></a>Configurations</h2>
+        <p>We can edit the configuration of different resources, like topics and nodes.</p>
+        <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">org</span><span>.</span><span class="identifier">apache</span><span>.</span><span class="identifier">kafka</span><span>.</span><span class="identifier">clients</span><span>.</span><span class="identifier">admin</span><span>.{</span><span class="type-name">AlterConfigOp</span><span>, </span><span class="type-name">ConfigEntry</span><span>}
+</span><span class="keyword">import</span><span> </span><span class="identifier">org</span><span>.</span><span class="identifier">apache</span><span>.</span><span class="identifier">kafka</span><span>.</span><span class="identifier">common</span><span>.</span><span class="identifier">config</span><span>.</span><span class="type-name">ConfigResource</span><span>
+
+</span><span class="keyword">def</span><span> </span><span class="declaration-name">configOperations</span><span>[</span><span class="type-name">F</span><span>[</span><span class="identifier">_</span><span>]: </span><span class="type-name">Async</span><span>]: </span><span class="type-name">F</span><span>[</span><span class="type-name">Unit</span><span>] =
+  </span><span class="identifier">kafkaAdminClientResource</span><span>[</span><span class="type-name">F</span><span>](</span><span class="string-literal">&quot;localhost:9092&quot;</span><span>).</span><span class="identifier">use</span><span> { </span><span class="identifier">client</span><span> =&gt;
+    </span><span class="keyword">val</span><span> </span><span class="identifier">topic</span><span> = </span><span class="keyword">new</span><span> </span><span class="type-name">ConfigResource</span><span>(</span><span class="type-name">ConfigResource</span><span>.</span><span class="type-name">Type</span><span>.</span><span class="type-name">TOPIC</span><span>, </span><span class="string-literal">&quot;topic&quot;</span><span>)
+
+    </span><span class="keyword">for</span><span> {
+      </span><span class="identifier">_</span><span> &lt;- </span><span class="identifier">client</span><span>.</span><span class="identifier">describeConfigs</span><span>(</span><span class="identifier">topic</span><span> :: </span><span class="type-name">Nil</span><span>)
+      </span><span class="identifier">_</span><span> &lt;- </span><span class="identifier">client</span><span>.</span><span class="identifier">alterConfigs</span><span> {
+             </span><span class="type-name">Map</span><span>(
+               </span><span class="identifier">topic</span><span> -&gt; </span><span class="type-name">List</span><span>(
+                 </span><span class="keyword">new</span><span> </span><span class="type-name">AlterConfigOp</span><span>(
+                   </span><span class="keyword">new</span><span> </span><span class="type-name">ConfigEntry</span><span>(</span><span class="string-literal">&quot;cleanup.policy&quot;</span><span>, </span><span class="string-literal">&quot;delete&quot;</span><span>),
+                   </span><span class="type-name">AlterConfigOp</span><span>.</span><span class="type-name">OpType</span><span>.</span><span class="type-name">SET</span><span>
+                 )
+               )
+             )
+           }
+    } </span><span class="keyword">yield</span><span> ()
+  }</span></code></pre>
+        
+        <h2 id="cluster-metadata" class="section"><a class="anchor-link left" href="#cluster-metadata"><i class="icofont-laika link">&#xef71;</i></a>Cluster Metadata</h2>
+        <p>It&#39;s possible to retrieve metadata about the cluster nodes.</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">org</span><span>.</span><span class="identifier">apache</span><span>.</span><span class="identifier">kafka</span><span>.</span><span class="identifier">common</span><span>.</span><span class="type-name">Node</span><span>
+
+</span><span class="keyword">def</span><span> </span><span class="declaration-name">clusterNodes</span><span>[</span><span class="type-name">F</span><span>[</span><span class="identifier">_</span><span>]: </span><span class="type-name">Async</span><span>]: </span><span class="type-name">F</span><span>[</span><span class="type-name">Set</span><span>[</span><span class="type-name">Node</span><span>]] =
+  </span><span class="identifier">kafkaAdminClientResource</span><span>[</span><span class="type-name">F</span><span>](</span><span class="string-literal">&quot;localhost:9092&quot;</span><span>).</span><span class="identifier">use</span><span>(</span><span class="identifier">_</span><span>.</span><span class="identifier">describeCluster</span><span>.</span><span class="identifier">nodes</span><span>)</span></code></pre>
+        
+        <h2 id="consumer-groups" class="section"><a class="anchor-link left" href="#consumer-groups"><i class="icofont-laika link">&#xef71;</i></a>Consumer Groups</h2>
+        <p>There are functions available for working with consumer groups.</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">def</span><span> </span><span class="declaration-name">consumerGroupOperations</span><span>[</span><span class="type-name">F</span><span>[</span><span class="identifier">_</span><span>]: </span><span class="type-name">Async</span><span>: </span><span class="identifier">cats</span><span>.</span><span class="type-name">Parallel</span><span>]: </span><span class="type-name">F</span><span>[</span><span class="type-name">Unit</span><span>] =
+  </span><span class="identifier">kafkaAdminClientResource</span><span>[</span><span class="type-name">F</span><span>](</span><span class="string-literal">&quot;localhost:9092&quot;</span><span>).</span><span class="identifier">use</span><span> { </span><span class="identifier">client</span><span> =&gt;
+    </span><span class="keyword">for</span><span> {
+      </span><span class="identifier">consumerGroupIds</span><span> &lt;- </span><span class="identifier">client</span><span>.</span><span class="identifier">listConsumerGroups</span><span>.</span><span class="identifier">groupIds</span><span>
+      </span><span class="identifier">_</span><span>                &lt;- </span><span class="identifier">client</span><span>.</span><span class="identifier">describeConsumerGroups</span><span>(</span><span class="identifier">consumerGroupIds</span><span>)
+      </span><span class="identifier">_</span><span>                &lt;- </span><span class="identifier">consumerGroupIds</span><span>.</span><span class="identifier">parTraverse</span><span> { </span><span class="identifier">groupId</span><span> =&gt;
+             </span><span class="identifier">client</span><span>.</span><span class="identifier">listConsumerGroupOffsets</span><span>(</span><span class="identifier">groupId</span><span>).</span><span class="identifier">partitionsToOffsetAndMetadata</span><span>
+           }
+    } </span><span class="keyword">yield</span><span> ()
+  }</span></code></pre>
+        
+        <h2 id="acls" class="section"><a class="anchor-link left" href="#acls"><i class="icofont-laika link">&#xef71;</i></a>ACLs</h2>
+        <p>There are ACL management functions to describe, create and delete ACL entries.</p>
+        <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">org</span><span>.</span><span class="identifier">apache</span><span>.</span><span class="identifier">kafka</span><span>.</span><span class="identifier">common</span><span>.</span><span class="identifier">acl</span><span>.</span><span class="identifier">_</span><span>
+</span><span class="keyword">import</span><span> </span><span class="identifier">org</span><span>.</span><span class="identifier">apache</span><span>.</span><span class="identifier">kafka</span><span>.</span><span class="identifier">common</span><span>.</span><span class="identifier">resource</span><span>.{</span><span class="type-name">PatternType</span><span>, </span><span class="type-name">ResourcePattern</span><span>, </span><span class="type-name">ResourceType</span><span>}
+
+</span><span class="keyword">def</span><span> </span><span class="declaration-name">aclOperations</span><span>[</span><span class="type-name">F</span><span>[</span><span class="identifier">_</span><span>]: </span><span class="type-name">Async</span><span>]: </span><span class="type-name">F</span><span>[</span><span class="type-name">Unit</span><span>] =
+  </span><span class="identifier">kafkaAdminClientResource</span><span>[</span><span class="type-name">F</span><span>](</span><span class="string-literal">&quot;localhost:9092&quot;</span><span>).</span><span class="identifier">use</span><span> { </span><span class="identifier">client</span><span> =&gt;
+    </span><span class="keyword">for</span><span> {
+      </span><span class="identifier">describedAcls</span><span> &lt;- </span><span class="identifier">client</span><span>.</span><span class="identifier">describeAcls</span><span>(</span><span class="type-name">AclBindingFilter</span><span>.</span><span class="type-name">ANY</span><span>)
+
+      </span><span class="identifier">aclEntry</span><span> = </span><span class="keyword">new</span><span> </span><span class="type-name">AccessControlEntry</span><span>(
+                   </span><span class="string-literal">&quot;User:ANONYMOUS&quot;</span><span>,
+                   </span><span class="string-literal">&quot;*&quot;</span><span>,
+                   </span><span class="type-name">AclOperation</span><span>.</span><span class="type-name">DESCRIBE</span><span>,
+                   </span><span class="type-name">AclPermissionType</span><span>.</span><span class="type-name">ALLOW</span><span>
+                 )
+      </span><span class="identifier">pattern</span><span> = </span><span class="keyword">new</span><span> </span><span class="type-name">ResourcePattern</span><span>(</span><span class="type-name">ResourceType</span><span>.</span><span class="type-name">TOPIC</span><span>, </span><span class="string-literal">&quot;topic1&quot;</span><span>, </span><span class="type-name">PatternType</span><span>.</span><span class="type-name">LITERAL</span><span>)
+      </span><span class="identifier">acl</span><span>     = </span><span class="keyword">new</span><span> </span><span class="type-name">AclBinding</span><span>(</span><span class="identifier">pattern</span><span>, </span><span class="identifier">aclEntry</span><span>)
+      </span><span class="identifier">_</span><span>      &lt;- </span><span class="identifier">client</span><span>.</span><span class="identifier">createAcls</span><span>(</span><span class="type-name">List</span><span>(</span><span class="identifier">acl</span><span>))
+
+      </span><span class="identifier">_</span><span> &lt;- </span><span class="identifier">client</span><span>.</span><span class="identifier">deleteAcls</span><span>(</span><span class="type-name">List</span><span>(</span><span class="type-name">AclBindingFilter</span><span>.</span><span class="type-name">ANY</span><span>))
+    } </span><span class="keyword">yield</span><span> ()
+  }</span></code></pre>
+
+        
+
+      </main>
+
+    </div>
+
+  </body>
+
+</html>

@@ -1,9 +1,117 @@
-<!DOCTYPE html><html lang=""><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>FS2 Kafka · Functional Kafka Streams for Scala</title><meta name="viewport" content="width=device-width, initial-scale=1.0"/><meta name="generator" content="Docusaurus"/><meta name="description" content="Functional Kafka Streams for Scala"/><meta property="og:title" content="FS2 Kafka · Functional Kafka Streams for Scala"/><meta property="og:type" content="website"/><meta property="og:url" content="https://typelevel/fs2-kafka/fs2-kafka/"/><meta property="og:description" content="Functional Kafka Streams for Scala"/><meta name="twitter:card" content="summary"/><link rel="shortcut icon" href="/fs2-kafka/img/logo.svg"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css"/><script src="/fs2-kafka/js/scrollSpy.js"></script><link rel="stylesheet" href="/fs2-kafka/css/main.css"/><script src="/fs2-kafka/js/codetabs.js"></script></head><body><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/fs2-kafka/"><img class="logo" src="/fs2-kafka/img/logo.svg" alt="FS2 Kafka"/><h2 class="headerTitleWithLogo">FS2 Kafka</h2></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class=""><a href="/fs2-kafka/api/fs2/kafka/index.html" target="_self">API Docs</a></li><li class=""><a href="/fs2-kafka/docs/overview" target="_self">Documentation</a></li><li class=""><a href="https://github.com/typelevel/fs2-kafka" target="_self">GitHub</a></li></ul></nav></div></header></div></div><div class="navPusher"><div><div class="homeContainer"><div class="homeSplashFade"><div class="wrapper homeWrapper"><div class="inner"><h2 class="projectTitle"><span><img class="projectTitleLogo" src="img/logo.svg" alt=""/>FS2 Kafka</span><small>Functional Kafka Streams for Scala</small></h2><div class="section promoSection"><div class="promoRow"><div class="pluginRowBlock"><div class="pluginWrapper buttonWrapper"><a class="button" href="/fs2-kafka/api/fs2/kafka/index.html">API Docs</a></div><div class="pluginWrapper buttonWrapper"><a class="button" href="/fs2-kafka/docs/overview">Documentation</a></div><div class="pluginWrapper buttonWrapper"><a class="button" href="https://github.com/typelevel/fs2-kafka">View on GitHub</a></div></div></div></div></div></div></div></div><div class="mainContainer"><div class="index"><div><span><p><a href="https://github.com/typelevel/fs2-kafka/actions"><img src="https://img.shields.io/github/actions/workflow/status/typelevel/fs2-kafka/ci.yml?branch=main" alt="GitHub Actions"></a> <a href="https://discord.gg/XF3CXcMzqD"><img src="https://img.shields.io/discord/632277896739946517?color=5865f2" alt="Discord"></a> <a href="https://index.scala-lang.org/typelevel/fs2-kafka"><img src="https://img.shields.io/badge/version-v4.1.3-orange.svg" alt="Version"></a></p>
-<p>Functional streams for Kafka with <a href="https://fs2.io">FS2</a> and the official Apache Kafka client.<br>
-Project is under active development. Feedback and contributions welcome.</p>
-<h3><a class="anchor" aria-hidden="true" id="getting-started"></a><a href="#getting-started" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Getting Started</h3>
-<p>To get started with <a href="https://scala-sbt.org">sbt</a>, simply add the following line to your <code>build.sbt</code> file.</p>
-<pre><code class="hljs css language-scala">libraryDependencies += <span class="hljs-string">"org.typelevel"</span> %% <span class="hljs-string">"fs2-kafka"</span> % <span class="hljs-string">"4.1.3"</span>
-</code></pre>
-<p>Published for Scala 2.12, 2.13 and 3.3. For changes, refer to the <a href="https://github.com/typelevel/fs2-kafka/releases">release notes</a>.</p>
-</span></div></div></div></div><footer class="nav-footer" id="footer"><hr class="separator"/><section class="copyright">Copyright © 2018 OVO Energy Limited.</section></footer></div></body></html>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="Typelevel Laika + Helium Theme" />
+    <title>FS2 Kafka · Functional Kafka for Scala</title>
+    
+      <meta name="author" content="Viktor Rudebeck"/>
+    
+      <meta name="author" content="Ben Plommer"/>
+    
+      <meta name="author" content="Yuriy Badalyantc"/>
+    
+      <meta name="author" content="Alan Artigao"/>
+    
+    
+      <meta name="description" content="Functional streams for Kafka with FS2 and the official Apache Kafka client."/>
+      <meta property="og:description" content="Functional streams for Kafka with FS2 and the official Apache Kafka client."/>
+    
+    <meta name="theme-color" content="#122932"/>
+    <meta property="og:type" content="website"/>
+    <meta property="og:site_name" content="FS2 Kafka"/>
+    <meta property="og:title" content="FS2 Kafka · Functional Kafka for Scala"/>
+    <meta property="og:image" content="https://typelevel.org/fs2-kafka/img/social-preview.png"/>
+    <meta property="og:image:width" content="1200"/>
+    <meta property="og:image:height" content="630"/>
+    <meta property="og:image:alt" content="FS2 Kafka · Functional Kafka for Scala"/>
+    <meta name="twitter:card" content="summary_large_image"/>
+    <meta name="theme-color" content="#2e8c7f"/>
+    
+      <link rel="icon" sizes="180x180" type="image/png" href="https://typelevel.org/fs2-kafka/img/logo.png"/>
+    
+      <link rel="icon"  type="image/svg+xml" href="img/logo.svg"/>
+    
+    <link rel="apple-touch-icon" href="https://typelevel.org/fs2-kafka/img/logo.png"/>
+    
+    <link rel="stylesheet" type="text/css" href="helium/site/icofont.min.css" />
+    <link rel="stylesheet" type="text/css" href="helium/site/laika-helium.css" />
+    <link rel="stylesheet" type="text/css" href="helium/site/landing-page.css" />
+    <link rel="stylesheet" type="text/css" href="css/site.css" />
+    <script src="helium/site/laika-helium.js"></script>
+    
+    <script> /* for avoiding page load transitions */ </script>
+  </head>
+
+  <body>
+
+    <div id="header-tint"></div>
+    <div id="header" class="light-inverted dark-inverted">
+      <div id="header-left">
+         <img src="img/logo.svg" alt="" height="150"> 
+         <h1>FS2 Kafka</h1> 
+         <h2>Functional Kafka for Scala</h2> 
+        <div class="row links">
+          <a class="button-link" href="overview.html">Documentation</a>
+          <span class="row links"><a class="icon-link svg-link" href="api/fs2/kafka.html"><span class="api" title="API"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+  <g class="svg-shape">
+    <path d="M75,47.5c13.246,0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm-50,-0c13.246,-0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,-0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm2.705,16.735l7.239,0l0.622,-4.904l-21.833,0l-0,4.904l7.589,0l0,22.067l6.383,0l-0,-22.067Zm58.076,7.265c-0,-8.757 -3.698,-14.166 -10.781,-14.166c-7.083,-0 -10.781,5.604 -10.781,14.166c0,8.757 3.698,14.166 10.781,14.166c7.083,0 10.781,-5.604 10.781,-14.166Zm-6.539,0c0,6.538 -1.128,9.496 -4.242,9.496c-2.997,0 -4.242,-2.88 -4.242,-9.496c-0,-6.616 1.206,-9.496 4.242,-9.496c3.036,-0 4.242,2.88 4.242,9.496Zm-29.242,-67c13.246,0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm0.512,9.834c-7.122,-0 -12.609,5.098 -12.609,14.127c-0,9.263 5.215,14.205 12.532,14.205c4.164,0 7.083,-1.634 9.068,-3.658l-2.88,-3.697c-1.518,1.206 -3.153,2.413 -5.838,2.413c-3.697,-0 -6.266,-2.763 -6.266,-9.263c-0,-6.616 2.724,-9.379 6.149,-9.379c2.102,-0 3.892,0.778 5.371,1.984l3.113,-3.775c-2.257,-1.868 -4.748,-2.957 -8.64,-2.957Z"/>
+  </g>
+</svg></span></a><a class="icon-link svg-link" href="https://github.com/typelevel/fs2-kafka"><span class="github" title="Source Code"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+  <g class="svg-shape">
+    <path d="M49.995,1c-27.609,-0 -49.995,22.386 -49.995,50.002c-0,22.09 14.325,40.83 34.194,47.444c2.501,0.458 3.413,-1.086 3.413,-2.412c0,-1.185 -0.043,-4.331 -0.067,-8.503c-13.908,3.021 -16.843,-6.704 -16.843,-6.704c-2.274,-5.773 -5.552,-7.311 -5.552,-7.311c-4.54,-3.103 0.344,-3.042 0.344,-3.042c5.018,0.356 7.658,5.154 7.658,5.154c4.46,7.64 11.704,5.433 14.552,4.156c0.454,-3.232 1.744,-5.436 3.174,-6.685c-11.102,-1.262 -22.775,-5.553 -22.775,-24.713c-0,-5.457 1.949,-9.92 5.147,-13.416c-0.516,-1.265 -2.231,-6.348 0.488,-13.233c0,0 4.199,-1.344 13.751,5.126c3.988,-1.108 8.266,-1.663 12.518,-1.682c4.245,0.019 8.523,0.574 12.517,1.682c9.546,-6.47 13.736,-5.126 13.736,-5.126c2.728,6.885 1.013,11.968 0.497,13.233c3.204,3.496 5.141,7.959 5.141,13.416c0,19.209 -11.691,23.436 -22.83,24.673c1.795,1.544 3.394,4.595 3.394,9.26c0,6.682 -0.061,12.076 -0.061,13.715c0,1.338 0.899,2.894 3.438,2.406c19.853,-6.627 34.166,-25.354 34.166,-47.438c-0,-27.616 -22.389,-50.002 -50.005,-50.002"/>
+  </g>
+</svg></span></a><a class="icon-link glyph-link" href="https://discord.gg/fjqZMuqzAp"><i class="icofont-laika chat" title="Chat">&#xeed5;</i></a></span>
+        </div>
+      </div>
+      <div id="header-right">
+        
+          <p>Latest Release</p>
+          <p class="large">4.1.3</p>
+        
+        
+          <p>License</p>
+          <p class="large">Apache 2.0</p>
+        
+        
+          <div id="docs">
+            <p>Documentation</p>
+            <ul>
+              
+                <li><a class="text-link" href="overview.html">Overview</a></li>
+              
+                <li><a class="text-link" href="quick-example.html">Quick Example</a></li>
+              
+                <li><a class="text-link" href="consumers.html">Consumers</a></li>
+              
+                <li><a class="text-link" href="producers.html">Producers</a></li>
+              
+            </ul>
+          </div>
+        
+        
+      </div>
+    </div>
+    
+    
+    
+    <main>
+      <p><a href="https://typelevel.org"><img src="https://img.shields.io/badge/typelevel-organization%20project-ff6169" alt="Typelevel Organization Project"></a>
+      <a href="https://github.com/typelevel/fs2-kafka/actions"><img src="https://img.shields.io/github/actions/workflow/status/typelevel/fs2-kafka/ci.yml?branch=main" alt="GitHub Actions"></a>
+      <a href="https://discord.gg/fjqZMuqzAp"><img src="https://img.shields.io/discord/632277896739946517?color=5865f2" alt="Discord"></a>
+      <a href="https://index.scala-lang.org/typelevel/fs2-kafka"><img src="https://img.shields.io/maven-central/v/org.typelevel/fs2-kafka_3?label=version&color=orange" alt="Version"></a></p>
+      <p>Functional streams for Kafka with <a href="https://fs2.io">FS2</a> and the official Apache Kafka client.</p>
+      <p>Project is under active development. Feedback and contributions welcome.</p>
+      
+      <h3 id="getting-started" class="section"><a class="anchor-link left" href="#getting-started"><i class="icofont-laika link">&#xef71;</i></a>Getting Started</h3>
+      <p>To get started with <a href="https://scala-sbt.org">sbt</a>, simply add the following line to your <code>build.sbt</code> file.</p>
+      <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">libraryDependencies</span><span> += </span><span class="string-literal">&quot;org.typelevel&quot;</span><span> %% </span><span class="string-literal">&quot;fs2-kafka&quot;</span><span> % </span><span class="string-literal">&quot;4.1.3&quot;</span></code></pre>
+      <p>Published for Scala 2.12, 2.13 and 3.3.</p>
+      <p>For changes between versions, please refer to the <a href="https://github.com/typelevel/fs2-kafka/releases">release notes</a>.</p>
+    </main>
+    
+
+  </body>
+</html>

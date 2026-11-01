@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+  
+  <head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="generator" content="Typelevel Laika + Helium Theme" />
+  <title>Overview · FS2 Kafka</title>
+  
+  <meta name="author" content="Viktor Rudebeck"/>
+  
+  <meta name="author" content="Ben Plommer"/>
+  
+  <meta name="author" content="Yuriy Badalyantc"/>
+  
+  <meta name="author" content="Alan Artigao"/>
+  
+  
+  <meta name="description" content="Functional streams for Kafka with FS2 and the official Apache Kafka client."/>
+  <meta property="og:description" content="Functional streams for Kafka with FS2 and the official Apache Kafka client."/>
+  
+  <meta name="theme-color" content="#122932"/>
+  <meta property="og:type" content="website"/>
+  <meta property="og:site_name" content="FS2 Kafka"/>
+  <meta property="og:title" content="Overview"/>
+  <meta property="og:image" content="https://typelevel.org/fs2-kafka/img/social-preview.png"/>
+  <meta property="og:image:width" content="1200"/>
+  <meta property="og:image:height" content="630"/>
+  <meta property="og:image:alt" content="FS2 Kafka · Functional Kafka for Scala"/>
+  <meta name="twitter:card" content="summary_large_image"/>
+  <meta name="theme-color" content="#2e8c7f"/>
+  
+  
+  <link rel="icon" sizes="180x180" type="image/png" href="https://typelevel.org/fs2-kafka/img/logo.png"/>
+  
+  <link rel="icon"  type="image/svg+xml" href="img/logo.svg"/>
+  
+  <link rel="apple-touch-icon" href="https://typelevel.org/fs2-kafka/img/logo.png"/>
+  
+  <link rel="stylesheet" type="text/css" href="helium/site/icofont.min.css" />
+    <link rel="stylesheet" type="text/css" href="helium/site/laika-helium.css" />
+    <link rel="stylesheet" type="text/css" href="css/site.css" />
+  <script src="helium/site/laika-helium.js"></script>
+  
+  
+  <script> /* for avoiding page load transitions */ </script>
+</head>
+
+  <body>
+
+    <header id="top-bar" class="light-inverted dark-inverted">
+
+  <div class="row">
+    <a id="nav-icon">
+      <i class="icofont-laika navigationMenu" title="Navigation">&#xefa2;</i>
+    </a>
+    
+    
+  </div>
+
+  <a class="icon-link svg-link home-link" href="index.html"><span><svg xmlns="http://www.w3.org/2000/svg" width="433" height="500" viewBox="0 0 433.013 500" role="img" aria-labelledby="fs2-kafka-logo-title">
+  <title id="fs2-kafka-logo-title">FS2 Kafka</title>
+  <polygon points="216.506,0 433.013,125 433.013,375 216.506,500 0,375 0,125" fill="#7CD3C0"/>
+  <path d="M179.3,352.3L216.5,248.14L253.7,352.3ZM110.11,352.3L322.89,352.3L291.64,402.89L141.36,402.89Z" fill="#AD2E37"/>
+  <path d="M179.3,352.3L216.5,248.14L216.5,352.3ZM179.3,352.3L253.7,352.3L216.5,402.89Z" fill="#122932" fill-opacity="0.35"/>
+  <path d="M255.09,362.53L307.18,362.53C309.65,362.53 309.65,366.25 307.18,366.25L255.09,366.25C252.62,366.25 252.62,362.53 255.09,362.53ZM249.51,372.76L294.15,372.76C296.63,372.76 296.63,376.48 294.15,376.48L249.51,376.48C247.04,376.48 247.04,372.76 249.51,372.76ZM243.94,382.99L279.27,382.99C281.75,382.99 281.75,386.71 279.27,386.71L243.94,386.71C241.46,386.71 241.46,382.99 243.94,382.99Z" fill="#122932" fill-opacity="0.35"/>
+  <path d="M110.02,401.2C113.11,401.35 116.22,402.2 119.31,402.32C122.41,402.43 125.52,401.64 128.62,400.15C131.71,398.67 134.82,396.68 137.91,395.8C141.01,394.91 144.12,395.05 147.22,396.08C150.31,397.13 153.42,398.87 156.51,399.76C159.61,400.64 162.72,400.5 165.81,399.47C168.91,398.43 172.02,396.68 175.12,395.8C178.21,394.91 181.32,395.05 184.41,396.08C187.51,397.13 190.62,398.87 193.72,399.76C196.81,400.64 199.92,400.5 203.01,399.47C206.11,398.43 209.22,396.68 212.31,395.8C215.41,394.91 218.52,395.05 221.62,396.08C224.71,397.13 227.82,398.87 230.91,399.76C234.01,400.64 237.12,400.5 240.22,399.47C243.31,398.43 246.42,396.68 249.51,395.8C252.61,394.91 255.72,395.05 258.81,396.08C261.91,397.13 265.02,398.87 268.12,399.76C271.21,400.64 274.32,400.5 277.42,399.47C280.51,398.43 283.62,396.68 286.72,395.8C289.5,395 292.3,395 295.09,395.8C295.39,395.89 295.71,395.98 296.01,396.09C299.11,397.17 302.22,399.21 305.31,400.59C308.41,401.95 311.52,402.5 314.62,402.26C317.4,402.05 320.19,401.33 322.99,401.2C320.19,402.94 317.4,405.25 314.62,406.9C311.52,408.74 308.41,409.56 305.31,409.16C302.22,408.76 299.11,407.3 296.01,406.31C295.71,406.21 295.39,406.12 295.09,406.03C292.3,405.23 289.5,405.23 286.72,406.03C283.62,406.91 280.51,408.66 277.42,409.7C274.32,410.73 271.21,410.87 268.12,409.99C265.02,409.1 261.91,407.36 258.81,406.31C255.72,405.28 252.61,405.14 249.51,406.03C246.42,406.91 243.31,408.66 240.22,409.7C237.12,410.73 234.01,410.87 230.91,409.99C227.82,409.1 224.71,407.36 221.62,406.31C218.52,405.28 215.41,405.14 212.31,406.03C209.22,406.91 206.11,408.66 203.01,409.7C199.92,410.73 196.81,410.87 193.72,409.99C190.62,409.1 187.51,407.36 184.41,406.31C181.32,405.28 178.21,405.14 175.12,406.03C172.02,406.91 168.91,408.66 165.81,409.7C162.72,410.73 159.61,410.87 156.51,409.99C153.42,409.1 150.31,407.36 147.22,406.31C144.12,405.28 141.01,405.14 137.91,406.03C134.82,406.91 131.71,408.43 128.62,409.01C125.52,409.61 122.41,409.09 119.31,407.43C116.22,405.77 113.11,403.13 110.02,401.2ZM154.66,418.37C157.75,416.76 160.86,415.85 163.95,416.03C167.05,416.23 170.16,417.41 173.25,418.19C176.35,418.97 179.46,419.17 182.56,418.45C183.18,418.31 183.79,418.14 184.41,417.95C186.9,417.18 189.37,415.98 191.85,415.11C194.95,414.03 198.06,413.65 201.16,414.31C204.25,414.97 207.36,416.56 210.46,417.64C213.55,418.72 216.66,419.1 219.75,418.44C222.85,417.78 225.96,416.19 229.06,415.11C232.15,414.03 235.26,413.65 238.35,414.31C241.45,414.97 244.56,416.56 247.66,417.64C247.96,417.75 248.28,417.86 248.59,417.95C251.38,418.81 254.16,419.14 256.95,418.75C260.05,418.32 263.16,417.08 266.25,416.43C269.35,415.78 272.46,415.9 275.56,417.09C276.49,417.45 277.42,417.88 278.35,418.37C277.42,418.21 276.49,418.09 275.56,418.05C272.46,417.91 269.35,418.8 266.25,420.31C263.16,421.82 260.05,423.74 256.95,424.64C254.16,425.44 251.38,425.32 248.59,424.46C248.28,424.37 247.96,424.26 247.66,424.15C244.56,423.07 241.45,421.48 238.35,420.82C235.26,420.16 232.15,420.54 229.06,421.62C225.96,422.7 222.85,424.29 219.75,424.95C216.66,425.61 213.55,425.23 210.46,424.15C207.36,423.07 204.25,421.48 201.16,420.82C198.06,420.16 194.95,420.54 191.85,421.62C189.37,422.49 186.9,423.69 184.41,424.46C183.79,424.65 183.18,424.81 182.56,424.93C179.46,425.54 176.35,424.98 173.25,423.6C170.16,422.23 167.05,420.24 163.95,419.1C160.86,417.98 157.75,417.82 154.66,418.37Z" fill="#2E8C7F"/>
+  <path d="M218.86,244.83L214.46,224.17C213.33,217.77 214.42,209.36 212.6,201.18L201.34,203.69C203.15,211.85 207.7,219.01 209.39,225.31L214.14,245.87Z" fill="#122932"/>
+  <path d="M210.78,256.97L212.12,246.58C212.78,244.73 214.54,243.49 216.5,243.49C218.46,243.49 220.22,244.73 220.88,246.58L223.47,260.46C224.07,262.15 221,263.24 220.41,261.56L216.5,250.63L213.85,258.05C213.25,259.75 210.18,258.65 210.78,256.97Z" fill="#122932"/>
+  <path d="M294.29,83.74C285.74,81.61 275.79,79.21 268.27,79.59C264.23,75.49 256.31,73.8 248.05,75.93C239.28,78.2 231.64,83.93 228.57,90.01C228.16,90.82 227.77,91.63 227.39,92.43L229.08,93.23C226.14,99.45 223.9,105.55 221.31,111.48C219.52,115.55 217.22,119.26 214.62,122.53L213.16,121.38C207.67,128.32 200.56,133.82 192.91,139.41C156.29,166.15 122.83,196.96 88.6,226.68C87.63,227.51 88.46,229.08 89.7,228.75C109.95,223.35 130.27,218.21 150.49,212.69C169.2,207.57 190.68,216.71 207.3,213.47C235.78,207.94 259.05,175.8 265.89,147.4C268.88,134.99 270.89,118.1 271.74,94.63C278.43,92.79 286.28,88.55 294.29,83.74Z" fill="#122932"/>
+  <path d="M227.39,92.43C224.41,98.72 222.16,104.85 219.6,110.73C217.67,115.12 215.2,118.95 212.31,122.43C225.58,130.11 253.9,134.03 264.4,120.99C269.04,115.22 261.41,105.86 254.02,101.33C248.57,97.98 240.1,91.04 227.39,92.43Z" fill="#2E8C7F"/>
+  <path d="M253.95,144.3C244.94,162.47 202.94,181.37 108.08,213.22C205.36,186.02 250.67,167.15 253.95,144.3Z" fill="#2E8C7F"/>
+  <circle cx="257.75" cy="88.14" r="8" fill="#7CD3C0"/>
+  <circle cx="259.17" cy="87.86" r="3.72" fill="#122932"/>
+  <circle cx="260.13" cy="86.44" r="1.4" fill="#7CD3C0"/>
+</svg>
+</span>FS2 Kafka</a>
+
+  <div class="row links">
+    
+    <a class="icon-link svg-link" href="api/fs2/kafka.html"><span class="api" title="API"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+  <g class="svg-shape">
+    <path d="M75,47.5c13.246,0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm-50,-0c13.246,-0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,-0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm2.705,16.735l7.239,0l0.622,-4.904l-21.833,0l-0,4.904l7.589,0l0,22.067l6.383,0l-0,-22.067Zm58.076,7.265c-0,-8.757 -3.698,-14.166 -10.781,-14.166c-7.083,-0 -10.781,5.604 -10.781,14.166c0,8.757 3.698,14.166 10.781,14.166c7.083,0 10.781,-5.604 10.781,-14.166Zm-6.539,0c0,6.538 -1.128,9.496 -4.242,9.496c-2.997,0 -4.242,-2.88 -4.242,-9.496c-0,-6.616 1.206,-9.496 4.242,-9.496c3.036,-0 4.242,2.88 4.242,9.496Zm-29.242,-67c13.246,0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm0.512,9.834c-7.122,-0 -12.609,5.098 -12.609,14.127c-0,9.263 5.215,14.205 12.532,14.205c4.164,0 7.083,-1.634 9.068,-3.658l-2.88,-3.697c-1.518,1.206 -3.153,2.413 -5.838,2.413c-3.697,-0 -6.266,-2.763 -6.266,-9.263c-0,-6.616 2.724,-9.379 6.149,-9.379c2.102,-0 3.892,0.778 5.371,1.984l3.113,-3.775c-2.257,-1.868 -4.748,-2.957 -8.64,-2.957Z"/>
+  </g>
+</svg></span></a>
+    
+    <a class="icon-link svg-link" href="https://github.com/typelevel/fs2-kafka"><span class="github" title="Source Code"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+  <g class="svg-shape">
+    <path d="M49.995,1c-27.609,-0 -49.995,22.386 -49.995,50.002c-0,22.09 14.325,40.83 34.194,47.444c2.501,0.458 3.413,-1.086 3.413,-2.412c0,-1.185 -0.043,-4.331 -0.067,-8.503c-13.908,3.021 -16.843,-6.704 -16.843,-6.704c-2.274,-5.773 -5.552,-7.311 -5.552,-7.311c-4.54,-3.103 0.344,-3.042 0.344,-3.042c5.018,0.356 7.658,5.154 7.658,5.154c4.46,7.64 11.704,5.433 14.552,4.156c0.454,-3.232 1.744,-5.436 3.174,-6.685c-11.102,-1.262 -22.775,-5.553 -22.775,-24.713c-0,-5.457 1.949,-9.92 5.147,-13.416c-0.516,-1.265 -2.231,-6.348 0.488,-13.233c0,0 4.199,-1.344 13.751,5.126c3.988,-1.108 8.266,-1.663 12.518,-1.682c4.245,0.019 8.523,0.574 12.517,1.682c9.546,-6.47 13.736,-5.126 13.736,-5.126c2.728,6.885 1.013,11.968 0.497,13.233c3.204,3.496 5.141,7.959 5.141,13.416c0,19.209 -11.691,23.436 -22.83,24.673c1.795,1.544 3.394,4.595 3.394,9.26c0,6.682 -0.061,12.076 -0.061,13.715c0,1.338 0.899,2.894 3.438,2.406c19.853,-6.627 34.166,-25.354 34.166,-47.438c-0,-27.616 -22.389,-50.002 -50.005,-50.002"/>
+  </g>
+</svg></span></a>
+    
+    <a class="icon-link glyph-link" href="https://discord.gg/fjqZMuqzAp"><i class="icofont-laika chat" title="Chat">&#xeed5;</i></a>
+    
+  </div>  
+
+</header>
+    
+    <nav id="sidebar">
+
+  <div class="row">
+    
+    <a class="icon-link svg-link" href="api/fs2/kafka.html"><span class="api" title="API"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+  <g class="svg-shape">
+    <path d="M75,47.5c13.246,0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm-50,-0c13.246,-0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,-0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm2.705,16.735l7.239,0l0.622,-4.904l-21.833,0l-0,4.904l7.589,0l0,22.067l6.383,0l-0,-22.067Zm58.076,7.265c-0,-8.757 -3.698,-14.166 -10.781,-14.166c-7.083,-0 -10.781,5.604 -10.781,14.166c0,8.757 3.698,14.166 10.781,14.166c7.083,0 10.781,-5.604 10.781,-14.166Zm-6.539,0c0,6.538 -1.128,9.496 -4.242,9.496c-2.997,0 -4.242,-2.88 -4.242,-9.496c-0,-6.616 1.206,-9.496 4.242,-9.496c3.036,-0 4.242,2.88 4.242,9.496Zm-29.242,-67c13.246,0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm0.512,9.834c-7.122,-0 -12.609,5.098 -12.609,14.127c-0,9.263 5.215,14.205 12.532,14.205c4.164,0 7.083,-1.634 9.068,-3.658l-2.88,-3.697c-1.518,1.206 -3.153,2.413 -5.838,2.413c-3.697,-0 -6.266,-2.763 -6.266,-9.263c-0,-6.616 2.724,-9.379 6.149,-9.379c2.102,-0 3.892,0.778 5.371,1.984l3.113,-3.775c-2.257,-1.868 -4.748,-2.957 -8.64,-2.957Z"/>
+  </g>
+</svg></span></a>
+    
+    <a class="icon-link svg-link" href="https://github.com/typelevel/fs2-kafka"><span class="github" title="Source Code"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+  <g class="svg-shape">
+    <path d="M49.995,1c-27.609,-0 -49.995,22.386 -49.995,50.002c-0,22.09 14.325,40.83 34.194,47.444c2.501,0.458 3.413,-1.086 3.413,-2.412c0,-1.185 -0.043,-4.331 -0.067,-8.503c-13.908,3.021 -16.843,-6.704 -16.843,-6.704c-2.274,-5.773 -5.552,-7.311 -5.552,-7.311c-4.54,-3.103 0.344,-3.042 0.344,-3.042c5.018,0.356 7.658,5.154 7.658,5.154c4.46,7.64 11.704,5.433 14.552,4.156c0.454,-3.232 1.744,-5.436 3.174,-6.685c-11.102,-1.262 -22.775,-5.553 -22.775,-24.713c-0,-5.457 1.949,-9.92 5.147,-13.416c-0.516,-1.265 -2.231,-6.348 0.488,-13.233c0,0 4.199,-1.344 13.751,5.126c3.988,-1.108 8.266,-1.663 12.518,-1.682c4.245,0.019 8.523,0.574 12.517,1.682c9.546,-6.47 13.736,-5.126 13.736,-5.126c2.728,6.885 1.013,11.968 0.497,13.233c3.204,3.496 5.141,7.959 5.141,13.416c0,19.209 -11.691,23.436 -22.83,24.673c1.795,1.544 3.394,4.595 3.394,9.26c0,6.682 -0.061,12.076 -0.061,13.715c0,1.338 0.899,2.894 3.438,2.406c19.853,-6.627 34.166,-25.354 34.166,-47.438c-0,-27.616 -22.389,-50.002 -50.005,-50.002"/>
+  </g>
+</svg></span></a>
+    
+    <a class="icon-link glyph-link" href="https://discord.gg/fjqZMuqzAp"><i class="icofont-laika chat" title="Chat">&#xeed5;</i></a>
+    
+  </div>
+
+  <ul class="nav-list">
+    <li class="level1 active nav-leaf"><a href="#">Overview</a></li>
+    <li class="level1 nav-leaf"><a href="quick-example.html">Quick Example</a></li>
+    <li class="level1 nav-leaf"><a href="consumers.html">Consumers</a></li>
+    <li class="level1 nav-leaf"><a href="producers.html">Producers</a></li>
+    <li class="level1 nav-leaf"><a href="transactions.html">Transactions</a></li>
+    <li class="level1 nav-leaf"><a href="admin.html">Admin</a></li>
+    <li class="level1 nav-leaf"><a href="certificates.html">Security &amp; Certificates</a></li>
+    <li class="level1 nav-leaf"><a href="modules.html">Modules</a></li>
+    <li class="level1 nav-leaf"><a href="technical-details.html">Technical Details</a></li>
+  </ul>
+
+</nav>
+
+    <div id="container">
+
+      
+<nav id="page-nav">
+  <p class="header"><a href="#">Overview</a></p>
+
+  <ul class="nav-list">
+    <li class="level1 nav-node"><a href="#getting-started">Getting Started</a></li>
+    <li class="level2 nav-leaf"><a href="#modules">Modules</a></li>
+    <li class="level2 nav-leaf"><a href="#signatures">Signatures</a></li>
+    <li class="level2 nav-leaf"><a href="#compatibility">Compatibility</a></li>
+    <li class="level2 nav-leaf"><a href="#snapshot-releases">Snapshot Releases</a></li>
+    <li class="level1 nav-leaf"><a href="#dependencies">Dependencies</a></li>
+    <li class="level1 nav-leaf"><a href="#adopters">Adopters</a></li>
+    <li class="level1 nav-leaf"><a href="#inspiration">Inspiration</a></li>
+    <li class="level1 nav-leaf"><a href="#participation">Participation</a></li>
+    <li class="level1 nav-leaf"><a href="#license">License</a></li>
+  </ul>
+
+  <p class="footer"><a href="https://github.com/typelevel/fs2-kafka/tree/main/docs/overview.md"><i class="icofont-laika edit" title="Edit">&#xef10;</i>Source for this page</a></p>
+</nav>
+
+
+      <main class="content">
+
+        <h1 id="overview" class="title">Overview</h1>
+        <p>Functional backpressured streams for consuming and producing Kafka records. Exposes a small interface, while taking care of common functionality: batch consuming and producing records, batched offset commits, offset commit recovery, and topic administration, while also simplifying client configuration.</p>
+        <p>Documentation is kept up-to-date, currently documenting v4.1.3 on Scala 3.3.</p>
+        
+        <h2 id="getting-started" class="section"><a class="anchor-link left" href="#getting-started"><i class="icofont-laika link">&#xef71;</i></a>Getting Started</h2>
+        <p>To get started with <a href="https://scala-sbt.org">sbt</a>, simply add the following line to your <code>build.sbt</code> file.</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">libraryDependencies</span><span> += </span><span class="string-literal">&quot;org.typelevel&quot;</span><span> %% </span><span class="string-literal">&quot;fs2-kafka&quot;</span><span> % </span><span class="string-literal">&quot;4.1.3&quot;</span></code></pre>
+        <p>Published for Scala 2.12, 2.13 and 3.3.</p>
+        <p>For changes between versions, please refer to the <a href="https://github.com/typelevel/fs2-kafka/releases">release notes</a>.</p>
+        <p>For Scala 2.12, enable partial unification by adding the following line to <code>build.sbt</code>.</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">scalacOptions</span><span> += </span><span class="string-literal">&quot;-Ypartial-unification&quot;</span></code></pre>
+        
+        <h3 id="modules" class="section"><a class="anchor-link left" href="#modules"><i class="icofont-laika link">&#xef71;</i></a>Modules</h3>
+        <p>For <a href="https://avro.apache.org">Avro</a> support using <a href="modules.html#vulcan">Vulcan</a>, add the following lines to your <code>build.sbt</code> file.</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">resolvers</span><span> += </span><span class="string-literal">&quot;confluent&quot;</span><span> </span><span class="identifier">at</span><span> </span><span class="string-literal">&quot;https://packages.confluent.io/maven/&quot;</span><span>
+
+</span><span class="identifier">libraryDependencies</span><span> += </span><span class="string-literal">&quot;org.typelevel&quot;</span><span> %% </span><span class="string-literal">&quot;fs2-kafka-vulcan&quot;</span><span> % </span><span class="string-literal">&quot;4.1.3&quot;</span></code></pre>
+        <p>In order to test vulcan codecs against a <a href="https://docs.confluent.io/platform/current/schema-registry/index.html">schema registry</a> using
+        <a href="https://scalameta.org/munit/">munit</a>, add the following line to your <code>build.sbt</code> file.</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">libraryDependencies</span><span> += </span><span class="string-literal">&quot;org.typelevel&quot;</span><span> %% </span><span class="string-literal">&quot;fs2-kafka-vulcan-testkit-munit&quot;</span><span> % </span><span class="string-literal">&quot;4.1.3&quot;</span></code></pre>
+        
+        <h4 id="external-modules" class="section"><a class="anchor-link left" href="#external-modules"><i class="icofont-laika link">&#xef71;</i></a>External Modules</h4>
+        <p>Following is an incomplete list of third-party integrations.</p>
+        <ul>
+          <li><a href="https://github.com/trace4cats/trace4cats-kafka">trace4cats-kafka</a></li>
+        </ul>
+        
+        <h3 id="signatures" class="section"><a class="anchor-link left" href="#signatures"><i class="icofont-laika link">&#xef71;</i></a>Signatures</h3>
+        <p>Stable release artifacts are signed with the <a href="https://keys.openpgp.org/search?q=598648A65DF64506"><code>14CA 4AC4 FDB0 0D5F</code></a> key.</p>
+        
+        <h3 id="compatibility" class="section"><a class="anchor-link left" href="#compatibility"><i class="icofont-laika link">&#xef71;</i></a>Compatibility</h3>
+        <p>Backwards binary-compatibility for the library is guaranteed between minor and patch versions.</p>
+        <p>Version <code>4.a.b</code> is backwards binary-compatible with <code>4.c.d</code> for any <code>a &gt; c</code> or <code>a = c</code> and <code>b &gt; d</code>.</p>
+        <p>Please note binary-compatibility is not guaranteed between milestone releases.</p>
+        
+        <h3 id="snapshot-releases" class="section"><a class="anchor-link left" href="#snapshot-releases"><i class="icofont-laika link">&#xef71;</i></a>Snapshot Releases</h3>
+        <p>To use the latest snapshot release, add the following lines to your <code>build.sbt</code> file.</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">resolvers</span><span> += </span><span class="type-name">Resolver</span><span>.</span><span class="identifier">sonatypeCentralSnapshots</span><span>
+
+</span><span class="identifier">libraryDependencies</span><span> += </span><span class="string-literal">&quot;org.typelevel&quot;</span><span> %% </span><span class="string-literal">&quot;fs2-kafka&quot;</span><span> % </span><span class="string-literal">&quot;4.1.3-3-7e381c3-SNAPSHOT&quot;</span></code></pre>
+        
+        <h2 id="dependencies" class="section"><a class="anchor-link left" href="#dependencies"><i class="icofont-laika link">&#xef71;</i></a>Dependencies</h2>
+        <p>Refer to the table below for dependencies and version support across modules.</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Module</th>
+              <th>Dependencies</th>
+              <th>Scala</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>fs2-kafka</code></td>
+              <td><a href="https://github.com/typelevel/fs2">FS2 3.14.0</a>, <a href="https://github.com/apache/kafka">Apache Kafka Client 4.3.1</a></td>
+              <td>Scala 2.12, 2.13 and 3.3</td>
+            </tr>
+            <tr>
+              <td><a href="modules.html#vulcan"><code>fs2-kafka-vulcan</code></a></td>
+              <td><a href="https://github.com/typelevel/vulcan">Vulcan 1.14.0</a>, <a href="https://github.com/confluentinc/schema-registry">Confluent Kafka Avro Serializer 8.3.2</a></td>
+              <td>Scala 2.12, 2.13 and 3.3</td>
+            </tr>
+          </tbody>
+        </table>
+        
+        <h2 id="adopters" class="section"><a class="anchor-link left" href="#adopters"><i class="icofont-laika link">&#xef71;</i></a>Adopters</h2>
+        <p>Following are some companies using FS2 Kafka in production.</p>
+        <p>Feel free to raise a pull request to add your company to the list.</p>
+        <ul>
+          <li><a href="https://github.com/itv">ITV</a></li>
+          <li><a href="https://github.com/ovotech">OVO Energy</a></li>
+          <li><a href="https://github.com/StuartApp">Stuart</a></li>
+        </ul>
+        
+        <h2 id="inspiration" class="section"><a class="anchor-link left" href="#inspiration"><i class="icofont-laika link">&#xef71;</i></a>Inspiration</h2>
+        <p>Library is heavily inspired by ideas from <a href="https://github.com/akka/alpakka-kafka">Alpakka Kafka</a>.</p>
+        
+        <h2 id="participation" class="section"><a class="anchor-link left" href="#participation"><i class="icofont-laika link">&#xef71;</i></a>Participation</h2>
+        <p>Everyone is expected to follow the <a href="https://typelevel.org/code-of-conduct/">Typelevel Code of Conduct</a> as described <a href="https://github.com/typelevel/.github/blob/main/CODE_OF_CONDUCT.md">here</a>.</p>
+        
+        <h2 id="license" class="section"><a class="anchor-link left" href="#license"><i class="icofont-laika link">&#xef71;</i></a>License</h2>
+        <p>Licensed under the <a href="https://www.apache.org/licenses/LICENSE-2.0.html">Apache License 2.0</a>. Refer to the <a href="https://github.com/typelevel/fs2-kafka/blob/main/license.txt">license file</a>.</p>
+
+        
+
+      </main>
+
+    </div>
+
+  </body>
+
+</html>
