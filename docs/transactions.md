@@ -1,9 +1,6 @@
----
-id: transactions
-title: Transactions
----
+# Transactions
 
-Kafka transactions are supported through a [`KafkaProducer`][kafkaproducer] instantiated via one of the `KafkaProducer.transactional` or `KafkaProducer.transactionalStream` methods.
+Kafka transactions are supported through a @:api(fs2.kafka.KafkaProducer) instantiated via one of the `KafkaProducer.transactional` or `KafkaProducer.transactionalStream` methods.
 
 For details on [consumers](consumers.md) and [producers](producers.md), see the respective sections.
 
@@ -110,5 +107,3 @@ The following methods provide more control over the transaction lifecycle:
 - `transaction`: a resource that represents a transaction, handling commit and abort automatically.
 - `sendOffsetsToTransaction`: allows committing offsets using the producer within a transaction.
 - `produce`: can be used within a transaction to produce records.
-
-[kafkaproducer]: @API_BASE_URL@/KafkaProducer.html

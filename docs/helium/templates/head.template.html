@@ -1,0 +1,39 @@
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="generator" content="Typelevel Laika + Helium Theme" />
+  <title>${cursor.currentDocument.rawTitle} · FS2 Kafka</title>
+  @:for(laika.site.metadata.authors)
+  <meta name="author" content="${_}"/>
+  @:@
+  @:for(laika.site.metadata.description)
+  <meta name="description" content="${_}"/>
+  <meta property="og:description" content="${_}"/>
+  @:@
+  <meta name="theme-color" content="#122932"/>
+  <meta property="og:type" content="website"/>
+  <meta property="og:site_name" content="FS2 Kafka"/>
+  <meta property="og:title" content="${cursor.currentDocument.rawTitle}"/>
+  <meta property="og:image" content="https://typelevel.org/fs2-kafka/img/social-preview.png"/>
+  <meta property="og:image:width" content="1200"/>
+  <meta property="og:image:height" content="630"/>
+  <meta property="og:image:alt" content="${?laika.site.metadata.title}"/>
+  <meta name="twitter:card" content="summary_large_image"/>
+  <meta name="theme-color" content="#2e8c7f"/>
+  @:for(laika.metadata.canonicalLink)
+  <link rel="canonical" href="${_}"/>
+  @:@
+  @:for(helium.site.favIcons)
+  <link rel="icon" @:attribute(sizes, _.sizes) @:attribute(type, _.type) href="@:target(_.target)"/>
+  @:@
+  <link rel="apple-touch-icon" href="https://typelevel.org/fs2-kafka/img/logo.png"/>
+  @:for(helium.webFonts)
+  <link rel="stylesheet" href="${_}">
+  @:@
+  @:includeCSS
+  @:includeJS
+  @:heliumInitVersions
+  @:heliumInitPreview(container)
+  <script> /* for avoiding page load transitions */ </script>
+</head>

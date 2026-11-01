@@ -233,7 +233,16 @@ private[kafka] object syntax {
   ) extends AnyVal {
 
     def cancelable_(implicit F: Async[F]): F[A] =
-      F.fromCompletionStage(futureF.map(_.toCompletionStage))
+      F.uncancelable { poll =>
+        futureF.flatMap { future =>
+          F.delay(future.toCompletionStage.toCompletableFuture)
+            .flatMap { cf =>
+              // Also cancel the future if cancelation happens before
+              // fromCompletableFuture has registered its own handler.
+              F.onCancel(poll(F.fromCompletableFuture(F.pure(cf))), F.delay(cf.cancel(true)).void)
+            }
+        }
+      }
 
   }
 

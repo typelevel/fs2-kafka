@@ -145,15 +145,15 @@ object ConsumerRecord {
       b.append(", key = ").append(key)
       b.append(", value = ").append(value)
       if (headers.nonEmpty)
-        b.append(", headers = ").append(headers)
+        b.append(", headers = ").append(headers): Unit
       if (timestamp.nonEmpty)
-        b.append(", timestamp = ").append(timestamp)
+        b.append(", timestamp = ").append(timestamp): Unit
       if (serializedKeySize.nonEmpty)
-        b.append(", serializedKeySize = ").append(serializedKeySize.get)
+        b.append(", serializedKeySize = ").append(serializedKeySize.get): Unit
       if (serializedValueSize.nonEmpty)
-        b.append(", serializedValueSize = ").append(serializedValueSize.get)
+        b.append(", serializedValueSize = ").append(serializedValueSize.get): Unit
       if (leaderEpoch.nonEmpty)
-        b.append(", leaderEpoch = ").append(leaderEpoch.get)
+        b.append(", leaderEpoch = ").append(leaderEpoch.get): Unit
       b.append(")").toString
     }
 
@@ -250,15 +250,15 @@ object ConsumerRecord {
       b.append(", key = ").append(record.key.show)
       b.append(", value = ").append(record.value.show)
       if (record.headers.nonEmpty)
-        b.append(", headers = ").append(record.headers)
+        b.append(", headers = ").append(record.headers): Unit
       if (record.timestamp.nonEmpty)
-        b.append(", timestamp = ").append(record.timestamp)
+        b.append(", timestamp = ").append(record.timestamp): Unit
       if (record.serializedKeySize.nonEmpty)
-        b.append(", serializedKeySize = ").append(record.serializedKeySize.get)
+        b.append(", serializedKeySize = ").append(record.serializedKeySize.get): Unit
       if (record.serializedValueSize.nonEmpty)
-        b.append(", serializedValueSize = ").append(record.serializedValueSize.get)
+        b.append(", serializedValueSize = ").append(record.serializedValueSize.get): Unit
       if (record.leaderEpoch.nonEmpty)
-        b.append(", leaderEpoch = ").append(record.leaderEpoch.get)
+        b.append(", leaderEpoch = ").append(record.leaderEpoch.get): Unit
       b.append(")").toString
     }
 

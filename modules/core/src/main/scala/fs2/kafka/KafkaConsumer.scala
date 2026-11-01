@@ -45,8 +45,8 @@ import org.apache.kafka.common.TopicPartition
 
 /**
   * [[KafkaConsumer]] represents a consumer of Kafka records, with the ability to `subscribe` to
-  * topics, start a single top-level stream, and optionally control it via the provided [[fiber]]
-  * instance.<br><br>
+  * topics, start a single top-level stream, and optionally control it via [[terminate]] and
+  * [[awaitTermination]].<br><br>
   *
   * The following top-level streams are provided.<br><br>
   *   - [[stream]] provides a single stream of records, where the order of records is guaranteed per
@@ -579,8 +579,9 @@ object KafkaConsumer {
   implicit final class StreamOps[F[_], K, V](self: Stream[F, KafkaConsumerGrouped[F, K, V]]) {
 
     /**
-      * Subscribes a consumer to the specified topics within the [[Stream]] context. See
-      * [[KafkaSubscription#subscribe]].
+      * Subscribes a consumer to the specified topics within the [[fs2.Stream]] context. See
+      * [[[fs2.kafka.consumer.KafkaSubscription#subscribe[G[_]](topics:G[String])*
+      * fs2.kafka.consumer.KafkaSubscription#subscribe]]].
       */
     def subscribe[G[_]: Reducible](topics: G[String]): Stream[F, KafkaConsumerGrouped[F, K, V]] =
       self.evalTap(_.subscribe(topics))
@@ -589,8 +590,8 @@ object KafkaConsumer {
       self.evalTap(_.subscribe(regex))
 
     /**
-      * Subscribes a consumer to the specified topics within the [[Stream]] context. See
-      * [[KafkaSubscription#subscribe]].
+      * Subscribes a consumer to the specified topics within the [[fs2.Stream]] context. See
+      * [[fs2.kafka.consumer.KafkaSubscription#subscribeTo]].
       */
     def subscribeTo(
       firstTopic: String,
@@ -599,31 +600,32 @@ object KafkaConsumer {
       self.evalTap(_.subscribeTo(firstTopic, remainingTopics*))
 
     /**
-      * A [[Stream]] of records from the allocated [[KafkaConsumer]]. Alias for [[stream]]. See
-      * [[KafkaConsume#stream]]
+      * A [[fs2.Stream]] of records from the allocated [[KafkaConsumer]]. Alias for [[stream]]. See
+      * [[fs2.kafka.consumer.KafkaConsume#stream]]
       */
     def records: Stream[F, CommittableConsumerRecord[F, K, V]] = stream
 
     /**
-      * A [[Stream]] of records from the allocated [[KafkaConsumer]]. See [[KafkaConsume#stream]]
+      * A [[fs2.Stream]] of records from the allocated [[KafkaConsumer]]. See
+      * [[fs2.kafka.consumer.KafkaConsume#stream]]
       */
     def stream: Stream[F, CommittableConsumerRecord[F, K, V]] = self.flatMap(_.records)
 
     /**
-      * Alias for [[partitionedStream]]. See [[KafkaConsume#partitionedStream]]
+      * Alias for [[partitionedStream]]. See [[fs2.kafka.consumer.KafkaConsume#partitionedStream]]
       */
     def partitionedRecords: Stream[F, Stream[F, CommittableConsumerRecord[F, K, V]]] =
       partitionedStream
 
     /**
-      * See [[KafkaConsume#partitionedStream]]
+      * See [[fs2.kafka.consumer.KafkaConsume#partitionedStream]]
       */
     def partitionedStream: Stream[F, Stream[F, CommittableConsumerRecord[F, K, V]]] =
       self.flatMap(_.partitionedRecords)
 
     /**
       * Consume from all assigned partitions concurrently, processing the messages in `Chunk`s. See
-      * [[KafkaConsumeChunk#consumeChunk]]
+      * [[fs2.kafka.consumer.KafkaConsumeChunk#consumeChunk]]
       */
     def consumeChunk(
       processor: Chunk[ConsumerRecord[K, V]] => F[CommitNow]
@@ -638,11 +640,11 @@ object KafkaConsumer {
    * to code defined in this object, ensuring factory methods require an instance
    * to be provided at the call site.
    */
-  @nowarn("msg=never used")
+  @nowarn("msg=never used|unused private member")
   implicit private def mkAmbig1[F[_]]: MkConsumer[F] =
     throw new AssertionError("should not be used")
 
-  @nowarn("msg=never used")
+  @nowarn("msg=never used|unused private member")
   implicit private def mkAmbig2[F[_]]: MkConsumer[F] =
     throw new AssertionError("should not be used")
 

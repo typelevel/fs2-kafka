@@ -63,8 +63,8 @@ sealed abstract class ConsumerSettings[F[_], K, V] {
   def customBlockingContext: Option[ExecutionContext]
 
   /**
-    * Returns a new [[ConsumerSettings]] instance with the specified [[ExecutionContext]] to use for
-    * blocking operations.
+    * Returns a new [[ConsumerSettings]] instance with the specified
+    * [[scala.concurrent.ExecutionContext]] to use for blocking operations.
     *
     * Because the underlying Java consumer is not thread-safe, the ExecutionContext *must* be
     * single-threaded. If in doubt, leave this unset so that a default single-threaded blocker will
@@ -159,7 +159,7 @@ sealed abstract class ConsumerSettings[F[_], K, V] {
     * ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG
     * }}}
     *
-    * Returns a value as a [[FiniteDuration]] for convenience
+    * Returns a value as a [[scala.concurrent.duration.FiniteDuration]] for convenience
     */
   def sessionTimeout: FiniteDuration
 
@@ -381,7 +381,8 @@ sealed abstract class ConsumerSettings[F[_], K, V] {
   def withMaxPrefetchBatches(maxPrefetchBatches: Int): ConsumerSettings[F, K, V]
 
   /**
-    * Includes the credentials properties from the provided [[KafkaCredentialStore]]
+    * Includes the credentials properties from the provided
+    * [[fs2.kafka.security.KafkaCredentialStore]]
     */
   def withCredentials(credentialsStore: KafkaCredentialStore): ConsumerSettings[F, K, V]
 
@@ -400,7 +401,7 @@ sealed abstract class ConsumerSettings[F[_], K, V] {
     * Sets the maximum number of parallel consumption streams.
     *
     * @see
-    *   [[KafkaConsumeGrouped.groupedPartitionsMapStream]]
+    *   [[fs2.kafka.consumer.KafkaConsumeGrouped#groupedPartitionsMapStream]]
     */
   def withMaxParallelism(maxParallelism: Int): ConsumerSettings[F, K, V]
 
@@ -410,7 +411,7 @@ sealed abstract class ConsumerSettings[F[_], K, V] {
     * The default is `Int.MaxValue` (unbounded consumption streams).
     *
     * @see
-    *   [[KafkaConsumeGrouped.groupedPartitionsMapStream]]
+    *   [[fs2.kafka.consumer.KafkaConsumeGrouped#groupedPartitionsMapStream]]
     */
   def maxParallelism: Int
 

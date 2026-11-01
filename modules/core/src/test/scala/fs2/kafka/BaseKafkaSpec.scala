@@ -15,7 +15,7 @@ import scala.concurrent.duration.*
 import scala.util.Failure
 import scala.util.Try
 
-import cats.effect.Sync
+import cats.effect.{IO, Sync}
 import fs2.kafka.internal.converters.collection.*
 
 import com.dimafeng.testcontainers.{ConfluentKafkaContainer, ForAllTestContainer}
@@ -133,6 +133,12 @@ abstract class BaseKafkaSpec extends BaseAsyncSpec with ForAllTestContainer {
 
   final def withTopic[A](f: String => A): A =
     f(nextTopicName())
+
+  final def eventually[A](check: IO[A], attempts: Int = 100): IO[A] =
+    check.handleErrorWith { error =>
+      if (attempts > 1) IO.sleep(100.millis) >> eventually(check, attempts - 1)
+      else IO.raiseError(error)
+    }
 
   final def withKafkaConsumer(
     nativeSettings: Map[String, AnyRef]

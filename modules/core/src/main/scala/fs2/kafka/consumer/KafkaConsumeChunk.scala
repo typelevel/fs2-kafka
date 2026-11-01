@@ -40,9 +40,9 @@ trait KafkaConsumeChunk[F[_], K, V] extends KafkaConsume[F, K, V] {
     * <br>
     *
     * The `processor` is a function that takes a `Chunk[ConsumerRecord[K, V]]` and returns a
-    * `F[CommitNow]`. [[CommitNow]] is isomorphic to `Unit`, but helps in transporting the intention
-    * that processing of a `Chunk` is done, offsets should be committed, and no important processing
-    * should be done afterwards.<br><br>
+    * `F[CommitNow]`. [[fs2.kafka.consumer.KafkaConsumeChunk.CommitNow]] is isomorphic to `Unit`,
+    * but helps in transporting the intention that processing of a `Chunk` is done, offsets should
+    * be committed, and no important processing should be done afterwards.<br><br>
     *
     * The returned value has the type `F[Nothing]`, because it's a never-ending process that doesn't
     * terminate, and therefore doesn't return a result.
@@ -56,7 +56,7 @@ trait KafkaConsumeChunk[F[_], K, V] extends KafkaConsume[F, K, V] {
     * @see
     *   [[partitionedStream]]
     * @see
-    *   [[CommitNow]]
+    *   [[fs2.kafka.consumer.KafkaConsumeChunk.CommitNow]]
     */
   final def consumeChunk(
     processor: Chunk[ConsumerRecord[K, V]] => F[CommitNow]

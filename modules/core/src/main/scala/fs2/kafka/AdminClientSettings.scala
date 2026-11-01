@@ -162,7 +162,8 @@ sealed abstract class AdminClientSettings {
   def withCloseTimeout(closeTimeout: FiniteDuration): AdminClientSettings
 
   /**
-    * Includes the credentials properties from the provided [[KafkaCredentialStore]]
+    * Includes the credentials properties from the provided
+    * [[fs2.kafka.security.KafkaCredentialStore]]
     */
   def withCredentials(credentialsStore: KafkaCredentialStore): AdminClientSettings
 

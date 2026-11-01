@@ -1,7 +1,4 @@
----
-id: technical-details
-title: Technical Details
----
+# Technical Details
 
 In the following sections, technical aspects of the library are detailed.
 

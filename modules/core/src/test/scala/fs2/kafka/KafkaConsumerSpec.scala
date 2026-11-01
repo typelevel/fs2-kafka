@@ -1658,15 +1658,16 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
           .stream(consumerSettings[IO])
           .evalTap { consumer =>
             for {
-              _                  <- IO(createCustomTopic(topic, partitions = 2))
-              topicsAfter        <- consumer.listTopics
-              topicsAfterTimeout <- consumer.listTopics(timeout)
-              _                  <-
-                IO(
-                  assert(
-                    topicsAfter.keySet == topicsAfterTimeout.keySet && topicsAfter(topic).size == 2
-                  )
-                )
+              _ <- IO(createCustomTopic(topic, partitions = 2))
+              _ <- eventually {
+                     for {
+                       topicsAfter        <- consumer.listTopics
+                       topicsAfterTimeout <- consumer.listTopics(timeout)
+                     } yield {
+                       assert(topicsAfter.keySet == topicsAfterTimeout.keySet)
+                       assert(topicsAfter(topic).size == 2)
+                     }
+                   }
             } yield ()
           }
           .compile
