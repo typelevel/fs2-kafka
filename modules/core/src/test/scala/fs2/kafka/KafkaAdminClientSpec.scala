@@ -762,10 +762,4 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
       .unsafeRunSync()
   }
 
-  def eventually[A](check: IO[A], attempts: Int = 100): IO[A] =
-    check.handleErrorWith { error =>
-      if (attempts > 1) IO.sleep(100.millis) >> eventually(check, attempts - 1)
-      else IO.raiseError(error)
-    }
-
 }
