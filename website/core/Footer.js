@@ -20,8 +20,6 @@ class Footer extends React.Component {
         <hr className="separator" />
         <section className="copyright">
           {this.props.config.copyright}
-          <br />
-          Icon by <a href="https://www.flaticon.com/authors/franco-averta" rel="noopener">Franco Averta</a>. <a href="https://creativecommons.org/licenses/by/3.0" rel="noopener">CC BY 3.0</a>.
         </section>
       </footer>
     );
