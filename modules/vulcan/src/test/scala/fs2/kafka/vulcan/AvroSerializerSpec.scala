@@ -6,19 +6,19 @@
 
 package fs2.kafka.vulcan
 
-import cats.effect.unsafe.implicits.global
 import cats.effect.IO
 import fs2.kafka.Headers
-
 import io.confluent.kafka.schemaregistry.client.MockSchemaRegistryClient
 import org.scalatest.funspec.AnyFunSpec
 import vulcan.Codec
+
+import cats.effect.unsafe.implicits.global
 
 final class AvroSerializerSpec extends AnyFunSpec {
 
   describe("AvroSerializer") {
     it("can create a serializer") {
-      val forKey   = AvroSerializer[Int].forKey(avroSettings)
+      val forKey = AvroSerializer[Int].forKey(avroSettings)
       val forValue = AvroSerializer[Int].forValue(avroSettings)
 
       assert(forKey.use(IO.pure).attempt.unsafeRunSync().isRight)
@@ -47,7 +47,7 @@ final class AvroSerializerSpec extends AnyFunSpec {
       val codec: Codec[BigDecimal] =
         Codec.decimal(-1, -1)
 
-      val forKey   = avroSerializer(codec).forKey(avroSettings)
+      val forKey = avroSerializer(codec).forKey(avroSettings)
       val forValue = avroSerializer(codec).forKey(avroSettings)
 
       assert(forKey.use(IO.pure).attempt.unsafeRunSync().isRight)

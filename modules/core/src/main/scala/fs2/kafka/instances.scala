@@ -6,10 +6,9 @@
 
 package fs2.kafka
 
-import cats.syntax.all.*
 import cats.Order
 import cats.Show
-
+import cats.syntax.all.*
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.clients.producer.RecordMetadata
 import org.apache.kafka.common.TopicPartition

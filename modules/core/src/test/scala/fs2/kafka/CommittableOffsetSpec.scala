@@ -6,20 +6,20 @@
 
 package fs2.kafka
 
-import cats.~>
 import cats.data.OptionT
-import cats.effect.unsafe.implicits.global
 import cats.effect.IO
 import cats.effect.SyncIO
-
+import cats.~>
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.TopicPartition
+
+import cats.effect.unsafe.implicits.global
 
 final class CommittableOffsetSpec extends BaseSpec {
   describe("CommittableOffset") {
     it("should be able to commit the offset") {
-      val partition                                         = new TopicPartition("topic", 0)
-      val offsetAndMetadata                                 = new OffsetAndMetadata(0L, "metadata")
+      val partition = new TopicPartition("topic", 0)
+      val offsetAndMetadata = new OffsetAndMetadata(0L, "metadata")
       var committed: Map[TopicPartition, OffsetAndMetadata] = null
 
       CommittableOffset[SyncIO](
@@ -35,8 +35,8 @@ final class CommittableOffsetSpec extends BaseSpec {
     }
 
     it("should be able to commit the offset after mapK") {
-      val partition                                         = new TopicPartition("topic", 0)
-      val offsetAndMetadata                                 = new OffsetAndMetadata(0L, "metadata")
+      val partition = new TopicPartition("topic", 0)
+      val offsetAndMetadata = new OffsetAndMetadata(0L, "metadata")
       var committed: Map[TopicPartition, OffsetAndMetadata] = null
 
       val committableOffset =
@@ -66,8 +66,8 @@ final class CommittableOffsetSpec extends BaseSpec {
     }
 
     it("should keep offsets from the same committer batchable after mapK") {
-      val partition0                                              = new TopicPartition("topic", 0)
-      val partition1                                              = new TopicPartition("topic", 1)
+      val partition0 = new TopicPartition("topic", 0)
+      val partition1 = new TopicPartition("topic", 1)
       var committed: List[Map[TopicPartition, OffsetAndMetadata]] = Nil
 
       val committer =

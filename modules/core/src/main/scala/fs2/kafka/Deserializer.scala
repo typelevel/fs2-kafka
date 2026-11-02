@@ -6,12 +6,13 @@
 
 package fs2.kafka
 
-import java.nio.charset.{Charset, StandardCharsets}
-import java.util.UUID
-
-import cats.effect.{Resource, Sync}
-import cats.syntax.all.*
 import cats.MonadError
+import cats.effect.Resource
+import cats.effect.Sync
+import cats.syntax.all.*
+import java.nio.charset.Charset
+import java.nio.charset.StandardCharsets
+import java.util.UUID
 
 /**
   * Functional composable Kafka key- and record deserializer with support for effect types.
@@ -66,7 +67,7 @@ object GenericDeserializer {
   def apply[F[_], A](implicit deserializer: Deserializer[F, A]): Deserializer[F, A] = deserializer
 
   /**
-    * Alias for [[Deserializer#identity]].
+    * Alias for [[GenericDeserializer.identity]].
     */
   def apply[F[_]](implicit F: Sync[F]): Deserializer[F, Array[Byte]] = identity
 

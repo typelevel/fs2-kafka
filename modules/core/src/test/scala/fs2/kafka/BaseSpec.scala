@@ -12,8 +12,8 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.scalacheck.*
 
 abstract class BaseSpec
-    extends AnyFunSpec
-    with Assertions
-    with Matchers
-    with ScalaCheckPropertyChecks
-    with BaseGenerators
+  extends AnyFunSpec
+  with Assertions
+  with Matchers
+  with ScalaCheckPropertyChecks
+  with BaseGenerators

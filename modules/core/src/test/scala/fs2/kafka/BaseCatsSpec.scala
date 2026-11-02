@@ -6,14 +6,12 @@
 
 package fs2.kafka
 
-import scala.util.Try
-
 import cats.*
-import cats.effect.testkit.TestInstances
 import cats.effect.IO
+import cats.effect.testkit.TestInstances
 import cats.tests.*
-
 import org.scalacheck.*
+import scala.util.Try
 
 trait BaseCatsSpec extends CatsSuite with BaseGenerators with TestInstances {
 

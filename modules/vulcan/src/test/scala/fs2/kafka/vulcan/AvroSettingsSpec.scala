@@ -6,11 +6,11 @@
 
 package fs2.kafka.vulcan
 
-import cats.effect.unsafe.implicits.global
 import cats.effect.IO
-
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatestplus.scalacheck.*
+
+import cats.effect.unsafe.implicits.global
 
 final class AvroSettingsSpec extends AnyFunSpec with ScalaCheckPropertyChecks {
 

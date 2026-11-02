@@ -105,7 +105,7 @@ final class HeadersSpec extends BaseSpec {
   }
 
   describe("Headers#nonEmpty.asJava") {
-    val header  = Header("key", Array[Byte]())
+    val header = Header("key", Array[Byte]())
     val headers = Headers(header).asJava
 
     it("add(header) throws IllegalStateException") {
@@ -124,8 +124,8 @@ final class HeadersSpec extends BaseSpec {
     }
 
     it("lastHeader returns last header") {
-      val first    = Header("key", Array[Byte](0))
-      val second   = Header("key", Array[Byte](1))
+      val first = Header("key", Array[Byte](0))
+      val second = Header("key", Array[Byte](1))
       val multiple = Headers(first, second)
 
       multiple.asJava.lastHeader("key") shouldBe second

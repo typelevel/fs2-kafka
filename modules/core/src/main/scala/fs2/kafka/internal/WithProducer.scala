@@ -6,8 +6,10 @@
 
 package fs2.kafka.internal
 
-import cats.effect.{Async, Resource}
-import fs2.kafka.{KafkaByteProducer, ProducerSettings}
+import cats.effect.Async
+import cats.effect.Resource
+import fs2.kafka.KafkaByteProducer
+import fs2.kafka.ProducerSettings
 import fs2.kafka.internal.syntax.*
 import fs2.kafka.producer.MkProducer
 

@@ -6,10 +6,10 @@
 
 package fs2.kafka
 
-import java.nio.charset.{Charset, StandardCharsets}
-import java.util.UUID
-
 import cats.Contravariant
+import java.nio.charset.Charset
+import java.nio.charset.StandardCharsets
+import java.util.UUID
 
 /**
   * [[HeaderSerializer]] is a functional serializer for Kafka record header values. It's similar to
@@ -48,7 +48,7 @@ sealed abstract class HeaderSerializer[A] {
   final def option: HeaderSerializer[Option[A]] =
     HeaderSerializer.instance {
       case Some(a) => serialize(a)
-      case None    => null
+      case None => null
     }
 
 }

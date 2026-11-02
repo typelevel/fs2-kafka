@@ -8,7 +8,6 @@ package fs2.kafka
 
 import cats.Eq
 import cats.Show
-
 import org.apache.kafka.common.record.TimestampType
 
 /**

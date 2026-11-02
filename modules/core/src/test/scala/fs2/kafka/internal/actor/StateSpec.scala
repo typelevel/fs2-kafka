@@ -6,12 +6,13 @@
 
 package fs2.kafka.internal.actor
 
-import cats.effect.{Deferred, IO}
-import cats.effect.std.{Queue, Semaphore}
+import cats.effect.Deferred
+import cats.effect.IO
+import cats.effect.std.Queue
+import cats.effect.std.Semaphore
 import cats.effect.unsafe.implicits.global
 import cats.syntax.apply.*
 import fs2.kafka.BaseSpec
-
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.TopicPartition
 

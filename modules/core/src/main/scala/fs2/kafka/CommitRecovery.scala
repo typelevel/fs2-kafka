@@ -6,17 +6,16 @@
 
 package fs2.kafka
 
-import scala.concurrent.duration.*
-
+import cats.Functor
 import cats.effect.Temporal
 import cats.syntax.applicativeError.*
 import cats.syntax.flatMap.*
 import cats.syntax.functor.*
-import cats.Functor
-
-import org.apache.kafka.clients.consumer.{OffsetAndMetadata, RetriableCommitFailedException}
-import org.apache.kafka.common.errors.RebalanceInProgressException
+import org.apache.kafka.clients.consumer.OffsetAndMetadata
+import org.apache.kafka.clients.consumer.RetriableCommitFailedException
 import org.apache.kafka.common.TopicPartition
+import org.apache.kafka.common.errors.RebalanceInProgressException
+import scala.concurrent.duration.*
 
 /**
   * [[CommitRecovery]] describes how to recover from exceptions raised while trying to commit

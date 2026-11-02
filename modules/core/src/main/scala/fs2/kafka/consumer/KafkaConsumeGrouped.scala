@@ -8,7 +8,6 @@ package fs2.kafka.consumer
 
 import fs2.*
 import fs2.kafka.CommittableConsumerRecord
-
 import org.apache.kafka.common.TopicPartition
 
 trait KafkaConsumeGrouped[F[_], K, V] {
@@ -40,9 +39,9 @@ trait KafkaConsumeGrouped[F[_], K, V] {
     *   `Stream`. If you forgot to subscribe, there will be a [[NotSubscribedException]] raised in
     *   the `Stream`.
     * @see
-    *   [[records]]
+    *   [[KafkaConsume#records]]
     * @see
-    *   [[partitionedRecords]]
+    *   [[KafkaConsume#partitionedRecords]]
     */
   def groupedPartitionsMapStream
     : Stream[F, Map[Set[TopicPartition], Stream[F, CommittableConsumerRecord[F, K, V]]]]

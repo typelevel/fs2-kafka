@@ -6,53 +6,46 @@
 
 package fs2.kafka
 
-import java.time
-
-import scala.concurrent.duration.*
-
-import cats.effect.{IO, SyncIO}
-import cats.effect.unsafe.implicits.global
+import cats.effect.IO
+import cats.effect.SyncIO
 import cats.syntax.all.*
-import fs2.{Chunk, Stream}
+import fs2.Chunk
+import fs2.Stream
 import fs2.kafka.internal.converters.collection.*
-
-import org.apache.kafka.clients.admin.{
-  AlterConfigOp,
-  ConfigEntry,
-  FeatureUpdate,
-  MemberToRemove,
-  NewPartitionReassignment,
-  NewPartitions,
-  NewTopic,
-  OffsetSpec,
-  RecordsToDelete
-}
-import org.apache.kafka.clients.consumer.{ConsumerConfig, OffsetAndMetadata}
-import org.apache.kafka.common.{IsolationLevel => KafkaIsolationLevel}
-import org.apache.kafka.common.acl.*
-import org.apache.kafka.common.config.ConfigResource
-import org.apache.kafka.common.errors.{
-  ElectionNotNeededException,
-  LogDirNotFoundException,
-  ProducerFencedException,
-  UnsupportedByAuthenticationException
-}
-import org.apache.kafka.common.quota.{
-  ClientQuotaAlteration,
-  ClientQuotaEntity,
-  ClientQuotaFilter,
-  ClientQuotaFilterComponent
-}
-import org.apache.kafka.common.resource.{
-  PatternType,
-  ResourcePattern,
-  ResourcePatternFilter,
-  ResourceType
-}
-import org.apache.kafka.common.security.auth.KafkaPrincipal
+import java.time
+import org.apache.kafka.clients.admin.AlterConfigOp
+import org.apache.kafka.clients.admin.ConfigEntry
+import org.apache.kafka.clients.admin.FeatureUpdate
+import org.apache.kafka.clients.admin.MemberToRemove
+import org.apache.kafka.clients.admin.NewPartitionReassignment
+import org.apache.kafka.clients.admin.NewPartitions
+import org.apache.kafka.clients.admin.NewTopic
+import org.apache.kafka.clients.admin.OffsetSpec
+import org.apache.kafka.clients.admin.RecordsToDelete
+import org.apache.kafka.clients.consumer.ConsumerConfig
+import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.ElectionType
+import org.apache.kafka.common.IsolationLevel as KafkaIsolationLevel
 import org.apache.kafka.common.TopicPartition
 import org.apache.kafka.common.TopicPartitionReplica
+import org.apache.kafka.common.acl.*
+import org.apache.kafka.common.config.ConfigResource
+import org.apache.kafka.common.errors.ElectionNotNeededException
+import org.apache.kafka.common.errors.LogDirNotFoundException
+import org.apache.kafka.common.errors.ProducerFencedException
+import org.apache.kafka.common.errors.UnsupportedByAuthenticationException
+import org.apache.kafka.common.quota.ClientQuotaAlteration
+import org.apache.kafka.common.quota.ClientQuotaEntity
+import org.apache.kafka.common.quota.ClientQuotaFilter
+import org.apache.kafka.common.quota.ClientQuotaFilterComponent
+import org.apache.kafka.common.resource.PatternType
+import org.apache.kafka.common.resource.ResourcePattern
+import org.apache.kafka.common.resource.ResourcePatternFilter
+import org.apache.kafka.common.resource.ResourceType
+import org.apache.kafka.common.security.auth.KafkaPrincipal
+import scala.concurrent.duration.*
+
+import cats.effect.unsafe.implicits.global
 
 final class KafkaAdminClientSpec extends BaseKafkaSpec {
 
@@ -73,50 +66,50 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
           .use { adminClient =>
             for {
               consumerGroupIds <- adminClient.listConsumerGroups.groupIds
-              consumerGroupId  <- IO(consumerGroupIds match {
-                                   case List(groupId) => groupId
-                                   case _             => fail()
-                                 })
-              consumerGroupListings   <- adminClient.listConsumerGroups.listings
-              _                       <- IO(assert(consumerGroupListings.size == 1))
+              consumerGroupId <- IO(consumerGroupIds match {
+                case List(groupId) => groupId
+                case _ => fail()
+              })
+              consumerGroupListings <- adminClient.listConsumerGroups.listings
+              _ <- IO(assert(consumerGroupListings.size == 1))
               describedConsumerGroups <- adminClient.describeConsumerGroups(consumerGroupIds)
-              _                       <- IO(assert(describedConsumerGroups.size == 1))
-              _                       <- IO {
-                     adminClient.listConsumerGroups.toString should
-                       startWith("ListConsumerGroups$")
-                   }
-              consumerGroupsOffsets <- consumerGroupIds.parTraverse { groupId =>
-                                         adminClient
-                                           .listConsumerGroupOffsets(groupId)
-                                           .partitionsToOffsetAndMetadata
-                                           .map((groupId, _))
-                                       }
-              offsets <- IO(consumerGroupsOffsets match {
-                           case List(offsets) => offsets
-                           case _             => fail()
-                         })
-              (_, consumerGroupOffsetsMap) = offsets
-              _                           <- IO(
-                     assert(
-                       consumerGroupOffsetsMap
-                         .map { case (_, offset) =>
-                           offset.offset()
-                         }
-                         .forall(_ > 0)
-                     )
-                   )
+              _ <- IO(assert(describedConsumerGroups.size == 1))
               _ <- IO {
-                     adminClient
-                       .listConsumerGroupOffsets(consumerGroupId)
-                       .toString shouldBe "ListConsumerGroupOffsets(groupId = test-group-id)"
-                   }
+                adminClient.listConsumerGroups.toString should
+                  startWith("ListConsumerGroups$")
+              }
+              consumerGroupsOffsets <- consumerGroupIds.parTraverse { groupId =>
+                adminClient
+                  .listConsumerGroupOffsets(groupId)
+                  .partitionsToOffsetAndMetadata
+                  .map((groupId, _))
+              }
+              offsets <- IO(consumerGroupsOffsets match {
+                case List(offsets) => offsets
+                case _ => fail()
+              })
+              (_, consumerGroupOffsetsMap) = offsets
+              _ <- IO(
+                assert(
+                  consumerGroupOffsetsMap
+                    .map { case (_, offset) =>
+                      offset.offset()
+                    }
+                    .forall(_ > 0)
+                )
+              )
+              _ <- IO {
+                adminClient
+                  .listConsumerGroupOffsets(consumerGroupId)
+                  .toString shouldBe "ListConsumerGroupOffsets(groupId = test-group-id)"
+              }
               consumerGroupOffsetsPartitions <- consumerGroupIds.parTraverse { groupId =>
-                                                  adminClient
-                                                    .listConsumerGroupOffsets(groupId)
-                                                    .forPartitions(List.empty[TopicPartition])
-                                                    .partitionsToOffsetAndMetadata
-                                                    .map((groupId, _))
-                                                }
+                adminClient
+                  .listConsumerGroupOffsets(groupId)
+                  .forPartitions(List.empty[TopicPartition])
+                  .partitionsToOffsetAndMetadata
+                  .map((groupId, _))
+              }
               _ <- IO(assert(consumerGroupOffsetsPartitions.size == 1))
               _ <-
                 IO {
@@ -125,37 +118,35 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
                     .forPartitions(List(new TopicPartition("topic", 0)))
                     .toString shouldBe "ListConsumerGroupOffsetsForPartitions(groupId = test-group-id, partitions = List(topic-0))"
                 }
-              partition0    = new TopicPartition(topic, 0)
+              partition0 = new TopicPartition(topic, 0)
               updatedOffset = new OffsetAndMetadata(0)
-              _            <- adminClient.alterConsumerGroupOffsets(
-                     consumerGroupId,
-                     Map(partition0 -> updatedOffset)
-                   )
+              _ <- adminClient.alterConsumerGroupOffsets(
+                consumerGroupId,
+                Map(partition0 -> updatedOffset)
+              )
               _ <- adminClient
-                     .listConsumerGroupOffsets(consumerGroupId)
-                     .partitionsToOffsetAndMetadata
-                     .map { res =>
-                       val expected = consumerGroupOffsetsMap.updated(partition0, updatedOffset)
-                       assert {
-                         res(partition0) != consumerGroupOffsetsMap(partition0) && res == expected
-                       }
-                     }
+                .listConsumerGroupOffsets(consumerGroupId)
+                .partitionsToOffsetAndMetadata
+                .map { res =>
+                  val expected = consumerGroupOffsetsMap.updated(partition0, updatedOffset)
+                  assert {
+                    res(partition0) != consumerGroupOffsetsMap(partition0) && res == expected
+                  }
+                }
               _ <- adminClient.deleteConsumerGroupOffsets(consumerGroupId, Set(partition0))
               _ <- adminClient
-                     .listConsumerGroupOffsets(consumerGroupId)
-                     .partitionsToOffsetAndMetadata
-                     .map { res =>
-                       val expected = consumerGroupOffsetsMap - partition0
-                       assert(res == expected)
-                     }
+                .listConsumerGroupOffsets(consumerGroupId)
+                .partitionsToOffsetAndMetadata
+                .map { res =>
+                  val expected = consumerGroupOffsetsMap - partition0
+                  assert(res == expected)
+                }
               _ <- adminClient.deleteConsumerGroups(consumerGroupIds)
-              _ <- adminClient
-                     .listConsumerGroups
-                     .groupIds
-                     .map { res =>
-                       val expected = List.empty
-                       assert(res == expected)
-                     }
+              _ <- adminClient.listConsumerGroups.groupIds
+                .map { res =>
+                  val expected = List.empty
+                  assert(res == expected)
+                }
             } yield ()
           }
           .unsafeRunSync()
@@ -170,15 +161,15 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
           .resource[IO](adminClientSettings)
           .use { adminClient =>
             for {
-              clusterNodes      <- adminClient.describeCluster.nodes
-              _                 <- IO(assert(clusterNodes.size == 1))
+              clusterNodes <- adminClient.describeCluster.nodes
+              _ <- IO(assert(clusterNodes.size == 1))
               clusterController <- adminClient.describeCluster.controller
-              _                 <- IO(assert(!clusterController.isEmpty))
-              clusterId         <- adminClient.describeCluster.clusterId
-              _                 <- IO(assert(clusterId.nonEmpty))
-              _                 <- IO {
-                     adminClient.describeCluster.toString should startWith("DescribeCluster$")
-                   }
+              _ <- IO(assert(!clusterController.isEmpty))
+              clusterId <- adminClient.describeCluster.clusterId
+              _ <- IO(assert(clusterId.nonEmpty))
+              _ <- IO {
+                adminClient.describeCluster.toString should startWith("DescribeCluster$")
+              }
             } yield ()
           }
           .unsafeRunSync()
@@ -197,21 +188,21 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
                 actual.source == ConfigEntry.ConfigSource.DYNAMIC_TOPIC_CONFIG
 
             for {
-              cr               <- IO.pure(new ConfigResource(ConfigResource.Type.TOPIC, topic))
-              delete            = new ConfigEntry("cleanup.policy", "delete")
-              compact           = new ConfigEntry("cleanup.policy", "compact")
-              setDelete         = Map(cr -> List(new AlterConfigOp(delete, AlterConfigOp.OpType.SET)))
-              setCompact        = Map(cr -> List(new AlterConfigOp(compact, AlterConfigOp.OpType.SET)))
-              _                <- adminClient.alterConfigs[List](setDelete)
+              cr <- IO.pure(new ConfigResource(ConfigResource.Type.TOPIC, topic))
+              delete = new ConfigEntry("cleanup.policy", "delete")
+              compact = new ConfigEntry("cleanup.policy", "compact")
+              setDelete = Map(cr -> List(new AlterConfigOp(delete, AlterConfigOp.OpType.SET)))
+              setCompact = Map(cr -> List(new AlterConfigOp(compact, AlterConfigOp.OpType.SET)))
+              _ <- adminClient.alterConfigs[List](setDelete)
               describeAfterSet <- eventually {
-                                    adminClient
-                                      .describeConfigs(List(cr))
-                                      .map { described =>
-                                        assert(described(cr).exists(isSetOnTopic(delete)))
-                                        described
-                                      }
-                                  }
-              _                     <- adminClient.alterConfigs[List](setCompact, validateOnly = true)
+                adminClient
+                  .describeConfigs(List(cr))
+                  .map { described =>
+                    assert(described(cr).exists(isSetOnTopic(delete)))
+                    described
+                  }
+              }
+              _ <- adminClient.alterConfigs[List](setCompact, validateOnly = true)
               describeAfterValidate <- adminClient.describeConfigs(List(cr))
             } yield assert(describeAfterSet.get(cr) == describeAfterValidate.get(cr))
           }
@@ -227,68 +218,66 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
           .resource[IO](adminClientSettings)
           .use { adminClient =>
             for {
-              topicNames                   <- adminClient.listTopics.names
-              topicCount                    = topicNames.size
-              topicListings                <- adminClient.listTopics.listings
-              _                            <- IO(assert(topicListings.size == topicCount))
-              topicNamesToListings         <- adminClient.listTopics.namesToListings
-              _                            <- IO(assert(topicNamesToListings.size == topicCount))
-              topicNamesInternal           <- adminClient.listTopics.includeInternal.names
-              _                            <- IO(assert(topicNamesInternal.size == topicCount + 1))
-              topicListingsInternal        <- adminClient.listTopics.includeInternal.listings
-              _                            <- IO(assert(topicListingsInternal.size == topicCount + 1))
+              topicNames <- adminClient.listTopics.names
+              topicCount = topicNames.size
+              topicListings <- adminClient.listTopics.listings
+              _ <- IO(assert(topicListings.size == topicCount))
+              topicNamesToListings <- adminClient.listTopics.namesToListings
+              _ <- IO(assert(topicNamesToListings.size == topicCount))
+              topicNamesInternal <- adminClient.listTopics.includeInternal.names
+              _ <- IO(assert(topicNamesInternal.size == topicCount + 1))
+              topicListingsInternal <- adminClient.listTopics.includeInternal.listings
+              _ <- IO(assert(topicListingsInternal.size == topicCount + 1))
               topicNamesToListingsInternal <- adminClient.listTopics.includeInternal.namesToListings
-              _                            <- IO(assert(topicNamesToListingsInternal.size == topicCount + 1))
-              _                            <- IO {
-                     adminClient.listTopics.toString should startWith("ListTopics$")
-                   }
+              _ <- IO(assert(topicNamesToListingsInternal.size == topicCount + 1))
               _ <- IO {
-                     adminClient.listTopics.includeInternal.toString should
-                       startWith("ListTopicsIncludeInternal$")
-                   }
+                adminClient.listTopics.toString should startWith("ListTopics$")
+              }
+              _ <- IO {
+                adminClient.listTopics.includeInternal.toString should
+                  startWith("ListTopicsIncludeInternal$")
+              }
               describedTopics <- adminClient.describeTopics(topicNames.toList)
-              _               <- IO(assert(describedTopics.size == topicCount))
-              newTopic         = new NewTopic("new-test-topic", 1, 1.toShort)
-              preCreateNames  <- adminClient.listTopics.names
-              _               <- IO(assert(!preCreateNames.contains(newTopic.name)))
-              _               <- adminClient.createTopic(newTopic)
-              _               <- eventually {
-                     adminClient
-                       .listTopics
-                       .names
-                       .map { postCreateNames =>
-                         assert(postCreateNames.contains(newTopic.name))
-                       }
-                   }
-              createAgain      <- adminClient.createTopics(List(newTopic)).attempt
-              _                <- IO(assert(createAgain.isLeft))
+              _ <- IO(assert(describedTopics.size == topicCount))
+              newTopic = new NewTopic("new-test-topic", 1, 1.toShort)
+              preCreateNames <- adminClient.listTopics.names
+              _ <- IO(assert(!preCreateNames.contains(newTopic.name)))
+              _ <- adminClient.createTopic(newTopic)
+              _ <- eventually {
+                adminClient.listTopics.names
+                  .map { postCreateNames =>
+                    assert(postCreateNames.contains(newTopic.name))
+                  }
+              }
+              createAgain <- adminClient.createTopics(List(newTopic)).attempt
+              _ <- IO(assert(createAgain.isLeft))
               createPartitions <-
                 adminClient.createPartitions(Map(topic -> NewPartitions.increaseTo(4))).attempt
               _ <- IO(assert(createPartitions.isRight))
               _ <- eventually {
-                     adminClient
-                       .describeTopics(topic :: Nil)
-                       .map { describedTopics =>
-                         assert(describedTopics.size == 1)
-                         assert(describedTopics.headOption.exists(_._2.partitions.size == 4))
-                       }
-                   }
+                adminClient
+                  .describeTopics(topic :: Nil)
+                  .map { describedTopics =>
+                    assert(describedTopics.size == 1)
+                    assert(describedTopics.headOption.exists(_._2.partitions.size == 4))
+                  }
+              }
               deleteTopics <- adminClient.deleteTopics(List(topic)).attempt
-              _            <- IO(assert(deleteTopics.isRight))
-              _            <- eventually {
-                     adminClient
-                       .describeTopics(topic :: Nil)
-                       .attempt
-                       .map { describedTopics =>
-                         assert(
-                           describedTopics.leftMap(_.getMessage()) == Left(
-                             "This server does not host this topic-partition."
-                           )
-                         )
-                       }
-                   }
+              _ <- IO(assert(deleteTopics.isRight))
+              _ <- eventually {
+                adminClient
+                  .describeTopics(topic :: Nil)
+                  .attempt
+                  .map { describedTopics =>
+                    assert(
+                      describedTopics.leftMap(_.getMessage()) == Left(
+                        "This server does not host this topic-partition."
+                      )
+                    )
+                  }
+              }
               deleteTopic <- adminClient.deleteTopic(newTopic.name()).attempt
-              _           <- IO(assert(deleteTopic.isRight))
+              _ <- IO(assert(deleteTopic.isRight))
             } yield ()
           }
           .unsafeRunSync()
@@ -304,41 +293,41 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
           .use { adminClient =>
             for {
               describedAcls <- adminClient.describeAcls(AclBindingFilter.ANY)
-              _             <- IO(assert(describedAcls.isEmpty))
+              _ <- IO(assert(describedAcls.isEmpty))
 
               aclEntry = new AccessControlEntry(
-                           "User:ANONYMOUS",
-                           "*",
-                           AclOperation.DESCRIBE,
-                           AclPermissionType.ALLOW
-                         )
-              pattern    = new ResourcePattern(ResourceType.TOPIC, topic, PatternType.LITERAL)
-              acl        = new AclBinding(pattern, aclEntry)
-              _         <- adminClient.createAcls(List(acl))
+                "User:ANONYMOUS",
+                "*",
+                AclOperation.DESCRIBE,
+                AclPermissionType.ALLOW
+              )
+              pattern = new ResourcePattern(ResourceType.TOPIC, topic, PatternType.LITERAL)
+              acl = new AclBinding(pattern, aclEntry)
+              _ <- adminClient.createAcls(List(acl))
               foundAcls <- adminClient.describeAcls(AclBindingFilter.ANY)
-              _         <- IO(assert(foundAcls.length == 1))
-              _         <- IO(assert(foundAcls.head.pattern() === pattern))
+              _ <- IO(assert(foundAcls.length == 1))
+              _ <- IO(assert(foundAcls.head.pattern() === pattern))
 
               // delete another Entry
               _ <- adminClient.deleteAcls(
-                     List(
-                       new AclBindingFilter(
-                         ResourcePatternFilter.ANY,
-                         new AccessControlEntryFilter(
-                           "User:ANONYMOUS",
-                           "*",
-                           AclOperation.WRITE,
-                           AclPermissionType.ALLOW
-                         )
-                       )
-                     )
-                   )
+                List(
+                  new AclBindingFilter(
+                    ResourcePatternFilter.ANY,
+                    new AccessControlEntryFilter(
+                      "User:ANONYMOUS",
+                      "*",
+                      AclOperation.WRITE,
+                      AclPermissionType.ALLOW
+                    )
+                  )
+                )
+              )
               foundAcls <- adminClient.describeAcls(AclBindingFilter.ANY)
-              _         <- IO(assert(foundAcls.length == 1))
+              _ <- IO(assert(foundAcls.length == 1))
 
-              _         <- adminClient.deleteAcls(List(AclBindingFilter.ANY))
+              _ <- adminClient.deleteAcls(List(AclBindingFilter.ANY))
               foundAcls <- adminClient.describeAcls(AclBindingFilter.ANY)
-              _         <- IO(assert(foundAcls.isEmpty))
+              _ <- IO(assert(foundAcls.isEmpty))
             } yield ()
           }
           .unsafeRunSync()
@@ -353,20 +342,20 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
           .resource[IO](adminClientSettings)
           .use { adminClient =>
             for {
-              nodes       <- adminClient.describeCluster.nodes
-              brokerId    <- IO(nodes.head.id)
-              logDirs     <- adminClient.describeLogDirs(List(brokerId))
-              _           <- IO(assert(logDirs.nonEmpty))
-              _           <- IO(assert(logDirs.get(brokerId).exists(_.nonEmpty)))
-              replica      = new TopicPartitionReplica(topic, 0, brokerId)
+              nodes <- adminClient.describeCluster.nodes
+              brokerId <- IO(nodes.head.id)
+              logDirs <- adminClient.describeLogDirs(List(brokerId))
+              _ <- IO(assert(logDirs.nonEmpty))
+              _ <- IO(assert(logDirs.get(brokerId).exists(_.nonEmpty)))
+              replica = new TopicPartitionReplica(topic, 0, brokerId)
               replicaDirs <- adminClient.describeReplicaLogDirs(List(replica))
-              _           <- IO(assert(replicaDirs.contains(replica)))
-              alterDirs   <-
+              _ <- IO(assert(replicaDirs.contains(replica)))
+              alterDirs <-
                 adminClient.alterReplicaLogDirs(Map(replica -> "/nonexistent-log-dir")).attempt
             } yield {
               alterDirs match {
                 case Left(_: LogDirNotFoundException) => succeed
-                case other                            =>
+                case other =>
                   fail(s"expected alterReplicaLogDirs to fail for invalid log directory but got: $other")
               }
             }
@@ -385,15 +374,15 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
               val tp = new TopicPartition(topic, 0)
               for {
                 offsets <- adminClient.listOffsets(
-                             Map(tp -> OffsetSpec.latest()),
-                             KafkaIsolationLevel.READ_COMMITTED
-                           )
-                _            <- IO(assert(offsets(tp).offset() > 0L))
+                  Map(tp -> OffsetSpec.latest()),
+                  KafkaIsolationLevel.READ_COMMITTED
+                )
+                _ <- IO(assert(offsets(tp).offset() > 0L))
                 beforeDelete <-
                   IO.blocking(consumer.beginningOffsets(List(tp).asJava)).map(_.asScala)
                 _ <- adminClient.deleteRecords(
-                       Map(tp -> RecordsToDelete.beforeOffset(offsets(tp).offset()))
-                     )
+                  Map(tp -> RecordsToDelete.beforeOffset(offsets(tp).offset()))
+                )
                 afterDelete <-
                   IO.blocking(consumer.beginningOffsets(List(tp).asJava)).map(_.asScala)
               } yield assert(beforeDelete(tp) < afterDelete(tp))
@@ -412,14 +401,14 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
           .use { adminClient =>
             val tp = new TopicPartition(topic, 0)
             for {
-              nodes         <- adminClient.describeCluster.nodes
-              brokerId      <- IO(nodes.head.id)
-              all           <- adminClient.listPartitionReassignments(None)
-              filtered      <- adminClient.listPartitionReassignments(Some(Set(tp)))
-              _             <- IO(assert(all == Map.empty))
-              _             <- IO(assert(filtered == Map.empty))
+              nodes <- adminClient.describeCluster.nodes
+              brokerId <- IO(nodes.head.id)
+              all <- adminClient.listPartitionReassignments(None)
+              filtered <- adminClient.listPartitionReassignments(Some(Set(tp)))
+              _ <- IO(assert(all == Map.empty))
+              _ <- IO(assert(filtered == Map.empty))
               targetReplicas = new NewPartitionReassignment(List(Integer.valueOf(brokerId)).asJava)
-              _             <- adminClient.alterPartitionReassignments(Map(tp -> Some(targetReplicas)))
+              _ <- adminClient.alterPartitionReassignments(Map(tp -> Some(targetReplicas)))
             } yield ()
           }
           .unsafeRunSync()
@@ -433,40 +422,42 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
           .resource[IO](adminClientSettings)
           .use { adminClient =>
             val qClientId = s"fs2-kafka-quota-$topic"
-            val byteRate  = 1048576.0
+            val byteRate = 1048576.0
             // User + client-id matches PLAINTEXT / StandardAuthorizer.
             val quotaMap = Map(
-              ClientQuotaEntity.USER      -> "User:ANONYMOUS",
+              ClientQuotaEntity.USER -> "User:ANONYMOUS",
               ClientQuotaEntity.CLIENT_ID -> qClientId
             ).asJava
-            val metaFeature     = "metadata.version"
-            val quotaEntity     = new ClientQuotaEntity(quotaMap)
-            val quotaOp         = new ClientQuotaAlteration.Op("producer_byte_rate", byteRate)
+            val metaFeature = "metadata.version"
+            val quotaEntity = new ClientQuotaEntity(quotaMap)
+            val quotaOp = new ClientQuotaAlteration.Op("producer_byte_rate", byteRate)
             val quotaAlteration = new ClientQuotaAlteration(quotaEntity, List(quotaOp).asJava)
-            val quotaFilter     =
+            val quotaFilter =
               ClientQuotaFilterComponent.ofEntity(ClientQuotaEntity.CLIENT_ID, qClientId)
             val describeFilter = ClientQuotaFilter.contains(List(quotaFilter).asJava)
             for {
               _ <- adminClient.alterClientQuotas(List(quotaAlteration))
               _ <- Stream
-                     .awakeEvery[IO](500.millis)
-                     .evalMap(_ => adminClient.describeClientQuotas(describeFilter))
-                     .map(_.get(quotaEntity).flatMap(_.get("producer_byte_rate")))
-                     .collect { case Some(quota) => quota }
-                     .filter(_ == byteRate)
-                     .take(1)
-                     .interruptAfter(30.seconds)
-                     .compile
-                     .drain
-              _       <- adminClient.describeUserScramCredentials(None) // no assertion other than we can make the call
+                .awakeEvery[IO](500.millis)
+                .evalMap(_ => adminClient.describeClientQuotas(describeFilter))
+                .map(_.get(quotaEntity).flatMap(_.get("producer_byte_rate")))
+                .collect { case Some(quota) => quota }
+                .filter(_ == byteRate)
+                .take(1)
+                .interruptAfter(30.seconds)
+                .compile
+                .drain
+              _ <- adminClient.describeUserScramCredentials(
+                None
+              ) // no assertion other than we can make the call
               feature <-
                 adminClient.describeFeatures.map(_.supportedFeatures().asScala(metaFeature))
-              update     = new FeatureUpdate(feature.maxVersion(), FeatureUpdate.UpgradeType.UPGRADE)
-              _         <- adminClient.updateFeatures(Map(metaFeature -> update), true)
-              quorum    <- adminClient.describeMetadataQuorum
-              _         <- IO(assert(quorum.leaderId() >= 0))
+              update = new FeatureUpdate(feature.maxVersion(), FeatureUpdate.UpgradeType.UPGRADE)
+              _ <- adminClient.updateFeatures(Map(metaFeature -> update), true)
+              quorum <- adminClient.describeMetadataQuorum
+              _ <- IO(assert(quorum.leaderId() >= 0))
               resources <- adminClient.listConfigResources
-              _         <- IO(assert(resources.nonEmpty))
+              _ <- IO(assert(resources.nonEmpty))
             } yield ()
           }
           .unsafeRunSync()
@@ -477,9 +468,9 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
       withTopic { topic =>
         commonSetup(topic)
 
-        val renewers    = List(KafkaPrincipal.ANONYMOUS)
+        val renewers = List(KafkaPrincipal.ANONYMOUS)
         val maxLifetime = Some(1.hour)
-        val badHmac     = Chunk[Byte](0)
+        val badHmac = Chunk[Byte](0)
         KafkaAdminClient
           .resource[IO](adminClientSettings)
           .use { adminClient =>
@@ -488,20 +479,20 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
             for {
               createResult <-
                 adminClient.createDelegationToken(renewers, owner = None, maxLifetime).attempt
-              renewResult  <- adminClient.renewDelegationToken(badHmac, None).attempt
+              renewResult <- adminClient.renewDelegationToken(badHmac, None).attempt
               expireResult <- adminClient.expireDelegationToken(badHmac, None).attempt
             } yield {
               createResult match {
                 case Left(_: UnsupportedByAuthenticationException) => succeed
-                case other                                         => fail(s"expected createDelegationToken to fail but got: $other")
+                case other => fail(s"expected createDelegationToken to fail but got: $other")
               }
               renewResult match {
                 case Left(_: UnsupportedByAuthenticationException) => succeed
-                case other                                         => fail(s"expected createDelegationToken to fail but got: $other")
+                case other => fail(s"expected createDelegationToken to fail but got: $other")
               }
               expireResult match {
                 case Left(_: UnsupportedByAuthenticationException) => succeed
-                case other                                         => fail(s"expected createDelegationToken to fail but got: $other")
+                case other => fail(s"expected createDelegationToken to fail but got: $other")
               }
             }
           }
@@ -510,7 +501,7 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
     }
 
     it("should support removeMembersFromConsumerGroup") {
-      val groupID    = defaultConsumerProperties(ConsumerConfig.GROUP_ID_CONFIG)
+      val groupID = defaultConsumerProperties(ConsumerConfig.GROUP_ID_CONFIG)
       val instanceID = "my-instance-id"
       withKafkaConsumer(
         defaultConsumerProperties + (ConsumerConfig.GROUP_INSTANCE_ID_CONFIG -> instanceID)
@@ -521,14 +512,13 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
             .resource[IO](adminClientSettings)
             .use { adminClient =>
               for {
-                _            <- IO.blocking(consumer.subscribe(topic.pure[List].asJava))
-                _            <- IO.blocking(consumer.poll(time.Duration.ofMillis(100)))
+                _ <- IO.blocking(consumer.subscribe(topic.pure[List].asJava))
+                _ <- IO.blocking(consumer.poll(time.Duration.ofMillis(100)))
                 groupMembers <-
                   adminClient.describeConsumerGroups(List(groupID)).map(_(groupID)).map(_.members())
-                toRemove = groupMembers
-                             .asScala
-                             .map(member => new MemberToRemove(member.groupInstanceId().get))
-                             .toList
+                toRemove = groupMembers.asScala
+                  .map(member => new MemberToRemove(member.groupInstanceId().get))
+                  .toList
                 _ <- IO.delay(assert(groupMembers.size == 1))
                 _ <-
                   adminClient.removeMembersFromConsumerGroup[List](groupID, toRemove, reason = None)
@@ -549,35 +539,35 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
         val tp = new TopicPartition(topic, 0)
         (for {
           producer <- KafkaProducer.transactional[IO, Unit, Unit](
-                        ProducerSettings[IO, Unit, Unit]
-                          .withProperties(defaultConsumerProperties)
-                          .withTransactionalId(transactionID)
-                      )
+            ProducerSettings[IO, Unit, Unit]
+              .withProperties(defaultConsumerProperties)
+              .withTransactionalId(transactionID)
+          )
           adminClient <- KafkaAdminClient.resource[IO](adminClientSettings)
-          _           <- producer.transaction // start transaction so that it can be managed
-          _           <- producer             // await the ack so the transaction is ongoing
-                 .produce(
-                   Chunk.singleton(ProducerRecord(tp.topic(), (), ()).withPartition(tp.partition()))
-                 )
-                 .flatten
-                 .toResource
+          _ <- producer.transaction // start transaction so that it can be managed
+          _ <- producer // await the ack so the transaction is ongoing
+            .produce(
+              Chunk.singleton(ProducerRecord(tp.topic(), (), ()).withPartition(tp.partition()))
+            )
+            .flatten
+            .toResource
         } yield (producer, adminClient))
           .use { case (_, adminClient) =>
             for {
-              listed       <- adminClient.listTransactions(None, None, None)
-              _            <- IO(assert(listed.exists(_.transactionalId() == transactionID)))
-              myTx          = listed.find(_.transactionalId() == transactionID).get
+              listed <- adminClient.listTransactions(None, None, None)
+              _ <- IO(assert(listed.exists(_.transactionalId() == transactionID)))
+              myTx = listed.find(_.transactionalId() == transactionID).get
               filteredList <- adminClient.listTransactions(
-                                Set(myTx.state()).some,
-                                Set(myTx.producerId()).some,
-                                0L.some
-                              )
-              _         <- IO(assert(filteredList.exists(_.transactionalId() == transactionID)))
+                Set(myTx.state()).some,
+                Set(myTx.producerId()).some,
+                0L.some
+              )
+              _ <- IO(assert(filteredList.exists(_.transactionalId() == transactionID)))
               described <- adminClient.describeTransactions[List](transactionID.pure[List])
-              _         <- IO(assert(described.contains(transactionID)))
+              _ <- IO(assert(described.contains(transactionID)))
               producers <- adminClient.describeProducers(tp.some, none)
-              _         <- IO(assert(producers.size == 1))
-              _         <- adminClient.fenceProducers[List](myTx.transactionalId().pure[List])
+              _ <- IO(assert(producers.size == 1))
+              _ <- adminClient.fenceProducers[List](myTx.transactionalId().pure[List])
             } yield ()
           }
           .attempt
@@ -586,7 +576,7 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
             // When it does it attempts to commit the transaction but since the producer was fenced it should fail
             // We assert that the failure does happen.
             case Left(_: ProducerFencedException) => succeed.pure[IO]
-            case other                            =>
+            case other =>
               IO(
                 fail(
                   s"expected ProducerFencedException when deallocating transaction but got: $other"
@@ -625,34 +615,32 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
           } yield (producer, adminClient))
             .use { case (producer, adminClient) =>
               for {
-                _ <- producer
-                       .transaction
-                       .use { _ =>
-                         for {
-                           _ <- producer
-                                  .produce(
-                                    Chunk.singleton(
-                                      ProducerRecord(
-                                        tp.topic(),
-                                        "records01-aborted-tx",
-                                        "records01-aborted-tx"
-                                      ).withPartition(tp.partition())
-                                    )
-                                  )
-                                  .flatten
-                           producers <- adminClient.describeProducers(tp.some, none)
-                           myProducer = producers.headOption.get._2.activeProducers().asScala.head
-                           _         <- adminClient.abortTransaction(
-                                  tp,
-                                  myProducer.producerId(),
-                                  myProducer.producerEpoch().toShort,
-                                  myProducer.coordinatorEpoch().orElse(-1)
-                                )
-                         } yield ()
-                       }
+                _ <- producer.transaction
+                  .use { _ =>
+                    for {
+                      _ <- producer
+                        .produce(
+                          Chunk.singleton(
+                            ProducerRecord(
+                              tp.topic(),
+                              "records01-aborted-tx",
+                              "records01-aborted-tx"
+                            ).withPartition(tp.partition())
+                          )
+                        )
+                        .flatten
+                      producers <- adminClient.describeProducers(tp.some, none)
+                      myProducer = producers.headOption.get._2.activeProducers().asScala.head
+                      _ <- adminClient.abortTransaction(
+                        tp,
+                        myProducer.producerId(),
+                        myProducer.producerEpoch().toShort,
+                        myProducer.coordinatorEpoch().orElse(-1)
+                      )
+                    } yield ()
+                  }
                 _ <-
-                  producer
-                    .transaction
+                  producer.transaction
                     .use { _ =>
                       producer
                         .produce(
@@ -668,7 +656,7 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
                         )
                         .flatten
                     }
-                _        <- IO.blocking(consumer.assign(List(tp).asJava))
+                _ <- IO.blocking(consumer.assign(List(tp).asJava))
                 elements <-
                   Stream
                     .repeatEval(IO.blocking(consumer.poll(java.time.Duration.ofMillis(2000))))
@@ -694,17 +682,16 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
             val tp = new TopicPartition(topic, 0)
             for {
               elected <- adminClient.electLeaders(ElectionType.PREFERRED, Set(tp)).attempt
-              _       <- IO {
-                     elected match {
-                       case Left(e: ElectionNotNeededException) =>
-                         assert(
-                           Option(e.getMessage).exists(msg =>
-                             msg.contains("not needed") || msg.contains("election")
-                           )
-                         )
-                       case other => fail(s"expected specific failure but got: $other")
-                     }
-                   }
+              _ <- IO {
+                elected match {
+                  case Left(e: ElectionNotNeededException) =>
+                    assert(
+                      Option(e.getMessage)
+                        .exists(msg => msg.contains("not needed") || msg.contains("election"))
+                    )
+                  case other => fail(s"expected specific failure but got: $other")
+                }
+              }
             } yield ()
           }
           .unsafeRunSync()
@@ -720,8 +707,8 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
           .use { adminClient =>
             for {
               _ <- IO {
-                     adminClient.toString should startWith("KafkaAdminClient$")
-                   }
+                adminClient.toString should startWith("KafkaAdminClient$")
+              }
             } yield ()
           }
           .unsafeRunSync()
@@ -737,7 +724,7 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
         .use { adminClient =>
           for {
             metrics <- adminClient.metrics
-            _       <- IO(assert(metrics.nonEmpty))
+            _ <- IO(assert(metrics.nonEmpty))
           } yield ()
         }
         .unsafeRunSync()
@@ -761,11 +748,5 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
       .lastOrError
       .unsafeRunSync()
   }
-
-  def eventually[A](check: IO[A], attempts: Int = 100): IO[A] =
-    check.handleErrorWith { error =>
-      if (attempts > 1) IO.sleep(100.millis) >> eventually(check, attempts - 1)
-      else IO.raiseError(error)
-    }
 
 }

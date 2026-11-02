@@ -6,12 +6,11 @@
 
 package fs2.kafka
 
-import cats.~>
-import cats.syntax.all.*
 import cats.Eq
 import cats.Show
+import cats.syntax.all.*
+import cats.~>
 import fs2.kafka.instances.*
-
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.TopicPartition
 

@@ -7,15 +7,15 @@
 package fs2.kafka.producer
 
 import cats.effect.Sync
-import fs2.kafka.{KafkaByteProducer, ProducerSettings}
+import fs2.kafka.KafkaByteProducer
+import fs2.kafka.ProducerSettings
 import fs2.kafka.internal.converters.collection.*
-
 import org.apache.kafka.common.serialization.ByteArraySerializer
 
 /**
   * A capability trait representing the ability to instantiate the Java `Producer` that underlies
   * the fs2-kafka `KafkaProducer`. This is needed in order to instantiate
-  * [[fs2.kafka.KafkaProducer]] and [[fs2.kafka.TransactionalKafkaProducer]].<br><br>
+  * [[fs2.kafka.KafkaProducer]].<br><br>
   *
   * By default, the instance provided by [[MkProducer.mkProducerForSync]] will be used. However,
   * this behaviour can be overridden, e.g. for testing purposes, by placing an alternative implicit

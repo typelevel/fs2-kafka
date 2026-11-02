@@ -7,9 +7,8 @@
 package fs2.kafka.admin
 
 import cats.effect.Sync
-import fs2.kafka.internal.converters.collection.*
 import fs2.kafka.AdminClientSettings
-
+import fs2.kafka.internal.converters.collection.*
 import org.apache.kafka.clients.admin.AdminClient
 
 /**

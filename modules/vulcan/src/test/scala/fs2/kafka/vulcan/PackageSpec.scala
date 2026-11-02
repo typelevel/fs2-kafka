@@ -6,16 +6,15 @@
 
 package fs2.kafka.vulcan
 
-import java.time.Instant
-
-import cats.effect.unsafe.implicits.global
+import _root_.vulcan.Codec
 import cats.effect.IO
 import cats.syntax.all.*
 import fs2.kafka.*
-
-import _root_.vulcan.Codec
 import io.confluent.kafka.schemaregistry.client.MockSchemaRegistryClient
+import java.time.Instant
 import org.scalatest.funspec.AnyFunSpec
+
+import cats.effect.unsafe.implicits.global
 
 final class PackageSpec extends AnyFunSpec {
 
@@ -43,7 +42,7 @@ final class PackageSpec extends AnyFunSpec {
           val test = Test("test")
 
           for {
-            serialized   <- serializer.serialize("topic", Headers.empty, Left(test))
+            serialized <- serializer.serialize("topic", Headers.empty, Left(test))
             deserialized <- deserializer.deserialize("topic", Headers.empty, serialized)
           } yield assert(deserialized == Left(test))
         }
@@ -58,7 +57,7 @@ final class PackageSpec extends AnyFunSpec {
         .use { case (serializer, deserializer) =>
           val test2 = Test2("test", 42)
           for {
-            serialized   <- serializer.serialize("topic2", Headers.empty, test2)
+            serialized <- serializer.serialize("topic2", Headers.empty, test2)
             deserialized <- deserializer.deserialize("topic2", Headers.empty, serialized)
           } yield assert(deserialized == Test("test"))
         }
@@ -74,7 +73,7 @@ final class PackageSpec extends AnyFunSpec {
           val rawLong = 42L
 
           for {
-            serialized   <- serializer.serialize("topic3", Headers.empty, rawLong)
+            serialized <- serializer.serialize("topic3", Headers.empty, rawLong)
             deserialized <- deserializer.deserialize("topic3", Headers.empty, serialized).attempt
           } yield assert(deserialized.isLeft)
         }

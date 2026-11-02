@@ -6,7 +6,8 @@
 
 package fs2.kafka.consumer
 
-import org.apache.kafka.common.{Metric, MetricName}
+import org.apache.kafka.common.Metric
+import org.apache.kafka.common.MetricName
 
 trait KafkaMetrics[F[_]] {
 

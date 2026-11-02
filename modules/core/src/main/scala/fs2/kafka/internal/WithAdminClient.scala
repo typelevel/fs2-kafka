@@ -6,12 +6,13 @@
 
 package fs2.kafka.internal
 
-import cats.effect.{Async, Resource, Sync}
+import cats.effect.Async
+import cats.effect.Resource
+import cats.effect.Sync
 import cats.syntax.all.*
+import fs2.kafka.AdminClientSettings
 import fs2.kafka.admin.MkAdminClient
 import fs2.kafka.internal.syntax.*
-import fs2.kafka.AdminClientSettings
-
 import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.common.KafkaFuture
 

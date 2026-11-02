@@ -6,16 +6,14 @@
 
 package fs2.kafka
 
-import scala.concurrent.duration.*
-import scala.concurrent.ExecutionContext
-import scala.util.Try
-
-import cats.effect.Resource
 import cats.Show
+import cats.effect.Resource
 import fs2.kafka.security.KafkaCredentialStore
-
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.common.requests.OffsetFetchResponse
+import scala.concurrent.ExecutionContext
+import scala.concurrent.duration.*
+import scala.util.Try
 
 /**
   * [[ConsumerSettings]] contain settings necessary to create a [[KafkaConsumer]]. At the very
@@ -63,8 +61,8 @@ sealed abstract class ConsumerSettings[F[_], K, V] {
   def customBlockingContext: Option[ExecutionContext]
 
   /**
-    * Returns a new [[ConsumerSettings]] instance with the specified [[ExecutionContext]] to use for
-    * blocking operations.
+    * Returns a new [[ConsumerSettings]] instance with the specified
+    * [[scala.concurrent.ExecutionContext]] to use for blocking operations.
     *
     * Because the underlying Java consumer is not thread-safe, the ExecutionContext *must* be
     * single-threaded. If in doubt, leave this unset so that a default single-threaded blocker will
@@ -159,7 +157,7 @@ sealed abstract class ConsumerSettings[F[_], K, V] {
     * ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG
     * }}}
     *
-    * Returns a value as a [[FiniteDuration]] for convenience
+    * Returns a value as a [[scala.concurrent.duration.FiniteDuration]] for convenience
     */
   def sessionTimeout: FiniteDuration
 
@@ -381,7 +379,8 @@ sealed abstract class ConsumerSettings[F[_], K, V] {
   def withMaxPrefetchBatches(maxPrefetchBatches: Int): ConsumerSettings[F, K, V]
 
   /**
-    * Includes the credentials properties from the provided [[KafkaCredentialStore]]
+    * Includes the credentials properties from the provided
+    * [[fs2.kafka.security.KafkaCredentialStore]]
     */
   def withCredentials(credentialsStore: KafkaCredentialStore): ConsumerSettings[F, K, V]
 
@@ -400,7 +399,7 @@ sealed abstract class ConsumerSettings[F[_], K, V] {
     * Sets the maximum number of parallel consumption streams.
     *
     * @see
-    *   [[KafkaConsumeGrouped.groupedPartitionsMapStream]]
+    *   [[fs2.kafka.consumer.KafkaConsumeGrouped#groupedPartitionsMapStream]]
     */
   def withMaxParallelism(maxParallelism: Int): ConsumerSettings[F, K, V]
 
@@ -410,7 +409,7 @@ sealed abstract class ConsumerSettings[F[_], K, V] {
     * The default is `Int.MaxValue` (unbounded consumption streams).
     *
     * @see
-    *   [[KafkaConsumeGrouped.groupedPartitionsMapStream]]
+    *   [[fs2.kafka.consumer.KafkaConsumeGrouped#groupedPartitionsMapStream]]
     */
   def maxParallelism: Int
 
@@ -466,8 +465,8 @@ object ConsumerSettings {
         ConsumerConfig.AUTO_OFFSET_RESET_CONFIG,
         autoOffsetReset match {
           case AutoOffsetReset.EarliestOffsetReset => "earliest"
-          case AutoOffsetReset.LatestOffsetReset   => "latest"
-          case AutoOffsetReset.NoneOffsetReset     => "none"
+          case AutoOffsetReset.LatestOffsetReset => "latest"
+          case AutoOffsetReset.NoneOffsetReset => "none"
         }
       )
 
@@ -531,7 +530,7 @@ object ConsumerSettings {
       withProperty(
         ConsumerConfig.ISOLATION_LEVEL_CONFIG,
         isolationLevel match {
-          case IsolationLevel.ReadCommittedIsolationLevel   => "read_committed"
+          case IsolationLevel.ReadCommittedIsolationLevel => "read_committed"
           case IsolationLevel.ReadUncommittedIsolationLevel => "read_uncommitted"
         }
       )
@@ -613,7 +612,7 @@ object ConsumerSettings {
       keyDeserializer = keyDeserializer,
       valueDeserializer = valueDeserializer,
       properties = Map(
-        ConsumerConfig.AUTO_OFFSET_RESET_CONFIG  -> "none",
+        ConsumerConfig.AUTO_OFFSET_RESET_CONFIG -> "none",
         ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG -> "false"
       ),
       closeTimeout = 20.seconds,

@@ -6,24 +6,28 @@
 
 package fs2.kafka
 
-import scala.annotation.nowarn
-import scala.concurrent.Promise
-
-import cats.{Apply, Functor, Parallel}
-import cats.~>
+import cats.Apply
+import cats.Functor
+import cats.Parallel
 import cats.effect.*
+import cats.effect.Resource.ExitCase
 import cats.effect.std.Semaphore
 import cats.effect.syntax.all.*
-import cats.effect.Resource.ExitCase
 import cats.syntax.all.*
+import cats.~>
 import fs2.*
 import fs2.kafka.internal.*
 import fs2.kafka.internal.converters.collection.*
 import fs2.kafka.producer.MkProducer
-
-import org.apache.kafka.clients.consumer.{ConsumerGroupMetadata, OffsetAndMetadata}
+import org.apache.kafka.clients.consumer.ConsumerGroupMetadata
+import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.clients.producer.RecordMetadata
-import org.apache.kafka.common.{Metric, MetricName, PartitionInfo, TopicPartition}
+import org.apache.kafka.common.Metric
+import org.apache.kafka.common.MetricName
+import org.apache.kafka.common.PartitionInfo
+import org.apache.kafka.common.TopicPartition
+import scala.annotation.nowarn
+import scala.concurrent.Promise
 
 /**
   * [[KafkaProducer]] represents a producer of Kafka records, with the ability to produce
@@ -210,8 +214,7 @@ object KafkaProducer {
 
   }
 
-  implicit class ProducerOps[F[_], K, V](private val producer: KafkaProducer[F, K, V])
-      extends AnyVal {
+  implicit class ProducerOps[F[_], K, V](private val producer: KafkaProducer[F, K, V]) extends AnyVal {
 
     /**
       * Produce a single [[ProducerRecord]], see [[KafkaProducer.produce]] for general semantics.
@@ -281,7 +284,7 @@ object KafkaProducer {
   ): Resource[F, KafkaProducer.WithSettings[F, K, V]] = {
     for {
       producer <- KafkaProducer.resource(settings)(F, mk, P)
-      _        <- producer.initTransactions.toResource
+      _ <- producer.initTransactions.toResource
     } yield producer
   }
 
@@ -338,22 +341,22 @@ object KafkaProducer {
     P: Parallel[F]
   ): Resource[F, KafkaProducer.WithSettings[F, K, V]] = {
     for {
-      keySerializer   <- settings.keySerializer
+      keySerializer <- settings.keySerializer
       valueSerializer <- settings.valueSerializer
-      producer        <- mk(settings).toResource
-      semaphore       <- Semaphore(1).toResource
-      blocking         =
+      producer <- mk(settings).toResource
+      semaphore <- Semaphore(1).toResource
+      blocking =
         settings.customBlockingContext.fold(Blocking.fromSync[F])(Blocking.fromExecutionContext)
-      close            = blocking(producer.close(java.time.Duration.ofMillis(settings.closeTimeout.toMillis)))
-      _               <- Resource.onFinalize(close)
+      close = blocking(producer.close(java.time.Duration.ofMillis(settings.closeTimeout.toMillis)))
+      _ <- Resource.onFinalize(close)
       fs2KafkaProducer = resourceInternal[F, K, V](
-                           settings,
-                           keySerializer,
-                           valueSerializer,
-                           producer,
-                           semaphore,
-                           blocking
-                         )
+        settings,
+        keySerializer,
+        valueSerializer,
+        producer,
+        semaphore,
+        blocking
+      )
     } yield fs2KafkaProducer
   }
 
@@ -389,16 +392,16 @@ object KafkaProducer {
 
       override def transaction: Resource[F, Unit] = {
         val acquireTx = blocking(producer.beginTransaction())
-        val commitTx  = blocking(producer.commitTransaction())
-        val abortTx   = blocking(producer.abortTransaction())
+        val commitTx = blocking(producer.commitTransaction())
+        val abortTx = blocking(producer.abortTransaction())
 
         for {
           _ <- txSemaphore.permit
           _ <- Resource.makeCase(acquireTx) {
-                 case (_, ExitCase.Succeeded)  => commitTx
-                 case (_, ExitCase.Canceled)   => abortTx
-                 case (_, ExitCase.Errored(e)) => abortTx >> e.raiseError[F, Unit]
-               }
+            case (_, ExitCase.Succeeded) => commitTx
+            case (_, ExitCase.Canceled) => abortTx
+            case (_, ExitCase.Errored(e)) => abortTx >> e.raiseError[F, Unit]
+          }
         } yield ()
       }
 
@@ -413,15 +416,15 @@ object KafkaProducer {
       ): F[ProducerResult[K, V]] = {
         if (records.isEmpty) F.pure(Chunk.empty)
         else {
-          val batch   = CommittableOffsetBatch.fromFoldableMap(records)(_.offset)
+          val batch = CommittableOffsetBatch.fromFoldableMap(records)(_.offset)
           val offsets = Chunk.from(batch.offsets.toVector)
           transaction.surround {
             offsets.parFlatTraverse { case (committer, offsets) =>
               for {
-                metadata       <- committer.metadata
+                metadata <- committer.metadata
                 producerRecords = records.filter(_.offset.committer == committer).flatMap(_.records)
-                result         <- produce(producerRecords).flatten
-                _              <- sendOffsetsToTransaction(offsets, metadata)
+                result <- produce(producerRecords).flatten
+                _ <- sendOffsetsToTransaction(offsets, metadata)
               } yield result
             }
           }
@@ -540,8 +543,7 @@ object KafkaProducer {
   def apply[F[_]]: ProducerPartiallyApplied[F] =
     new ProducerPartiallyApplied
 
-  final private[kafka] class ProducerPartiallyApplied[F[_]](val dummy: Boolean = true)
-      extends AnyVal {
+  final private[kafka] class ProducerPartiallyApplied[F[_]](val dummy: Boolean = true) extends AnyVal {
 
     /**
       * Alternative version of `resource` where the `F[_]` is specified explicitly, and where the
@@ -585,11 +587,11 @@ object KafkaProducer {
    * to code defined in this object, ensuring factory methods require an instance
    * to be provided at the call site.
    */
-  @nowarn("msg=never used")
+  @nowarn("msg=never used|unused private member")
   implicit private def mkAmbig1[F[_]]: MkProducer[F] =
     throw new AssertionError("should not be used")
 
-  @nowarn("msg=never used")
+  @nowarn("msg=never used|unused private member")
   implicit private def mkAmbig2[F[_]]: MkProducer[F] =
     throw new AssertionError("should not be used")
 

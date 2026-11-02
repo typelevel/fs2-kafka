@@ -6,20 +6,19 @@
 
 package fs2.kafka.internal
 
-import java.util.regex.Pattern
-
-import scala.collection.immutable.SortedSet
-
-import cats.data.{NonEmptyList, NonEmptySet}
+import cats.data.NonEmptyList
+import cats.data.NonEmptySet
 import cats.syntax.all.*
-import fs2.kafka.instances.*
-import fs2.kafka.internal.actor.{PartitionGroupState, State}
-import fs2.kafka.internal.syntax.*
-import fs2.kafka.internal.LogLevel.*
 import fs2.kafka.CommittableConsumerRecord
-
+import fs2.kafka.instances.*
+import fs2.kafka.internal.LogLevel.*
+import fs2.kafka.internal.actor.PartitionGroupState
+import fs2.kafka.internal.actor.State
+import fs2.kafka.internal.syntax.*
+import java.util.regex.Pattern
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.TopicPartition
+import scala.collection.immutable.SortedSet
 
 sealed abstract private[kafka] class LogEntry {
 
@@ -32,7 +31,7 @@ sealed abstract private[kafka] class LogEntry {
 private[kafka] object LogEntry {
 
   final case class SubscribedTopics[F[_]](topics: NonEmptyList[String], state: State[F, ?, ?])
-      extends LogEntry {
+    extends LogEntry {
 
     override def level: LogLevel = Debug
 
@@ -97,8 +96,7 @@ private[kafka] object LogEntry {
       var message = s"Revoked partition groups [${partitions.map(_.mkString(", ")).mkString(", ")}]"
 
       if (partitionState.nonEmpty) {
-        val withSpillover = partitionState
-          .view
+        val withSpillover = partitionState.view
           .filter(_._2.spillover.nonEmpty)
           .map(kv => kv._1 -> kv._2.spillover.flatMap(_.toList))
           .toMap
@@ -148,9 +146,7 @@ private[kafka] object LogEntry {
   def recordsString[F[_]](
     records: Map[Set[TopicPartition], List[CommittableConsumerRecord[F, ?, ?]]]
   ): String =
-    records
-      .values
-      .flatten
+    records.values.flatten
       .groupBy(_.offset.topicPartition)
       .toList
       .sortBy { case (tp, _) => tp }

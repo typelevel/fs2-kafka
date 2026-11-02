@@ -6,8 +6,13 @@
 
 package fs2.kafka
 
-import cats.{Applicative, Bitraverse, Eq, Eval, Foldable, Show, Traverse}
-import cats.~>
+import cats.Applicative
+import cats.Bitraverse
+import cats.Eq
+import cats.Eval
+import cats.Foldable
+import cats.Show
+import cats.Traverse
 import cats.syntax.bifoldable.*
 import cats.syntax.bitraverse.*
 import cats.syntax.eq.*
@@ -15,13 +20,14 @@ import cats.syntax.foldable.*
 import cats.syntax.functor.*
 import cats.syntax.show.*
 import cats.syntax.traverse.*
-import fs2.kafka.internal.syntax.*
+import cats.~>
 import fs2.Chunk
+import fs2.kafka.internal.syntax.*
 
 /**
   * [[CommittableProducerRecords]] represents zero or more [[ProducerRecord]]s and a
-  * [[CommittableOffset]], used by [[TransactionalKafkaProducer]] to produce the records and commit
-  * the offset atomically.<br><br>
+  * [[CommittableOffset]], used by a transactional [[KafkaProducer]] to produce the records and
+  * commit the offset atomically.<br><br>
   *
   * [[CommittableProducerRecords]]s can be created using one of the following options:<br>
   *   - `CommittableProducerRecords#apply` to produce zero or more records within the same
@@ -102,8 +108,7 @@ object CommittableProducerRecords {
       if (committable.records.isEmpty)
         show"CommittableProducerRecords(<empty>, ${committable.offset})"
       else
-        committable
-          .records
+        committable.records
           .mkStringShow(
             "CommittableProducerRecords(",
             ", ",
@@ -111,14 +116,12 @@ object CommittableProducerRecords {
           )
     }
 
-  implicit def committableProducerRecordsEq[F[_], K: Eq, V: Eq]
-    : Eq[CommittableProducerRecords[F, K, V]] =
+  implicit def committableProducerRecordsEq[F[_], K: Eq, V: Eq]: Eq[CommittableProducerRecords[F, K, V]] =
     Eq.instance { case (l, r) =>
       l.records === r.records && l.offset === r.offset
     }
 
-  implicit def committableProducerRecordsBitraverse[F[_]]
-    : Bitraverse[CommittableProducerRecords[F, *, *]] =
+  implicit def committableProducerRecordsBitraverse[F[_]]: Bitraverse[CommittableProducerRecords[F, *, *]] =
     new Bitraverse[CommittableProducerRecords[F, *, *]] {
 
       override def bitraverse[G[_], A, B, C, D](
@@ -126,8 +129,7 @@ object CommittableProducerRecords {
       )(f: A => G[C], g: B => G[D])(implicit
         G: Applicative[G]
       ): G[CommittableProducerRecords[F, C, D]] =
-        fab
-          .records
+        fab.records
           .traverse { record =>
             record.bitraverse(f, g)
           }
@@ -139,8 +141,7 @@ object CommittableProducerRecords {
         fab: CommittableProducerRecords[F, A, B],
         c: C
       )(f: (C, A) => C, g: (C, B) => C): C =
-        fab
-          .records
+        fab.records
           .foldLeft(c) { case (acc, record) =>
             record.bifoldLeft(acc)(f, g)
           }
@@ -149,16 +150,14 @@ object CommittableProducerRecords {
         fab: CommittableProducerRecords[F, A, B],
         c: Eval[C]
       )(f: (A, Eval[C]) => Eval[C], g: (B, Eval[C]) => Eval[C]): Eval[C] =
-        fab
-          .records
+        fab.records
           .foldRight(c) { case (record, acc) =>
             record.bifoldRight(acc)(f, g)
           }
 
     }
 
-  implicit def committableProducerRecordsTraverse[F[_], K]
-    : Traverse[CommittableProducerRecords[F, K, *]] =
+  implicit def committableProducerRecordsTraverse[F[_], K]: Traverse[CommittableProducerRecords[F, K, *]] =
     new Traverse[CommittableProducerRecords[F, K, *]] {
 
       override def traverse[G[_], A, B](

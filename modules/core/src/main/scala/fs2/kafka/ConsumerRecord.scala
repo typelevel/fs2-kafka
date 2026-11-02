@@ -6,12 +6,19 @@
 
 package fs2.kafka
 
-import cats.{Applicative, Apply, Bitraverse, Eq, Eval, Show, Traverse}
+import cats.Applicative
+import cats.Apply
+import cats.Bitraverse
+import cats.Eq
+import cats.Eval
+import cats.Show
+import cats.Traverse
 import cats.syntax.all.*
 import fs2.kafka.internal.syntax.*
-
-import org.apache.kafka.clients.consumer.ConsumerRecord.{NO_TIMESTAMP, NULL_SIZE}
-import org.apache.kafka.common.record.TimestampType.{CREATE_TIME, LOG_APPEND_TIME}
+import org.apache.kafka.clients.consumer.ConsumerRecord.NO_TIMESTAMP
+import org.apache.kafka.clients.consumer.ConsumerRecord.NULL_SIZE
+import org.apache.kafka.common.record.TimestampType.CREATE_TIME
+import org.apache.kafka.common.record.TimestampType.LOG_APPEND_TIME
 
 /**
   * [[ConsumerRecord]] represents a record which has been consumed from Kafka. At the very least,
@@ -145,15 +152,15 @@ object ConsumerRecord {
       b.append(", key = ").append(key)
       b.append(", value = ").append(value)
       if (headers.nonEmpty)
-        b.append(", headers = ").append(headers)
+        b.append(", headers = ").append(headers): Unit
       if (timestamp.nonEmpty)
-        b.append(", timestamp = ").append(timestamp)
+        b.append(", timestamp = ").append(timestamp): Unit
       if (serializedKeySize.nonEmpty)
-        b.append(", serializedKeySize = ").append(serializedKeySize.get)
+        b.append(", serializedKeySize = ").append(serializedKeySize.get): Unit
       if (serializedValueSize.nonEmpty)
-        b.append(", serializedValueSize = ").append(serializedValueSize.get)
+        b.append(", serializedValueSize = ").append(serializedValueSize.get): Unit
       if (leaderEpoch.nonEmpty)
-        b.append(", leaderEpoch = ").append(leaderEpoch.get)
+        b.append(", leaderEpoch = ").append(leaderEpoch.get): Unit
       b.append(")").toString
     }
 
@@ -194,7 +201,7 @@ object ConsumerRecord {
     keyDeserializer: KeyDeserializer[F, K],
     valueDeserializer: ValueDeserializer[F, V]
   )(implicit F: Apply[F]): F[(K, V)] = {
-    val key   = keyDeserializer.deserialize(record.topic, headers, record.key)
+    val key = keyDeserializer.deserialize(record.topic, headers, record.key)
     val value = valueDeserializer.deserialize(record.topic, headers, record.value)
     key.product(value)
   }
@@ -205,39 +212,38 @@ object ConsumerRecord {
     valueDeserializer: ValueDeserializer[F, V]
   )(implicit F: Apply[F]): F[ConsumerRecord[K, V]] = {
     val headers = record.headers.asScala
-    deserializeFromBytes(record, headers, keyDeserializer, valueDeserializer).map {
-      case (key, value) =>
-        ConsumerRecordImpl(
-          topic = record.topic,
-          partition = record.partition,
-          offset = record.offset,
-          key = key,
-          value = value,
-          headers = headers,
-          timestamp = {
-            if (record.timestamp != NO_TIMESTAMP) {
-              record.timestampType match {
-                case CREATE_TIME     => Timestamp.createTime(record.timestamp)
-                case LOG_APPEND_TIME => Timestamp.logAppendTime(record.timestamp)
-                case _               => Timestamp.unknownTime(record.timestamp)
-              }
-            } else {
-              Timestamp.none
+    deserializeFromBytes(record, headers, keyDeserializer, valueDeserializer).map { case (key, value) =>
+      ConsumerRecordImpl(
+        topic = record.topic,
+        partition = record.partition,
+        offset = record.offset,
+        key = key,
+        value = value,
+        headers = headers,
+        timestamp = {
+          if (record.timestamp != NO_TIMESTAMP) {
+            record.timestampType match {
+              case CREATE_TIME => Timestamp.createTime(record.timestamp)
+              case LOG_APPEND_TIME => Timestamp.logAppendTime(record.timestamp)
+              case _ => Timestamp.unknownTime(record.timestamp)
             }
-          },
-          serializedKeySize =
-            if (record.serializedKeySize != NULL_SIZE)
-              Some(record.serializedKeySize)
-            else None,
-          serializedValueSize =
-            if (record.serializedValueSize != NULL_SIZE)
-              Some(record.serializedValueSize)
-            else None,
-          leaderEpoch =
-            if (record.leaderEpoch.isPresent)
-              Some(record.leaderEpoch.get)
-            else None
-        )
+          } else {
+            Timestamp.none
+          }
+        },
+        serializedKeySize =
+          if (record.serializedKeySize != NULL_SIZE)
+            Some(record.serializedKeySize)
+          else None,
+        serializedValueSize =
+          if (record.serializedValueSize != NULL_SIZE)
+            Some(record.serializedValueSize)
+          else None,
+        leaderEpoch =
+          if (record.leaderEpoch.isPresent)
+            Some(record.leaderEpoch.get)
+          else None
+      )
     }
   }
 
@@ -250,15 +256,15 @@ object ConsumerRecord {
       b.append(", key = ").append(record.key.show)
       b.append(", value = ").append(record.value.show)
       if (record.headers.nonEmpty)
-        b.append(", headers = ").append(record.headers)
+        b.append(", headers = ").append(record.headers): Unit
       if (record.timestamp.nonEmpty)
-        b.append(", timestamp = ").append(record.timestamp)
+        b.append(", timestamp = ").append(record.timestamp): Unit
       if (record.serializedKeySize.nonEmpty)
-        b.append(", serializedKeySize = ").append(record.serializedKeySize.get)
+        b.append(", serializedKeySize = ").append(record.serializedKeySize.get): Unit
       if (record.serializedValueSize.nonEmpty)
-        b.append(", serializedValueSize = ").append(record.serializedValueSize.get)
+        b.append(", serializedValueSize = ").append(record.serializedValueSize.get): Unit
       if (record.leaderEpoch.nonEmpty)
-        b.append(", leaderEpoch = ").append(record.leaderEpoch.get)
+        b.append(", leaderEpoch = ").append(record.leaderEpoch.get): Unit
       b.append(")").toString
     }
 

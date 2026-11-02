@@ -14,7 +14,7 @@ import org.apache.kafka.common.KafkaException
   * starting.
   */
 sealed abstract class NotSubscribedException
-    extends KafkaException("consumer is not subscribed to any topics or assigned any partitions")
+  extends KafkaException("consumer is not subscribed to any topics or assigned any partitions")
 
 private[kafka] object NotSubscribedException {
 

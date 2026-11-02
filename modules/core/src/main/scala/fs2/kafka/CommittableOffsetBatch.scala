@@ -6,14 +6,13 @@
 
 package fs2.kafka
 
-import cats.syntax.all.*
 import cats.Eq
 import cats.Foldable
 import cats.Parallel
 import cats.Show
+import cats.syntax.all.*
 import fs2.kafka.instances.*
 import fs2.kafka.internal.syntax.*
-
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.TopicPartition
 
@@ -69,8 +68,7 @@ object CommittableOffsetBatch {
       else if (this.offsets.isEmpty) that
       else
         copy(
-          this.offsets ++ that
-            .offsets
+          this.offsets ++ that.offsets
             .map { case (committer, thatOffsets) =>
               (
                 committer,
@@ -81,7 +79,7 @@ object CommittableOffsetBatch {
                         topicPartition,
                         thisOffsets.get(topicPartition) match {
                           case Some(thisOffset) if thisOffset >= thatOffset => thisOffset
-                          case Some(_) | None                               => thatOffset
+                          case Some(_) | None => thatOffset
                         }
                       )
                     }
@@ -126,7 +124,7 @@ object CommittableOffsetBatch {
   ): CommittableOffsetBatch[F] = {
     offsets.foldLeft(empty) {
       case (batch, Some(offset)) => batch.updated(offset)
-      case (batch, None)         => batch
+      case (batch, None) => batch
     }
   }
 

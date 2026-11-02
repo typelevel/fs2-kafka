@@ -7,7 +7,8 @@
 package fs2.kafka
 
 import cats.kernel.laws.discipline.EqTests
-import cats.laws.discipline.{BitraverseTests, TraverseTests}
+import cats.laws.discipline.BitraverseTests
+import cats.laws.discipline.TraverseTests
 
 class ConsumerRecordLawsSpec extends BaseCatsSpec {
 

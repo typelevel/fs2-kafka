@@ -8,7 +8,6 @@ package fs2.kafka.internal
 
 import cats.effect.Sync
 import cats.syntax.all.*
-
 import org.slf4j.LoggerFactory
 
 sealed abstract private[kafka] class Logging[F[_]] {

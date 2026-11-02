@@ -6,14 +6,12 @@
 
 package fs2.kafka
 
-import scala.concurrent.duration.*
-import scala.concurrent.ExecutionContext
-
-import cats.effect.Resource
 import cats.Show
+import cats.effect.Resource
 import fs2.kafka.security.KafkaCredentialStore
-
 import org.apache.kafka.clients.producer.ProducerConfig
+import scala.concurrent.ExecutionContext
+import scala.concurrent.duration.*
 
 /**
   * [[ProducerSettings]] contain settings necessary to create a [[KafkaProducer]]. At the very
@@ -49,17 +47,18 @@ sealed abstract class ProducerSettings[F[_], K, V] {
   ): ProducerSettings[F, K1, V1]
 
   /**
-    * A custom [[ExecutionContext]] to use for blocking Kafka operations. If not provided, the
-    * default blocking ExecutionContext provided by [[cats.effect.Sync]] will be used.
+    * A custom [[scala.concurrent.ExecutionContext]] to use for blocking Kafka operations. If not
+    * provided, the default blocking ExecutionContext provided by [[cats.effect.kernel.Sync]] will
+    * be used.
     */
   def customBlockingContext: Option[ExecutionContext]
 
   /**
-    * Returns a new [[ProducerSettings]] instance with the specified [[ExecutionContext]] to use for
-    * blocking operations.
+    * Returns a new [[ProducerSettings]] instance with the specified
+    * [[scala.concurrent.ExecutionContext]] to use for blocking operations.
     *
-    * If not provided, the default blocking ExecutionContext provided by [[cats.effect.Sync]] will
-    * be used. If in doubt, leave this unset.
+    * If not provided, the default blocking ExecutionContext provided by [[cats.effect.kernel.Sync]]
+    * will be used. If in doubt, leave this unset.
     */
   def withCustomBlockingContext(ec: ExecutionContext): ProducerSettings[F, K, V]
 
@@ -211,7 +210,8 @@ sealed abstract class ProducerSettings[F[_], K, V] {
   def withCloseTimeout(closeTimeout: FiniteDuration): ProducerSettings[F, K, V]
 
   /**
-    * Includes the credentials properties from the provided [[KafkaCredentialStore]]
+    * Includes the credentials properties from the provided
+    * [[fs2.kafka.security.KafkaCredentialStore]]
     */
   def withCredentials(credentialsStore: KafkaCredentialStore): ProducerSettings[F, K, V]
 
@@ -237,8 +237,8 @@ sealed abstract class ProducerSettings[F[_], K, V] {
   def withTransactionalId(transactionalId: String): ProducerSettings[F, K, V]
 
   /**
-    * Controls whether [[fs2.kafka.KafkaProducer.produce]] fails immediately if any
-    * [[org.apache.kafka.clients.producer.KafkaProducer.send]] callback resolves with error.
+    * Controls whether [[fs2.kafka.KafkaProducer.produce]] fails immediately if any Java
+    * `KafkaProducer.send` callback resolves with error.
     *
     * When set to `true`, the `produce` method will fail fast, returning an error as soon as any
     * record in the [[ProducerRecords]] fails to be sent.
@@ -277,8 +277,8 @@ object ProducerSettings {
         ProducerConfig.ACKS_CONFIG,
         acks match {
           case Acks.ZeroAcks => "0"
-          case Acks.OneAcks  => "1"
-          case Acks.AllAcks  => "all"
+          case Acks.OneAcks => "1"
+          case Acks.AllAcks => "all"
         }
       )
 
@@ -324,7 +324,8 @@ object ProducerSettings {
       copy(closeTimeout = closeTimeout)
 
     /**
-      * Includes the credentials properties from the provided [[KafkaCredentialStore]]
+      * Includes the credentials properties from the provided
+      * [[fs2.kafka.security.KafkaCredentialStore]]
       */
     override def withCredentials(
       credentialsStore: KafkaCredentialStore

@@ -6,12 +6,10 @@
 
 package fs2.kafka
 
-import scala.concurrent.duration.*
-
 import cats.Show
 import fs2.kafka.security.KafkaCredentialStore
-
 import org.apache.kafka.clients.admin.AdminClientConfig
+import scala.concurrent.duration.*
 
 /**
   * [[AdminClientSettings]] contain settings necessary to create a [[KafkaAdminClient]]. Several
@@ -162,7 +160,8 @@ sealed abstract class AdminClientSettings {
   def withCloseTimeout(closeTimeout: FiniteDuration): AdminClientSettings
 
   /**
-    * Includes the credentials properties from the provided [[KafkaCredentialStore]]
+    * Includes the credentials properties from the provided
+    * [[fs2.kafka.security.KafkaCredentialStore]]
     */
   def withCredentials(credentialsStore: KafkaCredentialStore): AdminClientSettings
 

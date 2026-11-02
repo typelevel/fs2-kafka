@@ -6,8 +6,9 @@
 
 package fs2.kafka
 
-import cats.effect.unsafe.implicits.global
 import cats.effect.IO
+
+import cats.effect.unsafe.implicits.global
 
 final class JitterSpec extends BaseSpec {
 

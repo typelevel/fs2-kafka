@@ -6,38 +6,25 @@
 
 package fs2.kafka
 
-import java.time.Instant
-
-import scala.annotation.nowarn
-import scala.concurrent.duration.FiniteDuration
-
-import cats.effect.*
-import cats.syntax.all.*
 import cats.Foldable
 import cats.Functor
+import cats.effect.*
+import cats.syntax.all.*
+import fs2.Chunk
+import fs2.Stream
+import fs2.kafka.KafkaAdminClient.*
 import fs2.kafka.admin.MkAdminClient
+import fs2.kafka.internal.WithAdminClient
 import fs2.kafka.internal.converters.collection.*
 import fs2.kafka.internal.converters.option.*
 import fs2.kafka.internal.syntax.*
-import fs2.kafka.internal.WithAdminClient
-import fs2.kafka.KafkaAdminClient.*
-import fs2.Chunk
-import fs2.Stream
-
+import java.time.Instant
 import org.apache.kafka.clients.admin.*
 import org.apache.kafka.clients.admin.DescribeProducersResult.PartitionProducerState
 import org.apache.kafka.clients.admin.DescribeReplicaLogDirsResult.ReplicaLogDirInfo
 import org.apache.kafka.clients.admin.ListOffsetsResult.ListOffsetsResultInfo
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common
-import org.apache.kafka.common.acl.AclBinding
-import org.apache.kafka.common.acl.AclBindingFilter
-import org.apache.kafka.common.config.ConfigResource
-import org.apache.kafka.common.quota.ClientQuotaAlteration
-import org.apache.kafka.common.quota.ClientQuotaEntity
-import org.apache.kafka.common.quota.ClientQuotaFilter
-import org.apache.kafka.common.security.auth.KafkaPrincipal
-import org.apache.kafka.common.security.token.delegation.DelegationToken
 import org.apache.kafka.common.ElectionType
 import org.apache.kafka.common.KafkaFuture
 import org.apache.kafka.common.Metric
@@ -46,6 +33,16 @@ import org.apache.kafka.common.Node
 import org.apache.kafka.common.TopicPartition
 import org.apache.kafka.common.TopicPartitionReplica
 import org.apache.kafka.common.Uuid
+import org.apache.kafka.common.acl.AclBinding
+import org.apache.kafka.common.acl.AclBindingFilter
+import org.apache.kafka.common.config.ConfigResource
+import org.apache.kafka.common.quota.ClientQuotaAlteration
+import org.apache.kafka.common.quota.ClientQuotaEntity
+import org.apache.kafka.common.quota.ClientQuotaFilter
+import org.apache.kafka.common.security.auth.KafkaPrincipal
+import org.apache.kafka.common.security.token.delegation.DelegationToken
+import scala.annotation.nowarn
+import scala.concurrent.duration.FiniteDuration
 
 /**
   * [[KafkaAdminClient]] represents an admin client for Kafka, which is able to describe queries
@@ -491,8 +488,8 @@ object KafkaAdminClient {
   ): F[Instant] = {
     val options = new ExpireDelegationTokenOptions()
     expiryTime.foreach(expiryTime => options.expiryTimePeriodMs(expiryTime.toMillis))
-    withAdminClient(_.expireDelegationToken(hmac.toArray, options).expiryTimestamp()).map(
-      expiryTimestamp => Instant.ofEpochMilli(expiryTimestamp.toLong)
+    withAdminClient(_.expireDelegationToken(hmac.toArray, options).expiryTimestamp()).map(expiryTimestamp =>
+      Instant.ofEpochMilli(expiryTimestamp.toLong)
     )
   }
 
@@ -503,8 +500,8 @@ object KafkaAdminClient {
   ): F[Instant] = {
     val options = new RenewDelegationTokenOptions()
     renewTime.foreach(renewTime => options.renewTimePeriodMs(renewTime.toMillis))
-    withAdminClient(_.renewDelegationToken(hmac.toArray, options).expiryTimestamp()).map(
-      expiryTimestamp => Instant.ofEpochMilli(expiryTimestamp.toLong)
+    withAdminClient(_.renewDelegationToken(hmac.toArray, options).expiryTimestamp()).map(expiryTimestamp =>
+      Instant.ofEpochMilli(expiryTimestamp.toLong)
     )
   }
 
@@ -569,13 +566,9 @@ object KafkaAdminClient {
     filter: ClientQuotaFilter
   ): F[Map[ClientQuotaEntity, Map[String, Double]]] =
     withAdminClient(_.describeClientQuotas(filter).entities()).map { entities =>
-      entities
-        .asScala
-        .view
-        .map { case (k, v) =>
-          k -> v.asScala.view.map { case (qk, qv) => qk -> qv.doubleValue }.toMap
-        }
-        .toMap
+      entities.asScala.view.map { case (k, v) =>
+        k -> v.asScala.view.map { case (qk, qv) => qk -> qv.doubleValue }.toMap
+      }.toMap
     }
 
   private[this] def alterClientQuotasWith[F[_]: Functor, G[_]: Foldable](
@@ -646,8 +639,8 @@ object KafkaAdminClient {
     duration: Option[Long]
   ): F[List[TransactionListing]] = {
     val options = new ListTransactionsOptions()
-    val wState  = states.map(_.asJava).fold(options)(options.filterStates)
-    val wProd   = producerIds
+    val wState = states.map(_.asJava).fold(options)(options.filterStates)
+    val wProd = producerIds
       .map(_.map(java.lang.Long.valueOf).asJava)
       .fold(wState)(wState.filterProducerIds)
     val wDuration = duration.fold(wProd)(wProd.filterOnDuration)
@@ -674,12 +667,11 @@ object KafkaAdminClient {
 
     withAdminClient(
       _.addRaftVoter(
-          voterId,
-          voterDirectoryId,
-          endpoints.asJava,
-          new AddRaftVoterOptions().setClusterId(clusterId.toJava)
-        )
-        .all
+        voterId,
+        voterDirectoryId,
+        endpoints.asJava,
+        new AddRaftVoterOptions().setClusterId(clusterId.toJava)
+      ).all
     ).void
   }
 
@@ -691,11 +683,10 @@ object KafkaAdminClient {
   ): F[Unit] =
     withAdminClient(
       _.removeRaftVoter(
-          voterId,
-          voterDirectoryId,
-          new RemoveRaftVoterOptions().setClusterId(clusterId.toJava)
-        )
-        .all
+        voterId,
+        voterDirectoryId,
+        new RemoveRaftVoterOptions().setClusterId(clusterId.toJava)
+      ).all
     ).void
 
   private[this] def metricsWith[F[_]](
@@ -1034,7 +1025,7 @@ object KafkaAdminClient {
 
   /**
     * Like [[resource]], but allows the effect type of the created [[KafkaAdminClient]] to be
-    * different from the effect type of the [[Resource]] that allocates it.
+    * different from the effect type of the [[cats.effect.kernel.Resource]] that allocates it.
     */
   def resourceIn[F[_], G[_]](
     settings: AdminClientSettings
@@ -1293,7 +1284,7 @@ object KafkaAdminClient {
 
   /**
     * Like [[stream]], but allows the effect type of the created [[KafkaAdminClient]] to be
-    * different from the effect type of the [[Stream]] that allocates it.
+    * different from the effect type of the [[fs2.Stream]] that allocates it.
     */
   def streamIn[F[_], G[_]](
     settings: AdminClientSettings
@@ -1305,11 +1296,11 @@ object KafkaAdminClient {
    * to code defined in this object, ensuring factory methods require an instance
    * to be provided at the call site.
    */
-  @nowarn("msg=never used")
+  @nowarn("msg=never used|unused private member")
   implicit private def mkAmbig1[F[_]]: MkAdminClient[F] =
     throw new AssertionError("should not be used")
 
-  @nowarn("msg=never used")
+  @nowarn("msg=never used|unused private member")
   implicit private def mkAmbig2[F[_]]: MkAdminClient[F] =
     throw new AssertionError("should not be used")
 

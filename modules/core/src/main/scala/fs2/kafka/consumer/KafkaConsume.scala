@@ -8,7 +8,6 @@ package fs2.kafka.consumer
 
 import fs2.*
 import fs2.kafka.CommittableConsumerRecord
-
 import org.apache.kafka.common.TopicPartition
 
 trait KafkaConsume[F[_], K, V] {
@@ -83,8 +82,7 @@ trait KafkaConsume[F[_], K, V] {
     * @see
     *   [[partitionedRecords]]
     */
-  def partitionsMapStream
-    : Stream[F, Map[TopicPartition, Stream[F, CommittableConsumerRecord[F, K, V]]]]
+  def partitionsMapStream: Stream[F, Map[TopicPartition, Stream[F, CommittableConsumerRecord[F, K, V]]]]
 
   /**
     * Stops consuming new messages from Kafka. This method could be used to implement a graceful

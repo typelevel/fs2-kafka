@@ -6,10 +6,9 @@
 
 package fs2.kafka
 
-import scala.concurrent.duration.*
-
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.TopicPartition
+import scala.concurrent.duration.*
 
 final class CommitTimeoutExceptionSpec extends BaseSpec {
   describe("CommitTimeoutException") {
@@ -24,10 +23,8 @@ final class CommitTimeoutExceptionSpec extends BaseSpec {
         )
 
       assert {
-        exception
-          .getMessage == "offset commit timeout after 10 seconds for offsets: topic-0 -> 0, topic-1 -> 1" &&
-        exception
-          .toString == "fs2.kafka.CommitTimeoutException: offset commit timeout after 10 seconds for offsets: topic-0 -> 0, topic-1 -> 1"
+        exception.getMessage == "offset commit timeout after 10 seconds for offsets: topic-0 -> 0, topic-1 -> 1" &&
+        exception.toString == "fs2.kafka.CommitTimeoutException: offset commit timeout after 10 seconds for offsets: topic-0 -> 0, topic-1 -> 1"
       }
     }
   }

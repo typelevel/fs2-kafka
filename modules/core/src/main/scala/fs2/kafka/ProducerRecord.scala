@@ -6,7 +6,12 @@
 
 package fs2.kafka
 
-import cats.{Applicative, Bitraverse, Eq, Eval, Show, Traverse}
+import cats.Applicative
+import cats.Bitraverse
+import cats.Eq
+import cats.Eval
+import cats.Show
+import cats.Traverse
 import cats.instances.int.*
 import cats.instances.long.*
 import cats.instances.option.*
@@ -101,11 +106,11 @@ object ProducerRecord {
     override def toString: String = {
       val b = new java.lang.StringBuilder("ProducerRecord(")
       b.append("topic = ").append(topic)
-      if (partition.nonEmpty) b.append(", partition = ").append(partition.get)
-      if (timestamp.nonEmpty) b.append(", timestamp = ").append(timestamp.get)
+      if (partition.nonEmpty) b.append(", partition = ").append(partition.get): Unit
+      if (timestamp.nonEmpty) b.append(", timestamp = ").append(timestamp.get): Unit
       b.append(", key = ").append(key)
       b.append(", value = ").append(value)
-      if (headers.nonEmpty) b.append(", headers = ").append(headers)
+      if (headers.nonEmpty) b.append(", headers = ").append(headers): Unit
       b.append(")").toString
     }
 
@@ -140,11 +145,11 @@ object ProducerRecord {
   ): Show[ProducerRecord[K, V]] = Show.show { record =>
     val b = new java.lang.StringBuilder("ProducerRecord(")
     b.append("topic = ").append(record.topic)
-    if (record.partition.nonEmpty) b.append(", partition = ").append(record.partition.get)
-    if (record.timestamp.nonEmpty) b.append(", timestamp = ").append(record.timestamp.get)
+    if (record.partition.nonEmpty) b.append(", partition = ").append(record.partition.get): Unit
+    if (record.timestamp.nonEmpty) b.append(", timestamp = ").append(record.timestamp.get): Unit
     b.append(", key = ").append(record.key.show)
     b.append(", value = ").append(record.value.show)
-    if (record.headers.nonEmpty) b.append(", headers = ").append(record.headers)
+    if (record.headers.nonEmpty) b.append(", headers = ").append(record.headers): Unit
     b.append(")").toString
   }
 

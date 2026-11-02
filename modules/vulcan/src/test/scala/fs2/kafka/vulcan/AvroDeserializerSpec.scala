@@ -6,13 +6,16 @@
 
 package fs2.kafka.vulcan
 
-import cats.effect.{IO, Resource}
-import cats.effect.unsafe.implicits.global
-import fs2.kafka.{Headers, KeyDeserializer, ValueDeserializer}
-
+import cats.effect.IO
+import cats.effect.Resource
+import fs2.kafka.Headers
+import fs2.kafka.KeyDeserializer
+import fs2.kafka.ValueDeserializer
 import io.confluent.kafka.schemaregistry.client.MockSchemaRegistryClient
 import org.scalatest.funspec.AnyFunSpec
 import vulcan.Codec
+
+import cats.effect.unsafe.implicits.global
 
 final class AvroDeserializerSpec extends AnyFunSpec {
 

@@ -1,12 +1,7 @@
-/website/build/
-/website/node_modules/
-/website/static/api/
-/website/variables.js
-/website/yarn.lock
-target/
+.bloop/
+.bsp/
+.idea/
 .metals/
 .vscode/
-.bloop/
-.idea/
-.bsp/
 metals.sbt
+target/

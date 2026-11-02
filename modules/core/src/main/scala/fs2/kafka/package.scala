@@ -6,13 +6,11 @@
 
 package fs2
 
-import scala.concurrent.duration.FiniteDuration
-
-import cats.effect.*
 import cats.Parallel
 import cats.Traverse
-
+import cats.effect.*
 import org.apache.kafka.clients.producer.RecordMetadata
+import scala.concurrent.duration.FiniteDuration
 
 package object kafka {
 
@@ -89,13 +87,13 @@ package object kafka {
   ): Pipe[F, CommittableOffset[F], Unit] =
     _.groupWithin(n, d).evalMap(CommittableOffsetBatch.fromFoldable(_).commit)
 
-  type Serializer[F[_], A]      = GenericSerializer[KeyOrValue, F, A]
-  type KeySerializer[F[_], A]   = GenericSerializer[Key, F, A]
+  type Serializer[F[_], A] = GenericSerializer[KeyOrValue, F, A]
+  type KeySerializer[F[_], A] = GenericSerializer[Key, F, A]
   type ValueSerializer[F[_], A] = GenericSerializer[Value, F, A]
   val Serializer: GenericSerializer.type = GenericSerializer
 
-  type Deserializer[F[_], A]      = GenericDeserializer[KeyOrValue, F, A]
-  type KeyDeserializer[F[_], A]   = GenericDeserializer[Key, F, A]
+  type Deserializer[F[_], A] = GenericDeserializer[KeyOrValue, F, A]
+  type KeyDeserializer[F[_], A] = GenericDeserializer[Key, F, A]
   type ValueDeserializer[F[_], A] = GenericDeserializer[Value, F, A]
   val Deserializer: GenericDeserializer.type = GenericDeserializer
 
@@ -108,7 +106,7 @@ package kafka {
     * both
     */
   sealed trait KeyOrValue
-  sealed trait Key   extends KeyOrValue
+  sealed trait Key extends KeyOrValue
   sealed trait Value extends KeyOrValue
 
 }

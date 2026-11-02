@@ -6,14 +6,14 @@
 
 package fs2.kafka.vulcan
 
-import java.nio.ByteBuffer
-
+import _root_.vulcan.Codec
 import cats.effect.Resource
 import cats.effect.Sync
-import fs2.kafka.{Deserializer, KeyDeserializer, ValueDeserializer}
-
-import _root_.vulcan.Codec
+import fs2.kafka.Deserializer
+import fs2.kafka.KeyDeserializer
+import fs2.kafka.ValueDeserializer
 import io.confluent.kafka.schemaregistry.avro.AvroSchema
+import java.nio.ByteBuffer
 
 final class AvroDeserializer[A] private[vulcan] (
   private val codec: Codec[A]
@@ -49,11 +49,11 @@ final class AvroDeserializer[A] private[vulcan] (
 
                   val writerSchema = schemaRegistryClient.getSchemaById(writerSchemaId) match {
                     case avroSchema: AvroSchema => avroSchema.rawSchema
-                    case _                      => null
+                    case _ => null
                   }
 
                   codec.decode(deserializer.deserialize(topic, bytes, schema), writerSchema) match {
-                    case Right(a)    => F.pure(a)
+                    case Right(a) => F.pure(a)
                     case Left(error) => F.raiseError(error.throwable)
                   }
                 }

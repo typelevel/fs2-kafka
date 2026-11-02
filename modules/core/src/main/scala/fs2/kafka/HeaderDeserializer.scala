@@ -6,13 +6,13 @@
 
 package fs2.kafka
 
-import java.nio.charset.{Charset, StandardCharsets}
-import java.util.UUID
-
-import scala.annotation.tailrec
-
-import cats.{Eval, Monad}
+import cats.Eval
+import cats.Monad
 import cats.syntax.either.*
+import java.nio.charset.Charset
+import java.nio.charset.StandardCharsets
+import java.util.UUID
+import scala.annotation.tailrec
 
 /**
   * [[HeaderDeserializer]] is a functional deserializer for Kafka record header values. It's similar
@@ -194,7 +194,7 @@ object HeaderDeserializer {
           @tailrec def go(deserializer: HeaderDeserializer[Either[A, B]]): B =
             deserializer.deserialize(bytes) match {
               case Right(_b) => _b
-              case Left(_a)  => go(f(_a))
+              case Left(_a) => go(f(_a))
             }
 
           go(f(a))
@@ -203,49 +203,39 @@ object HeaderDeserializer {
     }
 
   implicit val double: HeaderDeserializer.Attempt[Double] =
-    HeaderDeserializer
-      .delegate {
-        (new org.apache.kafka.common.serialization.DoubleDeserializer).asInstanceOf[
-          org.apache.kafka.common.serialization.Deserializer[Double]
-        ]
-      }
-      .attempt
+    HeaderDeserializer.delegate {
+      (new org.apache.kafka.common.serialization.DoubleDeserializer).asInstanceOf[
+        org.apache.kafka.common.serialization.Deserializer[Double]
+      ]
+    }.attempt
 
   implicit val float: HeaderDeserializer.Attempt[Float] =
-    HeaderDeserializer
-      .delegate {
-        (new org.apache.kafka.common.serialization.FloatDeserializer).asInstanceOf[
-          org.apache.kafka.common.serialization.Deserializer[Float]
-        ]
-      }
-      .attempt
+    HeaderDeserializer.delegate {
+      (new org.apache.kafka.common.serialization.FloatDeserializer).asInstanceOf[
+        org.apache.kafka.common.serialization.Deserializer[Float]
+      ]
+    }.attempt
 
   implicit val int: HeaderDeserializer.Attempt[Int] =
-    HeaderDeserializer
-      .delegate {
-        (new org.apache.kafka.common.serialization.IntegerDeserializer).asInstanceOf[
-          org.apache.kafka.common.serialization.Deserializer[Int]
-        ]
-      }
-      .attempt
+    HeaderDeserializer.delegate {
+      (new org.apache.kafka.common.serialization.IntegerDeserializer).asInstanceOf[
+        org.apache.kafka.common.serialization.Deserializer[Int]
+      ]
+    }.attempt
 
   implicit val long: HeaderDeserializer.Attempt[Long] =
-    HeaderDeserializer
-      .delegate {
-        (new org.apache.kafka.common.serialization.LongDeserializer).asInstanceOf[
-          org.apache.kafka.common.serialization.Deserializer[Long]
-        ]
-      }
-      .attempt
+    HeaderDeserializer.delegate {
+      (new org.apache.kafka.common.serialization.LongDeserializer).asInstanceOf[
+        org.apache.kafka.common.serialization.Deserializer[Long]
+      ]
+    }.attempt
 
   implicit val short: HeaderDeserializer.Attempt[Short] =
-    HeaderDeserializer
-      .delegate {
-        (new org.apache.kafka.common.serialization.ShortDeserializer).asInstanceOf[
-          org.apache.kafka.common.serialization.Deserializer[Short]
-        ]
-      }
-      .attempt
+    HeaderDeserializer.delegate {
+      (new org.apache.kafka.common.serialization.ShortDeserializer).asInstanceOf[
+        org.apache.kafka.common.serialization.Deserializer[Short]
+      ]
+    }.attempt
 
   implicit val string: HeaderDeserializer[String] =
     HeaderDeserializer.string(StandardCharsets.UTF_8)
