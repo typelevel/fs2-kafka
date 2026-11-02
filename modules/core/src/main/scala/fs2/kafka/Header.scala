@@ -6,7 +6,8 @@
 
 package fs2.kafka
 
-import cats.{Eq, Show}
+import cats.Eq
+import cats.Show
 import cats.instances.string.*
 import cats.syntax.eq.*
 

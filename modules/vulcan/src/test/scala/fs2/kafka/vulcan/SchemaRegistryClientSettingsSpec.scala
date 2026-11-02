@@ -6,12 +6,12 @@
 
 package fs2.kafka.vulcan
 
-import cats.effect.unsafe.implicits.global
 import cats.effect.IO
 import cats.syntax.all.*
-
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatestplus.scalacheck.*
+
+import cats.effect.unsafe.implicits.global
 
 final class SchemaRegistryClientSettingsSpec extends AnyFunSpec with ScalaCheckPropertyChecks {
 
@@ -32,8 +32,7 @@ final class SchemaRegistryClientSettingsSpec extends AnyFunSpec with ScalaCheckP
         }
 
         assert {
-          settingsWithAuth
-            .properties
+          settingsWithAuth.properties
             .get("schema.registry.basic.auth.user.info")
             .contains(s"$username:$password")
         }

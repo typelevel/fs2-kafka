@@ -40,8 +40,7 @@ final class CommittableOffsetBatchSpec extends BaseSpec {
         val updatedBatch = batch.updated(offset)
 
         assert(
-          updatedBatch
-            .offsets
+          updatedBatch.offsets
             .get(offset.committer)
             .flatMap(_.get(offset.topicPartition))
             .exists(_ >= offset.offsetAndMetadata)
@@ -57,14 +56,13 @@ final class CommittableOffsetBatchSpec extends BaseSpec {
         assert(result.offsets.size == keys.size)
 
         keys.foreach { committer =>
-          val first  = batch1.offsets.get(committer)
+          val first = batch1.offsets.get(committer)
           val second = batch2.offsets.get(committer)
 
           first.foreach { offsets =>
             offsets.foreach { case (topicPartition, offsetAndMetadata) =>
               assert {
-                result
-                  .offsets
+                result.offsets
                   .get(committer)
                   .flatMap(_.get(topicPartition))
                   .exists(_ >= offsetAndMetadata)
@@ -75,8 +73,7 @@ final class CommittableOffsetBatchSpec extends BaseSpec {
           second.foreach { offsets =>
             offsets.foreach { case (topicPartition, offsetAndMetadata) =>
               assert {
-                result
-                  .offsets
+                result.offsets
                   .get(committer)
                   .flatMap(_.get(topicPartition))
                   .exists(_ >= offsetAndMetadata)

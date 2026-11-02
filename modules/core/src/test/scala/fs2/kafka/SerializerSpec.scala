@@ -6,13 +6,11 @@
 
 package fs2.kafka
 
-import java.nio.charset.StandardCharsets
-import java.util.UUID
-
 import cats.*
 import cats.effect.IO
 import cats.laws.discipline.*
-
+import java.nio.charset.StandardCharsets
+import java.util.UUID
 import org.scalacheck.Arbitrary
 import org.scalatest.*
 
@@ -73,7 +71,7 @@ final class SerializerSpec extends BaseCatsSpec {
         .delegate[IO, Int](
           new KafkaSerializer[Int] {
 
-            override def close(): Unit                                                    = ()
+            override def close(): Unit = ()
             override def configure(props: java.util.Map[String, ?], isKey: Boolean): Unit = ()
 
             override def serialize(topic: String, int: Int): Array[Byte] =
@@ -115,7 +113,7 @@ final class SerializerSpec extends BaseCatsSpec {
         .delegate[IO, Int](
           new KafkaSerializer[Int] {
 
-            override def close(): Unit                                                    = ()
+            override def close(): Unit = ()
             override def configure(props: java.util.Map[String, ?], isKey: Boolean): Unit = ()
 
             override def serialize(topic: String, int: Int): Array[Byte] =
@@ -136,14 +134,14 @@ final class SerializerSpec extends BaseCatsSpec {
       Serializer.headers { headers =>
         headers("format").map(_.as[String]) match {
           case Some("int") => Serializer[IO, Int]
-          case _           => Serializer[IO, String].contramap[Int](_.toString)
+          case _ => Serializer[IO, String].contramap[Int](_.toString)
         }
       }
 
     forAll { (topic: String, i: Int) =>
-      val headers    = Headers(Header("format", "int"))
+      val headers = Headers(Header("format", "int"))
       val serialized = serializer.serialize(topic, headers, i)
-      val expected   = Serializer[IO, Int].serialize(topic, Headers.empty, i)
+      val expected = Serializer[IO, Int].serialize(topic, Headers.empty, i)
       serialized.unsafeRunSync() shouldBe expected.unsafeRunSync()
     }
 
@@ -165,12 +163,12 @@ final class SerializerSpec extends BaseCatsSpec {
     val serializer =
       Serializer.topic {
         case "topic" => Serializer[IO, Int]
-        case _       => Serializer[IO, String].contramap[Int](_.toString)
+        case _ => Serializer[IO, String].contramap[Int](_.toString)
       }
 
     forAll { (i: Int) =>
       val serialized = serializer.serialize("topic", Headers.empty, i)
-      val expected   = Serializer[IO, Int].serialize("topic", Headers.empty, i)
+      val expected = Serializer[IO, Int].serialize("topic", Headers.empty, i)
       serialized.unsafeRunSync() shouldBe expected.unsafeRunSync()
     }
 
@@ -247,7 +245,7 @@ final class SerializerSpec extends BaseCatsSpec {
     serializer: Serializer[IO, A],
     deserializer: Deserializer[IO, A]
   ): Assertion = forAll { (topic: String, headers: Headers, a: A) =>
-    val serialized   = serializer.serialize(topic, headers, a).unsafeRunSync()
+    val serialized = serializer.serialize(topic, headers, a).unsafeRunSync()
     val deserialized = deserializer.deserialize(topic, headers, serialized).unsafeRunSync()
     assert(deserialized === a)
   }
@@ -256,7 +254,7 @@ final class SerializerSpec extends BaseCatsSpec {
     serializer: Serializer[IO, A],
     deserializer: Deserializer[IO, A]
   ): Assertion = forAll { (topic: String, headers: Headers, a: A) =>
-    val serialized   = serializer.serialize(topic, headers, a).unsafeRunSync()
+    val serialized = serializer.serialize(topic, headers, a).unsafeRunSync()
     val deserialized = deserializer.deserialize(topic, headers, serialized)
     assert(deserialized.attempt.unsafeRunSync().toOption === Option(a))
   }

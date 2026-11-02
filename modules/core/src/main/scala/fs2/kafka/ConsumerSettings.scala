@@ -6,16 +6,14 @@
 
 package fs2.kafka
 
-import scala.concurrent.duration.*
-import scala.concurrent.ExecutionContext
-import scala.util.Try
-
-import cats.effect.Resource
 import cats.Show
+import cats.effect.Resource
 import fs2.kafka.security.KafkaCredentialStore
-
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.common.requests.OffsetFetchResponse
+import scala.concurrent.ExecutionContext
+import scala.concurrent.duration.*
+import scala.util.Try
 
 /**
   * [[ConsumerSettings]] contain settings necessary to create a [[KafkaConsumer]]. At the very
@@ -467,8 +465,8 @@ object ConsumerSettings {
         ConsumerConfig.AUTO_OFFSET_RESET_CONFIG,
         autoOffsetReset match {
           case AutoOffsetReset.EarliestOffsetReset => "earliest"
-          case AutoOffsetReset.LatestOffsetReset   => "latest"
-          case AutoOffsetReset.NoneOffsetReset     => "none"
+          case AutoOffsetReset.LatestOffsetReset => "latest"
+          case AutoOffsetReset.NoneOffsetReset => "none"
         }
       )
 
@@ -532,7 +530,7 @@ object ConsumerSettings {
       withProperty(
         ConsumerConfig.ISOLATION_LEVEL_CONFIG,
         isolationLevel match {
-          case IsolationLevel.ReadCommittedIsolationLevel   => "read_committed"
+          case IsolationLevel.ReadCommittedIsolationLevel => "read_committed"
           case IsolationLevel.ReadUncommittedIsolationLevel => "read_uncommitted"
         }
       )
@@ -614,7 +612,7 @@ object ConsumerSettings {
       keyDeserializer = keyDeserializer,
       valueDeserializer = valueDeserializer,
       properties = Map(
-        ConsumerConfig.AUTO_OFFSET_RESET_CONFIG  -> "none",
+        ConsumerConfig.AUTO_OFFSET_RESET_CONFIG -> "none",
         ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG -> "false"
       ),
       closeTimeout = 20.seconds,

@@ -6,11 +6,9 @@
 
 package fs2.kafka.vulcan.testkit
 
-import cats.effect.unsafe.implicits.global
 import cats.effect.IO
 import fs2.kafka.internal.syntax.*
 import fs2.kafka.vulcan.SchemaRegistryClientSettings
-
 import io.confluent.kafka.schemaregistry.avro.AvroSchema
 import munit.FunSuite
 import org.apache.avro.Schema
@@ -18,6 +16,8 @@ import org.apache.avro.SchemaCompatibility
 import org.apache.avro.SchemaCompatibility.Incompatibility
 import org.apache.avro.SchemaCompatibility.SchemaCompatibilityType
 import vulcan.Codec
+
+import cats.effect.unsafe.implicits.global
 
 trait CompatibilityChecker[F[_]] {
 
@@ -46,13 +46,12 @@ trait SchemaSuite extends FunSuite {
   private def codecAsSchema[A](codec: Codec[A]) = codec.schema.fold(e => fail(e.message), ok => ok)
 
   private def renderIncompatibilities(incompatibilities: List[Incompatibility]): String =
-    "Schema incompatibilities:\n" + incompatibilities
-      .zipWithIndex
+    "Schema incompatibilities:\n" + incompatibilities.zipWithIndex
       .map { case (incompatibility, i) =>
         s"""${i + 1}) ${incompatibility.getType} - ${incompatibility.getMessage}
-           |At ${incompatibility.getLocation}
-           |Reader schema fragment: ${incompatibility.getReaderFragment.toString}
-           |Writer schema fragment: ${incompatibility.getWriterFragment.toString}""".stripMargin
+          |At ${incompatibility.getLocation}
+          |Reader schema fragment: ${incompatibility.getReaderFragment.toString}
+          |Writer schema fragment: ${incompatibility.getWriterFragment.toString}""".stripMargin
       }
       .mkString("\n-----\n")
 
@@ -73,17 +72,16 @@ trait SchemaSuite extends FunSuite {
   def newCompatibilityChecker(
     clientSettings: SchemaRegistryClientSettings[IO]
   ): IO[AssertableCompatibilityChecker[IO]] =
-    clientSettings
-      .createSchemaRegistryClient
+    clientSettings.createSchemaRegistryClient
       .map { client =>
         new AssertableCompatibilityChecker[IO] {
 
           private def registrySchema(subject: String): IO[Schema] =
             for {
               metadata <- IO.delay(client.getLatestSchemaMetadata(subject))
-              schema   <- IO.delay(
-                          client.getSchemaById(metadata.getId).asInstanceOf[AvroSchema]
-                        )
+              schema <- IO.delay(
+                client.getSchemaById(metadata.getId).asInstanceOf[AvroSchema]
+              )
             } yield schema.rawSchema()
 
           def checkReaderCompatibility[A](

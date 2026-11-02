@@ -6,11 +6,9 @@
 
 package fs2.kafka
 
-import scala.concurrent.duration.*
-
 import cats.syntax.all.*
-
 import org.apache.kafka.clients.admin.AdminClientConfig
+import scala.concurrent.duration.*
 
 final class AdminClientSettingsSpec extends BaseSpec {
 

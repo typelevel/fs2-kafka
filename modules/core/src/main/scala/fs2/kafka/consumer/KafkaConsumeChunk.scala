@@ -6,15 +6,15 @@
 
 package fs2.kafka.consumer
 
-import cats.effect.Concurrent
-import cats.syntax.flatMap.*
 import cats.FlatMap
 import cats.Parallel
+import cats.effect.Concurrent
+import cats.syntax.flatMap.*
 import fs2.*
-import fs2.kafka.consumer.KafkaConsumeChunk.CommitNow
 import fs2.kafka.CommittableConsumerRecord
 import fs2.kafka.CommittableOffsetBatch
 import fs2.kafka.ConsumerRecord
+import fs2.kafka.consumer.KafkaConsumeChunk.CommitNow
 
 trait KafkaConsumeChunk[F[_], K, V] extends KafkaConsume[F, K, V] {
 

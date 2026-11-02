@@ -6,13 +6,12 @@
 
 package fs2.kafka.internal.actor
 
-import cats.effect.std.Queue
-import cats.effect.std.Semaphore
 import cats.effect.Async
 import cats.effect.Deferred
-import fs2.kafka.CommittableConsumerRecord
+import cats.effect.std.Queue
+import cats.effect.std.Semaphore
 import fs2.Chunk
-
+import fs2.kafka.CommittableConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.TopicPartition
 

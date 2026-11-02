@@ -6,12 +6,10 @@
 
 package fs2.kafka.consumer
 
-import scala.util.matching.Regex
-
-import cats.data.NonEmptyList
 import cats.Reducible
-
+import cats.data.NonEmptyList
 import org.apache.kafka.clients.consumer.ConsumerGroupMetadata
+import scala.util.matching.Regex
 
 trait KafkaSubscription[F[_]] {
 

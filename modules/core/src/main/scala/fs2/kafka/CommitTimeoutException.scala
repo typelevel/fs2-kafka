@@ -6,17 +6,15 @@
 
 package fs2.kafka
 
-import scala.concurrent.duration.FiniteDuration
-
 import cats.instances.list.*
 import cats.instances.string.*
 import cats.syntax.show.*
 import fs2.kafka.instances.*
 import fs2.kafka.internal.syntax.*
-
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.clients.consumer.RetriableCommitFailedException
 import org.apache.kafka.common.TopicPartition
+import scala.concurrent.duration.FiniteDuration
 
 /**
   * [[CommitTimeoutException]] indicates that offset commit took longer than the configured
@@ -27,19 +25,17 @@ sealed abstract class CommitTimeoutException(
   timeout: FiniteDuration,
   offsets: Map[TopicPartition, OffsetAndMetadata]
 ) extends RetriableCommitFailedException({
-      offsets
-        .toList
-        .sorted
-        .mkStringAppend { case (append, (tp, oam)) =>
-          append(tp.show)
-          append(" -> ")
-          append(oam.show)
-        }(
-          start = s"offset commit timeout after $timeout for offsets: ",
-          sep = ", ",
-          end = ""
-        )
-    })
+    offsets.toList.sorted
+      .mkStringAppend { case (append, (tp, oam)) =>
+        append(tp.show)
+        append(" -> ")
+        append(oam.show)
+      }(
+        start = s"offset commit timeout after $timeout for offsets: ",
+        sep = ", ",
+        end = ""
+      )
+  })
 
 private[kafka] object CommitTimeoutException {
 

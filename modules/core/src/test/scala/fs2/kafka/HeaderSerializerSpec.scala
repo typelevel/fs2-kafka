@@ -6,11 +6,9 @@
 
 package fs2.kafka
 
-import java.nio.charset.*
-
 import cats.*
 import cats.laws.discipline.*
-
+import java.nio.charset.*
 import org.scalacheck.*
 import org.scalatest.*
 
@@ -83,7 +81,7 @@ final class HeaderSerializerSpec extends BaseCatsSpec {
     serializer: HeaderSerializer[A],
     deserializer: HeaderDeserializer[A]
   ): Assertion = forAll { (a: A) =>
-    val serialized   = serializer.serialize(a)
+    val serialized = serializer.serialize(a)
     val deserialized = deserializer.deserialize(serialized)
     assert(deserialized === a)
   }
@@ -92,7 +90,7 @@ final class HeaderSerializerSpec extends BaseCatsSpec {
     serializer: HeaderSerializer[A],
     deserializer: HeaderDeserializer.Attempt[A]
   ): Assertion = forAll { (a: A) =>
-    val serialized   = serializer.serialize(a)
+    val serialized = serializer.serialize(a)
     val deserialized = deserializer.deserialize(serialized)
     assert(deserialized.toOption === Option(a))
   }

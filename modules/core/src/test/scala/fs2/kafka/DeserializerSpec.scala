@@ -6,9 +6,9 @@
 
 package fs2.kafka
 
+import cats.Eq
 import cats.effect.IO
 import cats.laws.discipline.*
-import cats.Eq
 
 final class DeserializerSpec extends BaseCatsSpec {
 
@@ -60,13 +60,13 @@ final class DeserializerSpec extends BaseCatsSpec {
       Deserializer.headers { headers =>
         headers("format").map(_.as[String]) match {
           case Some("int") => Deserializer[IO, Int]
-          case _           => Deserializer[IO, String].map(_.toInt).suspend
+          case _ => Deserializer[IO, String].map(_.toInt).suspend
         }
       }
 
     forAll { (topic: String, i: Int) =>
-      val headers      = Headers(Header("format", "int"))
-      val serialized   = Serializer[IO, Int].serialize(topic, Headers.empty, i).unsafeRunSync()
+      val headers = Headers(Header("format", "int"))
+      val serialized = Serializer[IO, Int].serialize(topic, Headers.empty, i).unsafeRunSync()
       val deserialized = deserializer.deserialize(topic, headers, serialized)
       deserialized.attempt.unsafeRunSync() shouldBe Right(i)
     }
@@ -124,11 +124,11 @@ final class DeserializerSpec extends BaseCatsSpec {
     val deserializer =
       Deserializer.topic {
         case "topic" => Deserializer[IO, Int]
-        case _       => Deserializer[IO, String].map(_.toInt).suspend
+        case _ => Deserializer[IO, String].map(_.toInt).suspend
       }
 
     forAll { (i: Int) =>
-      val serialized   = Serializer[IO, Int].serialize("topic", Headers.empty, i).unsafeRunSync()
+      val serialized = Serializer[IO, Int].serialize("topic", Headers.empty, i).unsafeRunSync()
       val deserialized = deserializer.deserialize("topic", Headers.empty, serialized)
       deserialized.attempt.unsafeRunSync() shouldBe Right(i)
     }

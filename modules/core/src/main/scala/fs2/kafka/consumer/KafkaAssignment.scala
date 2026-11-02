@@ -6,13 +6,11 @@
 
 package fs2.kafka.consumer
 
-import scala.collection.immutable.SortedSet
-
 import cats.data.NonEmptySet
 import fs2.*
 import fs2.kafka.instances.*
-
 import org.apache.kafka.common.TopicPartition
+import scala.collection.immutable.SortedSet
 
 trait KafkaAssignment[F[_]] {
 

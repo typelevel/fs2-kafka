@@ -16,12 +16,10 @@ final class HeaderDeserializerSpec extends BaseCatsSpec {
     var deserialized = false
 
     val deserializer =
-      HeaderDeserializer
-        .instance { bytes =>
-          deserialized = true
-          bytes
-        }
-        .delay
+      HeaderDeserializer.instance { bytes =>
+        deserialized = true
+        bytes
+      }.delay
 
     val eval = deserializer.deserialize(Array())
     assert(!deserialized)

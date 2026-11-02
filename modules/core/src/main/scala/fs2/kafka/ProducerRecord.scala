@@ -6,7 +6,12 @@
 
 package fs2.kafka
 
-import cats.{Applicative, Bitraverse, Eq, Eval, Show, Traverse}
+import cats.Applicative
+import cats.Bitraverse
+import cats.Eq
+import cats.Eval
+import cats.Show
+import cats.Traverse
 import cats.instances.int.*
 import cats.instances.long.*
 import cats.instances.option.*

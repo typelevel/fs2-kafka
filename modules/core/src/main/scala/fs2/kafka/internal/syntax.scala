@@ -6,21 +6,22 @@
 
 package fs2.kafka.internal
 
-import java.time.temporal.ChronoUnit
-import java.time.Duration
-import java.util
-import java.util.concurrent.TimeUnit
-
-import scala.collection.immutable.SortedSet
-import scala.concurrent.duration.FiniteDuration
-
-import cats.{FlatMap, Foldable, Show}
+import cats.FlatMap
+import cats.Foldable
+import cats.Show
 import cats.effect.Async
 import cats.syntax.all.*
-import fs2.kafka.{Header, Headers, KafkaHeaders}
+import fs2.kafka.Header
+import fs2.kafka.Headers
+import fs2.kafka.KafkaHeaders
 import fs2.kafka.internal.converters.unsafeWrapArray
-
+import java.time.Duration
+import java.time.temporal.ChronoUnit
+import java.util
+import java.util.concurrent.TimeUnit
 import org.apache.kafka.common.KafkaFuture
+import scala.collection.immutable.SortedSet
+import scala.concurrent.duration.FiniteDuration
 
 private[kafka] object syntax {
 
@@ -44,13 +45,13 @@ private[kafka] object syntax {
       if (duration.length == 0L) Duration.ZERO
       else
         duration.unit match {
-          case TimeUnit.DAYS         => Duration.ofDays(duration.length)
-          case TimeUnit.HOURS        => Duration.ofHours(duration.length)
-          case TimeUnit.MINUTES      => Duration.ofMinutes(duration.length)
-          case TimeUnit.SECONDS      => Duration.ofSeconds(duration.length)
+          case TimeUnit.DAYS => Duration.ofDays(duration.length)
+          case TimeUnit.HOURS => Duration.ofHours(duration.length)
+          case TimeUnit.MINUTES => Duration.ofMinutes(duration.length)
+          case TimeUnit.SECONDS => Duration.ofSeconds(duration.length)
           case TimeUnit.MILLISECONDS => Duration.ofMillis(duration.length)
           case TimeUnit.MICROSECONDS => Duration.of(duration.length, ChronoUnit.MICROS)
-          case TimeUnit.NANOSECONDS  => Duration.ofNanos(duration.length)
+          case TimeUnit.NANOSECONDS => Duration.ofNanos(duration.length)
         }
 
   }
@@ -64,9 +65,9 @@ private[kafka] object syntax {
       sep: String,
       end: String
     )(implicit F: Foldable[F]): String = {
-      val builder                = new java.lang.StringBuilder(start)
+      val builder = new java.lang.StringBuilder(start)
       val append: String => Unit = s => { builder.append(s); () }
-      var first                  = true
+      var first = true
 
       fa.foldLeft(()) { (_, a) =>
         if (first) first = false
@@ -138,10 +139,10 @@ private[kafka] object syntax {
     def updatedUsing(key: K)(f: Option[V] => Option[V]): Map[K, V] = {
       val prev = map.get(key)
       f(prev) match {
-        case None if prev.isEmpty         => map
-        case None                         => map - key
+        case None if prev.isEmpty => map
+        case None => map - key
         case Some(next) if eq(prev, next) => map
-        case Some(next)                   => map.updated(key, next)
+        case Some(next) => map.updated(key, next)
       }
     }
 
@@ -167,35 +168,35 @@ private[kafka] object syntax {
 
     def toSet: Set[A] = {
       val builder = Set.newBuilder[A]
-      val it      = collection.iterator()
+      val it = collection.iterator()
       while (it.hasNext) builder += it.next()
       builder.result()
     }
 
     def toList: List[A] = {
       val builder = List.newBuilder[A]
-      val it      = collection.iterator()
+      val it = collection.iterator()
       while (it.hasNext) builder += it.next()
       builder.result()
     }
 
     def toVector: Vector[A] = {
       val builder = Vector.newBuilder[A]
-      val it      = collection.iterator()
+      val it = collection.iterator()
       while (it.hasNext) builder += it.next()
       builder.result()
     }
 
     def mapToList[B](f: A => B): List[B] = {
       val builder = List.newBuilder[B]
-      val it      = collection.iterator()
+      val it = collection.iterator()
       while (it.hasNext) builder += f(it.next())
       builder.result()
     }
 
     def toSortedSet(implicit ordering: Ordering[A]): SortedSet[A] = {
       val builder = SortedSet.newBuilder[A]
-      val it      = collection.iterator()
+      val it = collection.iterator()
       while (it.hasNext) builder += it.next()
       builder.result()
     }
@@ -208,7 +209,7 @@ private[kafka] object syntax {
 
     def toMap: Map[K, V] = {
       var result = Map.empty[K, V]
-      val it     = map.entrySet.iterator()
+      val it = map.entrySet.iterator()
       while (it.hasNext) {
         val e = it.next()
         result = result.updated(e.getKey, e.getValue)
@@ -218,7 +219,7 @@ private[kafka] object syntax {
 
     def toMapOptionValues: Map[K, Option[V]] = {
       var result = Map.empty[K, Option[V]]
-      val it     = map.entrySet.iterator()
+      val it = map.entrySet.iterator()
       while (it.hasNext) {
         val e = it.next()
         result = result.updated(e.getKey, Option(e.getValue))
@@ -253,8 +254,7 @@ private[kafka] object syntax {
     def asScala: Headers =
       Headers.fromSeq {
         unsafeWrapArray {
-          headers
-            .toArray
+          headers.toArray
             .map { header =>
               Header(header.key, header.value)
             }

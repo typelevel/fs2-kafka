@@ -13,7 +13,7 @@ import org.apache.kafka.common.KafkaException
   * unexpected topic which isn't supported by the [[Serializer]] or [[Deserializer]].
   */
 sealed abstract class UnexpectedTopicException(topic: String)
-    extends KafkaException(s"unexpected topic [$topic]")
+  extends KafkaException(s"unexpected topic [$topic]")
 
 private[kafka] object UnexpectedTopicException {
 

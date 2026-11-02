@@ -6,15 +6,14 @@
 
 package fs2.kafka
 
-import scala.concurrent.duration.*
-import scala.concurrent.ExecutionContext
-
-import cats.effect.kernel.Resource
-import cats.effect.unsafe.implicits.global
 import cats.effect.IO
+import cats.effect.kernel.Resource
 import cats.syntax.all.*
-
 import org.apache.kafka.clients.consumer.ConsumerConfig
+import scala.concurrent.ExecutionContext
+import scala.concurrent.duration.*
+
+import cats.effect.unsafe.implicits.global
 
 final class ConsumerSettingsSpec extends BaseSpec {
 
@@ -254,7 +253,7 @@ final class ConsumerSettingsSpec extends BaseSpec {
     }
 
     it("should be able to create with and without deserializer creation effects") {
-      val deserializer         = Deserializer[IO, String]
+      val deserializer = Deserializer[IO, String]
       val deserializerResource = Resource.pure[IO, Deserializer[IO, String]](deserializer)
 
       ConsumerSettings(deserializer, deserializer)
@@ -271,12 +270,10 @@ final class ConsumerSettingsSpec extends BaseSpec {
         Resource.pure(deserializerInstance)
 
       ConsumerSettings[IO, Int, Int]
-      ConsumerSettings[IO, String, Int]
-        .keyDeserializer
+      ConsumerSettings[IO, String, Int].keyDeserializer
         .use(IO.pure)
         .unsafeRunSync() shouldBe deserializerInstance
-      ConsumerSettings[IO, Int, String]
-        .valueDeserializer
+      ConsumerSettings[IO, Int, String].valueDeserializer
         .use(IO.pure)
         .unsafeRunSync() shouldBe deserializerInstance
       ConsumerSettings[IO, String, String]
@@ -284,8 +281,7 @@ final class ConsumerSettingsSpec extends BaseSpec {
 
     it("should have a Show instance and matching toString") {
       assert {
-        settings
-          .show == "ConsumerSettings(closeTimeout = 20 seconds, commitTimeout = 15 seconds, pollInterval = 50 milliseconds, pollTimeout = 50 milliseconds, commitRecovery = Default)" &&
+        settings.show == "ConsumerSettings(closeTimeout = 20 seconds, commitTimeout = 15 seconds, pollInterval = 50 milliseconds, pollTimeout = 50 milliseconds, commitRecovery = Default)" &&
         settings.show == settings.toString
       }
     }

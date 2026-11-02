@@ -6,15 +6,16 @@
 
 package fs2.kafka
 
-import cats.effect.unsafe.implicits.global
 import cats.effect.IO
 import cats.syntax.all.*
 import fs2.kafka.internal.converters.option.*
-
-import org.apache.kafka.clients.consumer.ConsumerRecord.{NO_TIMESTAMP, NULL_SIZE}
+import org.apache.kafka.clients.consumer.ConsumerRecord.NO_TIMESTAMP
+import org.apache.kafka.clients.consumer.ConsumerRecord.NULL_SIZE
 import org.apache.kafka.common.record.TimestampType
 import org.apache.kafka.common.record.TimestampType.*
 import org.scalatest.*
+
+import cats.effect.unsafe.implicits.global
 
 final class ConsumerRecordSpec extends BaseSpec {
 
