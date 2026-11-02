@@ -6,33 +6,32 @@
 
 package fs2.kafka.internal.actor
 
-import java.time.Duration
-import java.util
-
-import scala.collection.immutable.SortedSet
-import scala.util.control.NonFatal
-import scala.util.matching.Regex
-
+import cats.Reducible
 import cats.data.NonEmptyList
 import cats.data.NonEmptySet
 import cats.effect.*
 import cats.effect.implicits.*
 import cats.effect.std.*
 import cats.syntax.all.*
-import cats.Reducible
+import fs2.Chunk
+import fs2.Stream
 import fs2.concurrent.SignallingRef
 import fs2.kafka.*
 import fs2.kafka.instances.*
-import fs2.kafka.internal.{LogEntry, Logging, WithConsumer}
+import fs2.kafka.internal.LogEntry
+import fs2.kafka.internal.LogEntry.*
+import fs2.kafka.internal.Logging
+import fs2.kafka.internal.WithConsumer
 import fs2.kafka.internal.converters.collection.*
 import fs2.kafka.internal.syntax.*
-import fs2.kafka.internal.LogEntry.*
-import fs2.Chunk
-import fs2.Stream
-
+import java.time.Duration
+import java.util
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.TopicPartition
+import scala.collection.immutable.SortedSet
+import scala.util.control.NonFatal
+import scala.util.matching.Regex
 
 /**
   * [[KafkaConsumerActor]] wraps a Java `KafkaConsumer` and works like a traditional actor: it
@@ -89,7 +88,7 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
 
   private type GroupsState = Map[Set[TopicPartition], PartitionGroupState[F, K, V]]
   private[this] val pollTimeout: Duration = settings.pollTimeout.toJava
-  private[this] val maxPrefetch: Int      = settings.maxPrefetchBatches
+  private[this] val maxPrefetch: Int = settings.maxPrefetchBatches
 
   val consumerRebalanceListener: ConsumerRebalanceListener = new ConsumerRebalanceListener {
     override def onPartitionsRevoked(partitions: util.Collection[TopicPartition]): Unit = {
@@ -98,7 +97,7 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
       dispatcher.unsafeRunSync {
         state.evalUpdate { state =>
           val currentAssignment = state.partitionGroupState.keys.toList.flatten.toSet
-          val targetAssignment  = currentAssignment -- partitions.asScala
+          val targetAssignment = currentAssignment -- partitions.asScala
           alignPartitionState(targetAssignment, state.partitionGroupState).map(state.withGroupState)
         }
       }
@@ -109,11 +108,11 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
         val assigned = SortedSet(partitions.asScala.toList: _*)
         state.evalUpdate { state =>
           val currentAssignment = state.partitionGroupState.keys.toList.flatten.toSet
-          val targetAssignment  = currentAssignment ++ assigned
+          val targetAssignment = currentAssignment ++ assigned
           for {
-            groups  <- alignPartitionState(targetAssignment, state.partitionGroupState)
+            groups <- alignPartitionState(targetAssignment, state.partitionGroupState)
             newState = state.withGroupState(groups)
-            _       <- logging.log(AssignedPartitions(assigned, newState))
+            _ <- logging.log(AssignedPartitions(assigned, newState))
           } yield newState
         }
       }
@@ -128,26 +127,26 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
     *
     * Partition groups
     */
-  def consume()
-    : Stream[F, Map[Set[TopicPartition], Stream[F, Chunk[CommittableConsumerRecord[F, K, V]]]]] =
+  def consume(): Stream[F, Map[Set[TopicPartition], Stream[F, Chunk[CommittableConsumerRecord[F, K, V]]]]] =
     for {
       _ <-
         Stream.eval(
           state.get.map(_.subscribed).ifM(().pure[F], NotSubscribedException().raiseError[F, Unit])
         )
-      _                <- Stream.eval(state.update(_.withStreaming()))
-      assignments0      = Stream.eval(state.get.map(_.partitionGroupState)).filter(_.nonEmpty)
+      _ <- Stream.eval(state.update(_.withStreaming()))
+      assignments0 = Stream.eval(state.get.map(_.partitionGroupState)).filter(_.nonEmpty)
       assignmentUpdates = Stream.fromQueueNoneTerminated(assignment)
-      assignment       <- (assignments0 ++ assignmentUpdates).map { assignment =>
-                      assignment.map { case (k, state) =>
-                        k ->
-                          (for {
-                            hasPermit <- Stream.resource(state.groupSemaphore.tryPermit)
-                            result    <- if (hasPermit) Stream.fromQueueUnterminated(state.queue)
-                                      else Stream.empty
-                          } yield result).interruptWhen(state.interrupt)
-                      }
-                    }
+      assignment <- (assignments0 ++ assignmentUpdates).map { assignment =>
+        assignment.map { case (k, state) =>
+          k ->
+            (for {
+              hasPermit <- Stream.resource(state.groupSemaphore.tryPermit)
+              result <-
+                if (hasPermit) Stream.fromQueueUnterminated(state.queue)
+                else Stream.empty
+            } yield result).interruptWhen(state.interrupt)
+        }
+      }
     } yield assignment
 
   def assignments: Stream[F, SortedSet[TopicPartition]] =
@@ -163,33 +162,29 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
     } >> state.evalUpdate { s =>
       for {
         groups <- alignPartitionState(partitions.toSortedSet, Map.empty)
-        next    = s.withGroupState(groups).withSubscribed()
-        _      <- logging.log(ManuallyAssignedPartitions(partitions, next))
+        next = s.withGroupState(groups).withSubscribed()
+        _ <- logging.log(ManuallyAssignedPartitions(partitions, next))
       } yield next
     }
 
   def subscribe(regex: Regex): F[Unit] =
     for {
       _ <- drainAssignmentQueue
-      _ <- withConsumer
-             .blocking {
-               _.subscribe(regex.pattern, consumerRebalanceListener)
-             }
-             .uncancelable
+      _ <- withConsumer.blocking {
+        _.subscribe(regex.pattern, consumerRebalanceListener)
+      }.uncancelable
       newState <- state.updateAndGet(_.withSubscribed())
-      _        <- logging.log(SubscribedPattern(regex.pattern, newState))
+      _ <- logging.log(SubscribedPattern(regex.pattern, newState))
     } yield ()
 
   def subscribe[G[_]](topics: G[String])(implicit G: Reducible[G]): F[Unit] =
     for {
       _ <- drainAssignmentQueue
-      _ <- withConsumer
-             .blocking {
-               _.subscribe(topics.toList.asJava, consumerRebalanceListener)
-             }
-             .uncancelable
+      _ <- withConsumer.blocking {
+        _.subscribe(topics.toList.asJava, consumerRebalanceListener)
+      }.uncancelable
       newState <- state.updateAndGet(_.withSubscribed())
-      _        <- logging.log(SubscribedTopics(NonEmptyList.fromListUnsafe(topics.toList), newState))
+      _ <- logging.log(SubscribedTopics(NonEmptyList.fromListUnsafe(topics.toList), newState))
     } yield ()
 
   def handle(request: Request[F, K, V]): F[Unit] =
@@ -197,11 +192,11 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
       case Request.Poll() =>
         for {
           records <- pollRecords
-          _       <- state.evalUpdate { s =>
-                 for {
-                   stateAfterEnqueued <- enqueueRecordsAndSpillover(records, s.partitionGroupState)
-                 } yield s.withGroupState(stateAfterEnqueued)
-               }
+          _ <- state.evalUpdate { s =>
+            for {
+              stateAfterEnqueued <- enqueueRecordsAndSpillover(records, s.partitionGroupState)
+            } yield s.withGroupState(stateAfterEnqueued)
+          }
         } yield ()
       case request @ Request.Commit(_, _) =>
         commit(request)
@@ -215,19 +210,14 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
     for {
       _ <- withConsumer.blocking(_.unsubscribe()).uncancelable
       _ <- state.evalUpdate { state =>
-             for {
-               _ <- assignment.offer(None)
-               _ <- state
-                      .partitionGroupState
-                      .values
-                      .toList
-                      .parTraverse(group =>
-                        group.interrupt.complete(().asRight) >> group.groupSemaphore.acquire
-                      )
-               newState = state.withUnsubscribed()
-               _       <- logging.log(Unsubscribed(newState))
-             } yield newState
-           }
+        for {
+          _ <- assignment.offer(None)
+          _ <- state.partitionGroupState.values.toList
+            .parTraverse(group => group.interrupt.complete(().asRight) >> group.groupSemaphore.acquire)
+          newState = state.withUnsubscribed()
+          _ <- logging.log(Unsubscribed(newState))
+        } yield newState
+      }
     } yield ()
 
   /**
@@ -261,58 +251,52 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
     } else {
       for {
         groupGoal <- PartitionGroupingCalculator
-                       .align(targetAssignment, currentAssignment, maxParallel)
-                       .pure[F]
-        toRevoke   = state -- groupGoal
-        toKeep     = state -- (toRevoke.keys)
-        _         <- logging.log(RevokedPartitions(toRevoke.keySet, toRevoke)).whenA(toRevoke.nonEmpty)
-        spillover <- toRevoke
-                       .toList
-                       .parFlatTraverse { case (group, state) =>
-                         revokePartitionGroup(targetAssignment, group, state)
-                       }
+          .align(targetAssignment, currentAssignment, maxParallel)
+          .pure[F]
+        toRevoke = state -- groupGoal
+        toKeep = state -- (toRevoke.keys)
+        _ <- logging.log(RevokedPartitions(toRevoke.keySet, toRevoke)).whenA(toRevoke.nonEmpty)
+        spillover <- toRevoke.toList
+          .parFlatTraverse { case (group, state) =>
+            revokePartitionGroup(targetAssignment, group, state)
+          }
         spilloverMap = spillover
-                         .map(_.toList)
-                         .map(_.groupByNel(_.offset.topicPartition).toMap)
-                         .map(_.map { case (k, v) => k -> Chunk.from(v.toList) })
-                         .foldLeft(Map.empty[TopicPartition, List[ConsumerRecords]]) {
-                           case (acc, elem) =>
-                             elem
-                               .toList
-                               .foldLeft(acc) { case (acc, (tp, records)) =>
-                                 acc.updated(tp, acc.getOrElse(tp, List.empty) ++ List(records))
-                               }
-                         }
-        needsAdding    = groupGoal.diff(currentAssignment)
-        newPartitions <- needsAdding
-                           .toList
-                           .traverse { group =>
-                             for {
-                               semaphore <- Semaphore[F](1)
-                               deferred  <- Deferred[F, Either[Throwable, Unit]]
-                               queue     <- Queue.bounded[F, Chunk[CommittableConsumerRecord[F, K, V]]](
-                                          maxPrefetch
-                                        )
-                               carryOver =
-                                 group.toList.foldMap(tp => spilloverMap.get(tp).toList.flatten)
-                               spillover <- queue.tryOfferN(carryOver.map(_.toList).map(Chunk.from))
-                             } yield group -> PartitionGroupState(
-                               semaphore,
-                               deferred,
-                               queue,
-                               spillover
-                             )
-                           }
+          .map(_.toList)
+          .map(_.groupByNel(_.offset.topicPartition).toMap)
+          .map(_.map { case (k, v) => k -> Chunk.from(v.toList) })
+          .foldLeft(Map.empty[TopicPartition, List[ConsumerRecords]]) { case (acc, elem) =>
+            elem.toList
+              .foldLeft(acc) { case (acc, (tp, records)) =>
+                acc.updated(tp, acc.getOrElse(tp, List.empty) ++ List(records))
+              }
+          }
+        needsAdding = groupGoal.diff(currentAssignment)
+        newPartitions <- needsAdding.toList
+          .traverse { group =>
+            for {
+              semaphore <- Semaphore[F](1)
+              deferred <- Deferred[F, Either[Throwable, Unit]]
+              queue <- Queue.bounded[F, Chunk[CommittableConsumerRecord[F, K, V]]](
+                maxPrefetch
+              )
+              carryOver =
+                group.toList.foldMap(tp => spilloverMap.get(tp).toList.flatten)
+              spillover <- queue.tryOfferN(carryOver.map(_.toList).map(Chunk.from))
+            } yield group -> PartitionGroupState(
+              semaphore,
+              deferred,
+              queue,
+              spillover
+            )
+          }
         newState = newPartitions.toMap ++ toKeep
-        _       <- newPartitions
-               .toMap
-               .some
-               .filter(_.nonEmpty)
-               .map(_.some)
-               .traverse(assignment.offer)
-               .whenA(newState.keySet != state.keySet)
+        _ <- newPartitions.toMap.some
+          .filter(_.nonEmpty)
+          .map(_.some)
+          .traverse(assignment.offer)
+          .whenA(newState.keySet != state.keySet)
         newStateSet = SortedSet(newState.keys.toList.flatten: _*)
-        _          <- currentAssignmentRef.set(newStateSet.some)
+        _ <- currentAssignmentRef.set(newStateSet.some)
       } yield newState
     }
   }
@@ -323,39 +307,36 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
     state: PartitionGroupState[F, K, V]
   ): F[List[ConsumerRecords]] =
     for {
-      _                    <- state.interrupt.complete(().asRight)
-      safeToDiscard         = group.forall(!targetAssignment.contains(_))
-      isEager               = settings.rebalanceRevokeMode == RebalanceRevokeMode.EagerMode
+      _ <- state.interrupt.complete(().asRight)
+      safeToDiscard = group.forall(!targetAssignment.contains(_))
+      isEager = settings.rebalanceRevokeMode == RebalanceRevokeMode.EagerMode
       skipWaitForCompletion = isEager && safeToDiscard
-      result               <- if (!skipWaitForCompletion) {
-                  for {
-                    _ <- state
-                           .groupSemaphore
-                           .acquire
-                           .timeoutTo(
-                             settings.sessionTimeout,
-                             logging.log(LogEntry.RevokeTimeoutOccurred(group, state)) // TODO: throw exception here ?
-                           )
-                    queued   <- state.queue.tryTakeN(none)
-                    spillover = state.spillover
-                    records   =
-                      (queued ++ spillover)
-                        .map(_.filter(r => targetAssignment.contains(r.offset.topicPartition)))
-                        .filter(_.nonEmpty)
-                  } yield records
-                } else Nil.pure[F]
+      result <-
+        if (!skipWaitForCompletion) {
+          for {
+            _ <- state.groupSemaphore.acquire
+              .timeoutTo(
+                settings.sessionTimeout,
+                logging.log(LogEntry.RevokeTimeoutOccurred(group, state)) // TODO: throw exception here ?
+              )
+            queued <- state.queue.tryTakeN(none)
+            spillover = state.spillover
+            records =
+              (queued ++ spillover)
+                .map(_.filter(r => targetAssignment.contains(r.offset.topicPartition)))
+                .filter(_.nonEmpty)
+          } yield records
+        } else Nil.pure[F]
     } yield result
 
   private def enqueueRecordsAndSpillover(
     records: ConsumerRecordsMap,
     groupsState: GroupsState
   ): F[GroupsState] = {
-    groupsState
-      .toList
+    groupsState.toList
       .parTraverse { case (set, groupState) =>
         val toEnqueue = set.toList.flatMap(records.get(_).toList)
-        groupState
-          .queue
+        groupState.queue
           .tryOfferN(groupState.spillover ++ toEnqueue)
           .map(groupState.setSpillover)
           .tupleLeft(set)
@@ -384,8 +365,7 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
       .blocking {
         _.commitAsync(
           offsets.asJava,
-          (_, exception) =>
-            dispatcher.unsafeRunSync(F.delay(callback(Option(exception).toLeft(()))))
+          (_, exception) => dispatcher.unsafeRunSync(F.delay(callback(Option(exception).toLeft(()))))
         )
       }
       .handleErrorWith(e => F.delay(callback(Left(e))))
@@ -447,30 +427,27 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
     )
 
   private def pollRecords: F[ConsumerRecordsMap] =
-    state
-      .get
+    state.get
       .flatMap {
         case state if state.subscribed && state.streaming =>
           for {
             partition <-
               state.partitionGroupState.partition { case (_, s) => s.spillover.isEmpty }.pure[F]
             batch <- withConsumer.blocking { consumer =>
-                       val assigned = consumer.assignment().asScala.toSet
-                       val toResume = partition._1.keys.flatten.filter(assigned.contains)
-                       val toPause  = partition._2.keys.flatten.filter(assigned.contains)
-                       if (toPause.nonEmpty) consumer.pause(toPause.toList.asJava)
-                       if (toResume.nonEmpty) consumer.resume(toResume.toList.asJava)
-                       consumer.poll(pollTimeout)
-                     }
+              val assigned = consumer.assignment().asScala.toSet
+              val toResume = partition._1.keys.flatten.filter(assigned.contains)
+              val toPause = partition._2.keys.flatten.filter(assigned.contains)
+              if (toPause.nonEmpty) consumer.pause(toPause.toList.asJava)
+              if (toResume.nonEmpty) consumer.resume(toResume.toList.asJava)
+              consumer.poll(pollTimeout)
+            }
             records <- records(batch)
           } yield records
         case _ => Map.empty.pure[F]
       }
 
   private[this] def records(batch: KafkaByteConsumerRecords): F[ConsumerRecordsMap] =
-    batch
-      .partitions
-      .toVector
+    batch.partitions.toVector
       .traverse { partition =>
         batch
           .records(partition)

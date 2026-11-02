@@ -10,9 +10,9 @@ import cats.instances.list.*
 import cats.syntax.show.*
 import fs2.kafka.instances.*
 import fs2.kafka.internal.syntax.*
-
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
-import org.apache.kafka.common.{KafkaException, TopicPartition}
+import org.apache.kafka.common.KafkaException
+import org.apache.kafka.common.TopicPartition
 
 /**
   * [[CommitRecoveryException]] indicates that offset commit recovery was attempted `attempts` times
@@ -26,21 +26,20 @@ sealed abstract class CommitRecoveryException(
   lastException: Throwable,
   offsets: Map[TopicPartition, OffsetAndMetadata]
 ) extends KafkaException({
-      offsets
-        .toList
-        .sorted
-        .mkStringAppend { case (append, (tp, oam)) =>
-          append(tp.show)
-          append(" -> ")
-          append(oam.show)
-        }(
-          start =
-            s"offset commit is still failing after $attempts attempts${if (offsets.nonEmpty) " for offsets: "
-              else ""}",
-          sep = ", ",
-          end = s"; last exception was: $lastException"
-        )
-    })
+    offsets.toList.sorted
+      .mkStringAppend { case (append, (tp, oam)) =>
+        append(tp.show)
+        append(" -> ")
+        append(oam.show)
+      }(
+        start = s"offset commit is still failing after $attempts attempts${
+            if (offsets.nonEmpty) " for offsets: "
+            else ""
+          }",
+        sep = ", ",
+        end = s"; last exception was: $lastException"
+      )
+  })
 
 object CommitRecoveryException {
 

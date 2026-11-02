@@ -6,14 +6,14 @@
 
 package fs2.kafka
 
-import scala.concurrent.duration.*
-import scala.concurrent.ExecutionContext
-
-import cats.effect.{IO, Resource}
-import cats.effect.unsafe.implicits.global
+import cats.effect.IO
+import cats.effect.Resource
 import cats.syntax.all.*
-
 import org.apache.kafka.clients.producer.ProducerConfig
+import scala.concurrent.ExecutionContext
+import scala.concurrent.duration.*
+
+import cats.effect.unsafe.implicits.global
 
 final class ProducerSettingsSpec extends BaseSpec {
 
@@ -132,7 +132,7 @@ final class ProducerSettingsSpec extends BaseSpec {
     }
 
     it("should be able to create with and without serializer creation effects") {
-      val serializer                                               = Serializer[IO, String]
+      val serializer = Serializer[IO, String]
       val serializerResource: Resource[IO, Serializer[IO, String]] = Resource.pure(serializer)
 
       ProducerSettings(serializer, serializer)
@@ -149,12 +149,10 @@ final class ProducerSettingsSpec extends BaseSpec {
         Resource.pure(serializerInstance)
 
       ProducerSettings[IO, Int, Int]
-      ProducerSettings[IO, String, Int]
-        .keySerializer
+      ProducerSettings[IO, String, Int].keySerializer
         .use(IO.pure)
         .unsafeRunSync() shouldBe serializerInstance
-      ProducerSettings[IO, Int, String]
-        .valueSerializer
+      ProducerSettings[IO, Int, String].valueSerializer
         .use(IO.pure)
         .unsafeRunSync() shouldBe serializerInstance
       ProducerSettings[IO, String, String]

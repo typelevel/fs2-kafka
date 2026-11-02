@@ -55,10 +55,10 @@ private[kafka] object PartitionGroupingCalculator {
     } else if (targetAssignment.isEmpty) {
       Set.empty
     } else {
-      val totalGroupCount     = Math.min(targetAssignment.size, maxParallelism)
+      val totalGroupCount = Math.min(targetAssignment.size, maxParallelism)
       val spilloverGroupCount = targetAssignment.size % totalGroupCount
 
-      val defaultGroupSize   = targetAssignment.size / totalGroupCount
+      val defaultGroupSize = targetAssignment.size / totalGroupCount
       val oversizedGroupSize = defaultGroupSize + 1
 
       val stillAssigned =

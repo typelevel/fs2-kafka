@@ -6,14 +6,12 @@
 
 package fs2.kafka
 
-import scala.concurrent.duration.*
-import scala.concurrent.ExecutionContext
-
-import cats.effect.Resource
 import cats.Show
+import cats.effect.Resource
 import fs2.kafka.security.KafkaCredentialStore
-
 import org.apache.kafka.clients.producer.ProducerConfig
+import scala.concurrent.ExecutionContext
+import scala.concurrent.duration.*
 
 /**
   * [[ProducerSettings]] contain settings necessary to create a [[KafkaProducer]]. At the very
@@ -279,8 +277,8 @@ object ProducerSettings {
         ProducerConfig.ACKS_CONFIG,
         acks match {
           case Acks.ZeroAcks => "0"
-          case Acks.OneAcks  => "1"
-          case Acks.AllAcks  => "all"
+          case Acks.OneAcks => "1"
+          case Acks.AllAcks => "all"
         }
       )
 

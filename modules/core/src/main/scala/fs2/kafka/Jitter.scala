@@ -6,9 +6,9 @@
 
 package fs2.kafka
 
+import cats.Applicative
 import cats.effect.Sync
 import cats.syntax.functor.*
-import cats.Applicative
 
 /**
   * [[Jitter]] represents the ability to apply jitter to an existing value `n`, effectively

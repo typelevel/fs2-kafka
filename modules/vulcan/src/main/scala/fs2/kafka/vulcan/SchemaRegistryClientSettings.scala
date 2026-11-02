@@ -6,8 +6,8 @@
 
 package fs2.kafka.vulcan
 
-import cats.effect.Sync
 import cats.Show
+import cats.effect.Sync
 import fs2.kafka.internal.converters.collection.*
 
 /**
@@ -100,14 +100,14 @@ object SchemaRegistryClientSettings {
       auth match {
         case Auth.BasicAuth(username, password) =>
           withProperties(
-            "basic.auth.credentials.source"        -> "USER_INFO",
+            "basic.auth.credentials.source" -> "USER_INFO",
             "schema.registry.basic.auth.user.info" -> s"$username:$password"
           )
 
         case Auth.BearerAuth(token) =>
           withProperties(
             "bearer.auth.credentials.source" -> "STATIC_TOKEN",
-            "bearer.auth.token"              -> token
+            "bearer.auth.token" -> token
           )
 
         case Auth.NoAuth =>

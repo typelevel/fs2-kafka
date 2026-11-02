@@ -8,7 +8,6 @@ package fs2.kafka.consumer
 
 import fs2.*
 import fs2.kafka.CommittableConsumerRecord
-
 import org.apache.kafka.common.TopicPartition
 
 trait KafkaConsumeGrouped[F[_], K, V] {

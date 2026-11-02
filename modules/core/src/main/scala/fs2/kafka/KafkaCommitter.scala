@@ -6,10 +6,9 @@
 
 package fs2.kafka
 
-import cats.~>
 import cats.Eq
 import cats.Show
-
+import cats.~>
 import org.apache.kafka.clients.consumer.ConsumerGroupMetadata
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.TopicPartition
@@ -48,7 +47,7 @@ sealed abstract class KafkaCommitter[F[_]] { self =>
   final override def equals(that: Any): Boolean =
     that match {
       case that: KafkaCommitter[_] => source eq that.source
-      case _                       => false
+      case _ => false
     }
 
   final override def hashCode(): Int =

@@ -6,11 +6,12 @@
 
 package fs2.kafka.vulcan
 
-import cats.effect.kernel.Resource
-import cats.effect.Sync
-import fs2.kafka.{KeySerializer, Serializer, ValueSerializer}
-
 import _root_.vulcan.Codec
+import cats.effect.Sync
+import cats.effect.kernel.Resource
+import fs2.kafka.KeySerializer
+import fs2.kafka.Serializer
+import fs2.kafka.ValueSerializer
 
 final class AvroSerializer[A] private[vulcan] (
   private val codec: Codec[A]
@@ -26,7 +27,7 @@ final class AvroSerializer[A] private[vulcan] (
     F: Sync[F]
   ): Resource[F, Serializer[F, A]] =
     codec.schema match {
-      case Left(e)             => Resource.pure(Serializer.fail(e.throwable))
+      case Left(e) => Resource.pure(Serializer.fail(e.throwable))
       case Right(writerSchema) =>
         Resource
           .make(settings.createAvroSerializer(isKey, Some(writerSchema))) { case (ser, _) =>
@@ -37,7 +38,7 @@ final class AvroSerializer[A] private[vulcan] (
               F.defer {
                 codec.encode(a) match {
                   case Right(value) => F.pure(serializer.serialize(topic, value))
-                  case Left(error)  => F.raiseError(error.throwable)
+                  case Left(error) => F.raiseError(error.throwable)
                 }
               }
             }

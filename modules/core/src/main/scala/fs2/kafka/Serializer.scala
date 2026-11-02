@@ -6,13 +6,14 @@
 
 package fs2.kafka
 
-import java.nio.charset.{Charset, StandardCharsets}
-import java.util.UUID
-
-import cats.~>
-import cats.effect.{Resource, Sync}
-import cats.syntax.all.*
 import cats.Contravariant
+import cats.effect.Resource
+import cats.effect.Sync
+import cats.syntax.all.*
+import cats.~>
+import java.nio.charset.Charset
+import java.nio.charset.StandardCharsets
+import java.util.UUID
 
 sealed abstract class GenericSerializer[-T <: KeyOrValue, F[_], A] { self =>
 
@@ -164,7 +165,7 @@ object GenericSerializer {
       override def option: Serializer[F, Option[A]] =
         Serializer.instance {
           case (topic, headers, Some(a)) => serialize(topic, headers, a)
-          case (_, _, None)              => F.pure(null)
+          case (_, _, None) => F.pure(null)
         }
 
       override def suspend: Serializer[F, A] =

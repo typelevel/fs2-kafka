@@ -10,7 +10,6 @@ import cats.effect.Sync
 import cats.syntax.all.*
 import fs2.kafka.internal.converters.collection.*
 import fs2.kafka.internal.syntax.*
-
 import io.confluent.kafka.schemaregistry.avro.AvroSchema
 import org.apache.avro.Schema
 import vulcan.Codec
@@ -225,7 +224,7 @@ object AvroSettings {
         schemaRegistryClient.flatMap { schemaRegistryClient =>
           F.delay {
             val serializer = schema match {
-              case None         => new KafkaAvroSerializer(schemaRegistryClient)
+              case None => new KafkaAvroSerializer(schemaRegistryClient)
               case Some(schema) =>
                 new KafkaAvroSerializer(schemaRegistryClient) {
 
@@ -257,8 +256,7 @@ object AvroSettings {
         },
       registerSchemaWith = (schemaRegistryClient, subjectName, codec) => {
         schemaRegistryClient.flatMap { client =>
-          codec
-            .schema
+          codec.schema
             .leftMap(_.throwable)
             .liftTo[F]
             .flatMap { schema =>

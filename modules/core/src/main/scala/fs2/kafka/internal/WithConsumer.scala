@@ -6,12 +6,13 @@
 
 package fs2.kafka.internal
 
-import cats.effect.{Async, Resource}
+import cats.effect.Async
+import cats.effect.Resource
 import cats.syntax.all.*
-import fs2.kafka.{ConsumerSettings, KafkaByteConsumer}
+import fs2.kafka.ConsumerSettings
+import fs2.kafka.KafkaByteConsumer
 import fs2.kafka.consumer.MkConsumer
 import fs2.kafka.internal.syntax.*
-
 import org.apache.kafka.clients.consumer.CloseOptions
 
 sealed abstract private[kafka] class WithConsumer[F[_]] {
@@ -29,7 +30,7 @@ private[kafka] object WithConsumer {
     settings: ConsumerSettings[F, K, V]
   ): Resource[F, WithConsumer[F]] = {
     val blocking: Resource[F, Blocking[F]] = settings.customBlockingContext match {
-      case None     => Blocking.singleThreaded[F]("fs2-kafka-consumer")
+      case None => Blocking.singleThreaded[F]("fs2-kafka-consumer")
       case Some(ec) => Resource.pure(Blocking.fromExecutionContext(ec))
     }
 
