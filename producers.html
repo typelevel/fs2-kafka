@@ -154,7 +154,7 @@
       <main class="content">
 
         <h1 id="producers" class="title">Producers</h1>
-        <p>Producers support publishing of records. Producers make use of the <a href="https://kafka.apache.org/43/javadoc/?org/apache/kafka/clients/producer/KafkaProducer.html">Java Kafka producer</a>, which becomes especially important for <a href="#settings">settings</a>.</p>
+        <p>Producers support publishing of records. Producers make use of the <a href="https://kafka.apache.org/44/javadoc/?org/apache/kafka/clients/producer/KafkaProducer.html">Java Kafka producer</a>, which becomes especially important for <a href="#settings">settings</a>.</p>
         <p>The following imports are assumed throughout this page.</p>
         <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">scala</span><span>.</span><span class="identifier">concurrent</span><span>.</span><span class="identifier">duration</span><span>.</span><span class="identifier">_</span><span>
 
@@ -236,7 +236,7 @@
   </span><span class="identifier">keySerializer</span><span> = </span><span class="type-name">Serializer</span><span>[</span><span class="type-name">IO</span><span>, </span><span class="type-name">String</span><span>],
   </span><span class="identifier">valueSerializer</span><span> = </span><span class="type-name">Serializer</span><span>[</span><span class="type-name">IO</span><span>, </span><span class="type-name">String</span><span>]
 ).</span><span class="identifier">withBootstrapServers</span><span>(</span><span class="string-literal">&quot;localhost:9092&quot;</span><span>)</span></code></pre>
-        <p><a class="api" href="api/fs2/kafka/ProducerSettings.html">ProducerSettings</a> provides functions for configuring both the Java Kafka producer and options specific to the library. If functions for configuring certain properties of the Java Kafka producer is missing, we can instead use <code>withProperty</code> or <code>withProperties</code> together with constants from <a href="https://kafka.apache.org/43/javadoc/?org/apache/kafka/clients/producer/ProducerConfig.html"><code>ProducerConfig</code></a>. Available properties for the Java Kafka producer are described in the <a href="http://kafka.apache.org/documentation/#producerconfigs">documentation</a>.</p>
+        <p><a class="api" href="api/fs2/kafka/ProducerSettings.html">ProducerSettings</a> provides functions for configuring both the Java Kafka producer and options specific to the library. If functions for configuring certain properties of the Java Kafka producer is missing, we can instead use <code>withProperty</code> or <code>withProperties</code> together with constants from <a href="https://kafka.apache.org/44/javadoc/?org/apache/kafka/clients/producer/ProducerConfig.html"><code>ProducerConfig</code></a>. Available properties for the Java Kafka producer are described in the <a href="http://kafka.apache.org/documentation/#producerconfigs">documentation</a>.</p>
         
         <h3 id="default-settings" class="section"><a class="anchor-link left" href="#default-settings"><i class="icofont-laika link">&#xef71;</i></a>Default Settings</h3>
         <p>The following settings are specific to the library.</p>

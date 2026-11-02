@@ -156,7 +156,7 @@
         <p>Following are some general library implementation notes.</p>
         <ul>
           <li>
-            <p>The library relies on the Java Kafka client, and does not re-implement the Kafka client. In particular, the library implements a consumer threading model similar to the &#39;decouple consumption and processing&#39; model described in the <a href="https://kafka.apache.org/43/javadoc/?org/apache/kafka/clients/consumer/KafkaConsumer.html">documentation</a>.</p>
+            <p>The library relies on the Java Kafka client, and does not re-implement the Kafka client. In particular, the library implements a consumer threading model similar to the &#39;decouple consumption and processing&#39; model described in the <a href="https://kafka.apache.org/44/javadoc/?org/apache/kafka/clients/consumer/KafkaConsumer.html">documentation</a>.</p>
           </li>
           <li>
             <p>Since the Java Kafka client is allowed to block (up to <code>pollTimeout</code> for <code>poll</code>), all Kafka client calls are run on a dedicated <code>ExecutionContext</code>. Unless explicitly provided when creating <code>ConsumerSettings</code>, a default single-threaded <code>ExecutionContext</code> will be created and used for this purpose.</p>
