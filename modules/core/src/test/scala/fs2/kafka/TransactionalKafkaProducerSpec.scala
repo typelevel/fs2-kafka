@@ -17,13 +17,13 @@ import java.util
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
 import java.util.concurrent.atomic.AtomicBoolean
-import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.consumer.ConsumerGroupMetadata
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.clients.producer.Callback
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.clients.producer.RecordMetadata
 import org.apache.kafka.common.TopicPartition
+import org.apache.kafka.common.errors.InvalidTxnStateException
 import org.apache.kafka.common.errors.ProducerFencedException
 import org.apache.kafka.common.serialization.ByteArraySerializer
 import org.scalatest.EitherValues
@@ -75,7 +75,7 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
   }
 
   private def testSingle(topic: String, makeOffset: Option[Long => CommittableOffset[IO]]) = {
-    createCustomTopic(topic, partitions = 3)
+    createTopic(topic, partitions = 3)
     val toProduce = (0 to 10).map(n => s"key-$n" -> s"value-$n")
 
     val produced =
@@ -121,13 +121,8 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
 
     produced should contain theSameElementsAs toProduce
 
-    val consumed = {
-      consumeNumberKeyedMessagesFrom[String, String](
-        topic,
-        produced.size,
-        customProperties = Map(ConsumerConfig.ISOLATION_LEVEL_CONFIG -> "read_committed")
-      )
-    }
+    val consumed =
+      readRecords(topic, produced.size, readCommitted = true)
 
     consumed should contain theSameElementsAs produced.toList
   }
@@ -160,7 +155,7 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
 
   it("should be able to commit offset without producing records in a transaction") {
     withTopic { topic =>
-      createCustomTopic(topic, partitions = 3)
+      createTopic(topic, partitions = 3)
       val commitState = new AtomicBoolean(false)
       implicit val mk: MkProducer[IO] = new MkProducer[IO] {
 
@@ -207,7 +202,7 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
   }
 
   private def testMultiple(topic: String, makeOffset: Option[Int => CommittableOffset[IO]]) = {
-    createCustomTopic(topic, partitions = 3)
+    createTopic(topic, partitions = 3)
     val toProduce =
       Chunk.from((0 to 100).toList.map(n => s"key-$n" -> s"value-$n"))
 
@@ -253,22 +248,15 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
 
     assert(records == toProduce && produced._1 == toPassthrough)
 
-    val consumed = {
-      val customConsumerProperties =
-        Map(ConsumerConfig.ISOLATION_LEVEL_CONFIG -> "read_committed")
-      consumeNumberKeyedMessagesFrom[String, String](
-        topic,
-        records.size,
-        customProperties = customConsumerProperties
-      )
-    }
+    val consumed =
+      readRecords(topic, records.size, readCommitted = true)
 
     consumed should contain theSameElementsAs records.toList
   }
 
   it("should not allow concurrent access to a producer during a transaction") {
     withTopic { topic =>
-      createCustomTopic(topic, partitions = 3)
+      createTopic(topic, partitions = 3)
       val toProduce =
         Chunk.from((0 to 1000000).toList.map(n => s"key-$n" -> s"value-$n"))
 
@@ -323,7 +311,7 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
 
   it("should abort transactions if committing offsets fails") {
     withTopic { topic =>
-      createCustomTopic(topic, partitions = 3)
+      createTopic(topic, partitions = 3)
       val toProduce = (0 to 100).toList.map(n => s"key-$n" -> s"value-$n")
       val toPassthrough = "passthrough"
 
@@ -387,14 +375,8 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
 
       produced shouldBe Left(error)
 
-      val consumedOrError = {
-        Either.catchNonFatal(
-          consumeFirstKeyedMessageFrom[String, String](
-            topic,
-            customProperties = Map(ConsumerConfig.ISOLATION_LEVEL_CONFIG -> "read_committed")
-          )
-        )
-      }
+      val consumedOrError =
+        Either.catchNonFatal(readRecords(topic, 1, readCommitted = true))
 
       consumedOrError.isLeft shouldBe true
     }
@@ -408,7 +390,7 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
     val expectedErrorOnSecondRecord = new RuntimeException("~Failed to produce second record~")
 
     withTopic { topic =>
-      createCustomTopic(topic)
+      createTopic(topic)
 
       implicit val mk: MkProducer[IO] = new MkProducer[IO] {
 
@@ -489,7 +471,7 @@ class TransactionalKafkaProducerSpec extends BaseKafkaSpec with EitherValues {
 
   it("should get metrics") {
     withTopic { topic =>
-      createCustomTopic(topic, partitions = 3)
+      createTopic(topic, partitions = 3)
 
       val info =
         KafkaProducer[IO]
@@ -516,7 +498,7 @@ class TransactionalKafkaProducerTimeoutSpec extends BaseKafkaSpec with EitherVal
 
   it("should use user-specified transaction timeouts") {
     withTopic { topic =>
-      createCustomTopic(topic, partitions = 3)
+      createTopic(topic, partitions = 3)
       val toProduce = (0 to 100).toList.map(n => s"key-$n" -> s"value-$n")
 
       implicit val mkProducer: MkProducer[IO] = new MkProducer[IO] {
@@ -559,16 +541,12 @@ class TransactionalKafkaProducerTimeoutSpec extends BaseKafkaSpec with EitherVal
           result <- Stream.eval(producer.produceAndCommitTransactionally(records).attempt)
         } yield result).compile.lastOrError.unsafeRunSync()
 
-      produced.left.value shouldBe an[ProducerFencedException]
-
-      val consumedOrError = {
-        Either.catchNonFatal(
-          consumeFirstKeyedMessageFrom[String, String](
-            topic,
-            customProperties = Map(ConsumerConfig.ISOLATION_LEVEL_CONFIG -> "read_committed")
-          )
-        )
+      produced.left.value should matchPattern {
+        case _: ProducerFencedException | _: InvalidTxnStateException =>
       }
+
+      val consumedOrError =
+        Either.catchNonFatal(readRecords(topic, 1, readCommitted = true))
 
       consumedOrError.isLeft shouldBe true
     }

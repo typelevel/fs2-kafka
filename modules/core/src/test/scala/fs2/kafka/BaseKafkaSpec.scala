@@ -8,110 +8,63 @@ package fs2.kafka
 
 import cats.effect.IO
 import cats.effect.Sync
-import com.dimafeng.testcontainers.ConfluentKafkaContainer
-import com.dimafeng.testcontainers.ForAllTestContainer
+import com.github.dockerjava.api.exception.NotFoundException
 import fs2.kafka.internal.converters.collection.*
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
-import org.apache.kafka.clients.admin.AdminClient
+import org.apache.kafka.clients.admin.Admin
 import org.apache.kafka.clients.admin.AdminClientConfig
 import org.apache.kafka.clients.admin.NewTopic
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.consumer.KafkaConsumer as KConsumer
-import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.clients.producer.KafkaProducer as KProducer
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.clients.producer.ProducerRecord as KProducerRecord
-import org.apache.kafka.common.KafkaException
 import org.apache.kafka.common.TopicPartition
 import org.apache.kafka.common.serialization.ByteArrayDeserializer
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.apache.kafka.common.serialization.StringSerializer
-import org.scalatest.Args
+import org.scalatest.BeforeAndAfterAll
+import org.testcontainers.images.RemoteDockerImage
+import org.testcontainers.kafka.KafkaContainer
 import org.testcontainers.utility.DockerImageName
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.*
-import scala.util.Failure
-import scala.util.Try
 
-abstract class BaseKafkaSpec extends BaseAsyncSpec with ForAllTestContainer {
+abstract class BaseKafkaSpec extends BaseAsyncSpec with BeforeAndAfterAll {
 
-  final val adminClientCloseTimeout: FiniteDuration = 2.seconds
-  final val transactionTimeoutInterval: FiniteDuration = 1.second
-
-  final val consumerPollingTimeout: FiniteDuration = 1.second
-  protected val producerPublishTimeout: FiniteDuration = 10.seconds
-
-  override def runTest(testName: String, args: Args) = super.runTest(testName, args)
-
-  private val imageVersion = "8.1.2"
-
-  private lazy val imageName = "confluentinc/cp-kafka"
-
-  override val container: ConfluentKafkaContainer =
-    ConfluentKafkaContainer(DockerImageName.parse(s"$imageName:$imageVersion")).configure { container =>
-      container
-        .withEnv("KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR", "1")
-        .withEnv(
-          "KAFKA_TRANSACTION_ABORT_TIMED_OUT_TRANSACTION_CLEANUP_INTERVAL_MS",
-          transactionTimeoutInterval.toMillis.toString
-        )
-        .withEnv("KAFKA_TRANSACTION_STATE_LOG_MIN_ISR", "1")
-        .withEnv(
-          "KAFKA_AUTHORIZER_CLASS_NAME",
-          "org.apache.kafka.metadata.authorizer.StandardAuthorizer"
-        )
-        .withEnv("KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND", "true")
-
-      ()
-    }
-
-  implicit final val stringSerializer: KafkaSerializer[String] = new StringSerializer
-
-  implicit final val stringDeserializer: KafkaDeserializer[String] = new StringDeserializer
-
-  def createCustomTopic(
-    topic: String,
-    topicConfig: Map[String, String] = Map.empty,
-    partitions: Int = 1,
-    replicationFactor: Int = 1
-  ): Try[Unit] = {
-    val newTopic =
-      new NewTopic(topic, partitions, replicationFactor.toShort).configs(topicConfig.asJava)
-
-    withAdminClient { adminClient =>
-      adminClient.createTopics(Seq(newTopic).asJava).all.get(2, TimeUnit.SECONDS)
-    }.map(_ => ())
+  override protected def beforeAll(): Unit = {
+    val _ = bootstrapServers
+    super.beforeAll()
   }
 
-  protected def withAdminClient[T](
-    body: AdminClient => T
-  ): Try[T] = {
-    val adminClient = AdminClient.create(
-      Map[String, Object](
-        AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG -> container.bootstrapServers,
-        AdminClientConfig.CLIENT_ID_CONFIG -> "test-kafka-admin-client",
-        AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG -> "10000",
-        AdminClientConfig.CONNECTIONS_MAX_IDLE_MS_CONFIG -> "10000"
-      ).asJava
-    )
+  final def bootstrapServers: String =
+    BaseKafkaSpec.bootstrapServers
 
-    val res = Try(body(adminClient))
-    adminClient.close(java.time.Duration.ofMillis(adminClientCloseTimeout.toMillis))
+  final val transactionTimeoutInterval: FiniteDuration =
+    BaseKafkaSpec.transactionAbortCleanupInterval
 
-    res
-  }
+  final val testGroupId: String =
+    s"test-group-${UUID.randomUUID()}"
 
   final def adminClientSettings: AdminClientSettings =
-    AdminClientSettings(bootstrapServers = container.bootstrapServers)
+    AdminClientSettings(bootstrapServers = bootstrapServers)
 
   final def defaultConsumerProperties: Map[String, String] =
     Map(
-      ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG -> container.bootstrapServers,
+      ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG -> bootstrapServers,
       ConsumerConfig.AUTO_OFFSET_RESET_CONFIG -> "earliest",
-      ConsumerConfig.GROUP_ID_CONFIG -> "test-group-id",
+      ConsumerConfig.GROUP_ID_CONFIG -> testGroupId,
       ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG -> "false"
+    )
+
+  private def defaultProducerProperties: Map[String, String] =
+    Map(
+      ProducerConfig.BOOTSTRAP_SERVERS_CONFIG -> bootstrapServers,
+      ProducerConfig.MAX_BLOCK_MS_CONFIG -> "10000",
+      ProducerConfig.RETRY_BACKOFF_MS_CONFIG -> "1000",
+      ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG -> "false"
     )
 
   final def consumerSettings[F[_]](implicit F: Sync[F]): ConsumerSettings[F, String, String] =
@@ -120,17 +73,17 @@ abstract class BaseKafkaSpec extends BaseAsyncSpec with ForAllTestContainer {
       .withRecordMetadata(_.timestamp.toString)
 
   final def producerSettings[F[_]](implicit F: Sync[F]): ProducerSettings[F, String, String] =
-    ProducerSettings[F, String, String].withProperties(defaultProducerConfig)
+    ProducerSettings[F, String, String].withProperties(defaultProducerProperties)
 
   final def producerSettingsTransactional[F[_]](implicit
     F: Sync[F]
   ): ProducerSettings[F, String, String] =
     ProducerSettings[F, String, String]
-      .withProperties(defaultProducerConfig)
+      .withProperties(defaultProducerProperties)
       .withEnableIdempotence(true)
 
   final def withTopic[A](f: String => A): A =
-    f(nextTopicName())
+    f(s"topic-${UUID.randomUUID()}")
 
   final def eventually[A](check: IO[A], attempts: Int = 100): IO[A] =
     check.handleErrorWith { error =>
@@ -161,212 +114,131 @@ abstract class BaseKafkaSpec extends BaseAsyncSpec with ForAllTestContainer {
 
   }
 
-  private[this] def nextTopicName(): String =
-    s"topic-${UUID.randomUUID()}"
-
-  def consumeFirstKeyedMessageFrom[K, V](
-    topic: String,
-    customProperties: Map[String, Object] = Map.empty
-  )(implicit
-    keyDeserializer: KafkaDeserializer[K],
-    valueDeserializer: KafkaDeserializer[V]
-  ): (K, V) =
-    consumeNumberKeyedMessagesFrom[K, V](topic, 1, customProperties = customProperties)(
-      keyDeserializer,
-      valueDeserializer
-    ).head
-
-  def consumeNumberKeyedMessagesFrom[K, V](
-    topic: String,
-    number: Int,
-    customProperties: Map[String, Object] = Map.empty
-  )(implicit
-    keyDeserializer: KafkaDeserializer[K],
-    valueDeserializer: KafkaDeserializer[V]
-  ): List[(K, V)] =
-    consumeNumberKeyedMessagesFromTopics(
-      Set(topic),
-      number,
-      customProperties = customProperties
-    )(
-      keyDeserializer,
-      valueDeserializer
-    )(topic)
-
-  def consumeNumberKeyedMessagesFromTopics[K, V](
-    topics: Set[String],
-    number: Int,
-    timeout: Duration = 10.seconds,
-    resetTimeoutOnEachMessage: Boolean = true,
-    customProperties: Map[String, Object] = Map.empty
-  )(implicit
-    keyDeserializer: KafkaDeserializer[K],
-    valueDeserializer: KafkaDeserializer[V]
-  ): Map[String, List[(K, V)]] = {
-    val consumerProperties = defaultConsumerProperties ++ customProperties
-
-    var timeoutNanoTime = System.nanoTime + timeout.toNanos
-    val consumer = new KConsumer[K, V](
-      consumerProperties.asJava,
-      keyDeserializer,
-      valueDeserializer
+  final def createTopic(topic: String, partitions: Int = 1): Unit = {
+    val admin = Admin.create(
+      Map[String, AnyRef](AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG -> bootstrapServers).asJava
     )
 
-    val messages = Try {
-      val messagesBuffers = topics.map(_ -> ListBuffer.empty[(K, V)]).toMap
-      var messagesRead = 0
-      consumer.subscribe(topics.asJava)
-      topics.foreach(consumer.partitionsFor)
+    try {
+      val newTopic = new NewTopic(topic, partitions, 1.toShort)
+      val _ = admin.createTopics(List(newTopic).asJava).all.get(10, TimeUnit.SECONDS)
+    } finally admin.close()
+  }
 
-      while (messagesRead < number && System.nanoTime < timeoutNanoTime) {
-        val recordIter =
-          consumer.poll(java.time.Duration.ofMillis(consumerPollingTimeout.toMillis)).iterator
-        if (resetTimeoutOnEachMessage && recordIter.hasNext) {
-          timeoutNanoTime = System.nanoTime + timeout.toNanos
-        }
-        while (recordIter.hasNext && messagesRead < number) {
-          val record = recordIter.next
-          messagesBuffers(record.topic) += (record.key -> record.value)
-          val tp = new TopicPartition(record.topic, record.partition)
-          val om = new OffsetAndMetadata(record.offset + 1)
-          consumer.commitSync(Map(tp -> om).asJava)
-          messagesRead += 1
-        }
+  final def sendRecords(topic: String, records: Seq[(String, String)]): Unit =
+    sendRecords(records.map { case (key, value) => ProducerRecord(topic, key, value) })
+
+  final def sendRecords(records: Seq[ProducerRecord[String, String]]): Unit = {
+    val producer = new KProducer[String, String](
+      (defaultProducerProperties: Map[String, AnyRef]).asJava,
+      new StringSerializer,
+      new StringSerializer
+    )
+
+    try {
+      val sent = records.map { record =>
+        val partition = record.partition.map(Int.box).orNull
+        producer.send(new KProducerRecord(record.topic, partition, record.key, record.value))
       }
-      if (messagesRead < number) {
+
+      sent.foreach(_.get(10, TimeUnit.SECONDS))
+    } finally producer.close()
+  }
+
+  final def readRecords(
+    topic: String,
+    count: Int,
+    readCommitted: Boolean = false
+  ): List[(String, String)] = {
+    val isolationLevel = if (readCommitted) "read_committed" else "read_uncommitted"
+
+    val consumer = new KConsumer[String, String](
+      Map[String, AnyRef](
+        ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG -> bootstrapServers,
+        ConsumerConfig.AUTO_OFFSET_RESET_CONFIG -> "earliest",
+        ConsumerConfig.ISOLATION_LEVEL_CONFIG -> isolationLevel
+      ).asJava,
+      new StringDeserializer,
+      new StringDeserializer
+    )
+
+    try {
+      val partitions = consumer
+        .partitionsFor(topic)
+        .asScala
+        .map { info =>
+          new TopicPartition(info.topic, info.partition)
+        }
+
+      consumer.assign(partitions.asJava)
+
+      val records = ListBuffer.empty[(String, String)]
+      val deadline = 10.seconds.fromNow
+
+      while (records.size < count && deadline.hasTimeLeft()) {
+        consumer
+          .poll(java.time.Duration.ofMillis(100))
+          .asScala
+          .foreach { record =>
+            records += (record.key -> record.value)
+          }
+      }
+
+      if (records.size < count)
         throw new TimeoutException(
-          s"Unable to retrieve $number message(s) from Kafka in $timeout - got $messagesRead"
+          s"Read ${records.size} of $count records from $topic before timing out"
         )
-      }
-      messagesBuffers.view.map { case (k, v) => (k, v.toList) }.toMap
-    }
 
-    consumer.close()
-    messages.recover { case ex: KafkaException => throw new Exception("Kafka unavailable", ex) }.get
+      records.take(count).toList
+    } finally consumer.close()
   }
 
-  private def defaultProducerConfig =
-    Map[String, String](
-      ProducerConfig.BOOTSTRAP_SERVERS_CONFIG -> container.bootstrapServers,
-      ProducerConfig.MAX_BLOCK_MS_CONFIG -> 10000.toString,
-      ProducerConfig.RETRY_BACKOFF_MS_CONFIG -> 1000.toString,
-      ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG -> "false"
-    )
+}
 
-  def publishToKafka[T](
-    topic: String,
-    message: T
-  )(implicit serializer: KafkaSerializer[T]): Unit =
-    publishToKafka(
-      new KProducer(
-        (defaultProducerConfig: Map[String, Object]).asJava,
-        new StringSerializer(),
-        serializer
-      ),
-      new KProducerRecord[String, T](topic, message)
-    )
+private object BaseKafkaSpec {
 
-  def publishMessagesToKafka[K, V](
-    messages: List[ProducerRecord[K, V]]
-  )(implicit kSerializer: KafkaSerializer[K], vSerializer: KafkaSerializer[V]): Unit = {
-    val producer = new KProducer(
-      (defaultProducerConfig: Map[String, Object]).asJava,
-      kSerializer,
-      vSerializer
-    )
-    val records = messages.map(message =>
-      new KProducerRecord[K, V](
-        message.topic,
-        message.partition.map(Integer.valueOf).orNull,
-        message.key,
-        message.value
-      )
-    )
-    records.foreach(
-      producer.send(_).get(producerPublishTimeout.length, producerPublishTimeout.unit)
-    )
-    producer.flush()
-    producer.close()
+  val transactionAbortCleanupInterval: FiniteDuration = 1.second
+
+  /** Shared broker by all test suites. Cleaned up by Testcontainers when the JVM exits. */
+  lazy val bootstrapServers: String = {
+    val container =
+      new KafkaContainer(kafkaImage)
+        .withEnv(
+          "KAFKA_TRANSACTION_ABORT_TIMED_OUT_TRANSACTION_CLEANUP_INTERVAL_MS",
+          transactionAbortCleanupInterval.toMillis.toString
+        )
+        .withEnv(
+          "KAFKA_AUTHORIZER_CLASS_NAME",
+          "org.apache.kafka.metadata.authorizer.StandardAuthorizer"
+        )
+        .withEnv("KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND", "true")
+
+    container.start()
+    container.getBootstrapServers
   }
 
-  def publishToKafka[K, V](records: List[ProducerRecord[K, V]])(implicit
-    keySerializer: KafkaSerializer[K],
-    valueSerializer: KafkaSerializer[V]
-  ): Unit = {
-    val producer =
-      new KProducer(
-        defaultProducerConfig.asInstanceOf[Map[String, Object]].asJava,
-        keySerializer,
-        valueSerializer
+  private def kafkaImage: DockerImageName = {
+    val image =
+      DockerImageName.parse(
+        sys.props
+          .getOrElse(
+            "fs2.kafka.test.image",
+            sys.error("fs2.kafka.test.image is not set, run the tests via sbt")
+          )
       )
 
-    records.foreach { record =>
-      val javaRecord = new KProducerRecord(
-        record.topic,
-        record.partition.map(_.asInstanceOf[java.lang.Integer]).orNull,
-        record.key,
-        record.value
-      )
-
-      val sendResult = Try {
-        producer.send(javaRecord).get(producerPublishTimeout.length, producerPublishTimeout.unit)
-      }
-
-      sendResult match {
-        case Failure(ex) =>
-          producer.close()
-          throw new Exception("Kafka unavailable", ex)
-        case _ => ()
-      }
-    }
-
-    producer.close()
-  }
-
-  private def publishToKafka[K, T](
-    kafkaProducer: KProducer[K, T],
-    record: KProducerRecord[K, T]
-  ): Unit = {
-    val sendFuture = kafkaProducer.send(record)
-    val sendResult = Try {
-      sendFuture.get(producerPublishTimeout.length, producerPublishTimeout.unit)
-    }
-
-    kafkaProducer.close()
-
-    sendResult match {
-      case Failure(ex) => throw new Exception("Kafka unavailable", ex)
-      case _ => // OK
+    try {
+      val _ = new RemoteDockerImage(image).get()
+      image
+    } catch {
+      case e: Exception if isImageNotFound(e) =>
+        val fallback = image.withTag("latest")
+        println(s"$image is not available, running Kafka tests against $fallback instead")
+        fallback
     }
   }
 
-  def publishToKafka[K, T](topic: String, messages: Seq[(K, T)])(implicit
-    keySerializer: KafkaSerializer[K],
-    serializer: KafkaSerializer[T]
-  ): Unit = {
-    val producer =
-      new KProducer(
-        defaultProducerConfig.asInstanceOf[Map[String, Object]].asJava,
-        keySerializer,
-        serializer
-      )
-
-    val tupleToRecord =
-      (new KProducerRecord(topic, _: K, _: T)).tupled
-
-    val futureSend = tupleToRecord.andThen(producer.send)
-
-    val futures = messages.map(futureSend)
-
-    // Assure all messages sent before returning, and fail on first send error
-    val records =
-      futures.map(f => Try(f.get(producerPublishTimeout.length, producerPublishTimeout.unit)))
-
-    producer.close()
-
-    val _ = records.collectFirst { case Failure(ex) =>
-      throw new Exception("Kafka unavailable", ex)
-    }
-  }
+  private def isImageNotFound(e: Throwable): Boolean =
+    Iterator.iterate(e)(_.getCause).takeWhile(_ != null).exists(_.isInstanceOf[NotFoundException])
 
 }

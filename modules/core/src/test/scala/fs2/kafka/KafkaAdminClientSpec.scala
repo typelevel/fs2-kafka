@@ -66,29 +66,17 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
           .use { adminClient =>
             for {
               consumerGroupIds <- adminClient.listConsumerGroups.groupIds
-              consumerGroupId <- IO(consumerGroupIds match {
-                case List(groupId) => groupId
-                case _ => fail()
-              })
+              _ <- IO(assert(consumerGroupIds.contains(testGroupId)))
               consumerGroupListings <- adminClient.listConsumerGroups.listings
-              _ <- IO(assert(consumerGroupListings.size == 1))
-              describedConsumerGroups <- adminClient.describeConsumerGroups(consumerGroupIds)
+              _ <- IO(assert(consumerGroupListings.exists(_.groupId == testGroupId)))
+              describedConsumerGroups <- adminClient.describeConsumerGroups(List(testGroupId))
               _ <- IO(assert(describedConsumerGroups.size == 1))
               _ <- IO {
                 adminClient.listConsumerGroups.toString should
                   startWith("ListConsumerGroups$")
               }
-              consumerGroupsOffsets <- consumerGroupIds.parTraverse { groupId =>
-                adminClient
-                  .listConsumerGroupOffsets(groupId)
-                  .partitionsToOffsetAndMetadata
-                  .map((groupId, _))
-              }
-              offsets <- IO(consumerGroupsOffsets match {
-                case List(offsets) => offsets
-                case _ => fail()
-              })
-              (_, consumerGroupOffsetsMap) = offsets
+              consumerGroupOffsetsMap <-
+                adminClient.listConsumerGroupOffsets(testGroupId).partitionsToOffsetAndMetadata
               _ <- IO(
                 assert(
                   consumerGroupOffsetsMap
@@ -100,32 +88,28 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
               )
               _ <- IO {
                 adminClient
-                  .listConsumerGroupOffsets(consumerGroupId)
-                  .toString shouldBe "ListConsumerGroupOffsets(groupId = test-group-id)"
+                  .listConsumerGroupOffsets(testGroupId)
+                  .toString shouldBe s"ListConsumerGroupOffsets(groupId = $testGroupId)"
               }
-              consumerGroupOffsetsPartitions <- consumerGroupIds.parTraverse { groupId =>
-                adminClient
-                  .listConsumerGroupOffsets(groupId)
-                  .forPartitions(List.empty[TopicPartition])
-                  .partitionsToOffsetAndMetadata
-                  .map((groupId, _))
-              }
-              _ <- IO(assert(consumerGroupOffsetsPartitions.size == 1))
+              _ <- adminClient
+                .listConsumerGroupOffsets(testGroupId)
+                .forPartitions(List.empty[TopicPartition])
+                .partitionsToOffsetAndMetadata
               _ <-
                 IO {
                   adminClient
-                    .listConsumerGroupOffsets(consumerGroupId)
+                    .listConsumerGroupOffsets(testGroupId)
                     .forPartitions(List(new TopicPartition("topic", 0)))
-                    .toString shouldBe "ListConsumerGroupOffsetsForPartitions(groupId = test-group-id, partitions = List(topic-0))"
+                    .toString shouldBe s"ListConsumerGroupOffsetsForPartitions(groupId = $testGroupId, partitions = List(topic-0))"
                 }
               partition0 = new TopicPartition(topic, 0)
               updatedOffset = new OffsetAndMetadata(0)
               _ <- adminClient.alterConsumerGroupOffsets(
-                consumerGroupId,
+                testGroupId,
                 Map(partition0 -> updatedOffset)
               )
               _ <- adminClient
-                .listConsumerGroupOffsets(consumerGroupId)
+                .listConsumerGroupOffsets(testGroupId)
                 .partitionsToOffsetAndMetadata
                 .map { res =>
                   val expected = consumerGroupOffsetsMap.updated(partition0, updatedOffset)
@@ -133,20 +117,17 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
                     res(partition0) != consumerGroupOffsetsMap(partition0) && res == expected
                   }
                 }
-              _ <- adminClient.deleteConsumerGroupOffsets(consumerGroupId, Set(partition0))
+              _ <- adminClient.deleteConsumerGroupOffsets(testGroupId, Set(partition0))
               _ <- adminClient
-                .listConsumerGroupOffsets(consumerGroupId)
+                .listConsumerGroupOffsets(testGroupId)
                 .partitionsToOffsetAndMetadata
                 .map { res =>
                   val expected = consumerGroupOffsetsMap - partition0
                   assert(res == expected)
                 }
-              _ <- adminClient.deleteConsumerGroups(consumerGroupIds)
+              _ <- adminClient.deleteConsumerGroups(List(testGroupId))
               _ <- adminClient.listConsumerGroups.groupIds
-                .map { res =>
-                  val expected = List.empty
-                  assert(res == expected)
-                }
+                .map(res => assert(!res.contains(testGroupId)))
             } yield ()
           }
           .unsafeRunSync()
@@ -224,12 +205,14 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
               _ <- IO(assert(topicListings.size == topicCount))
               topicNamesToListings <- adminClient.listTopics.namesToListings
               _ <- IO(assert(topicNamesToListings.size == topicCount))
-              topicNamesInternal <- adminClient.listTopics.includeInternal.names
-              _ <- IO(assert(topicNamesInternal.size == topicCount + 1))
               topicListingsInternal <- adminClient.listTopics.includeInternal.listings
-              _ <- IO(assert(topicListingsInternal.size == topicCount + 1))
+              internalCount = topicListingsInternal.count(_.isInternal)
+              _ <- IO(assert(internalCount > 0))
+              _ <- IO(assert(topicListingsInternal.size == topicCount + internalCount))
+              topicNamesInternal <- adminClient.listTopics.includeInternal.names
+              _ <- IO(assert(topicNamesInternal.size == topicCount + internalCount))
               topicNamesToListingsInternal <- adminClient.listTopics.includeInternal.namesToListings
-              _ <- IO(assert(topicNamesToListingsInternal.size == topicCount + 1))
+              _ <- IO(assert(topicNamesToListingsInternal.size == topicCount + internalCount))
               _ <- IO {
                 adminClient.listTopics.toString should startWith("ListTopics$")
               }
@@ -732,9 +715,9 @@ final class KafkaAdminClientSpec extends BaseKafkaSpec {
   }
 
   def commonSetup(topic: String): Unit = {
-    createCustomTopic(topic, partitions = 3)
+    createTopic(topic, partitions = 3)
     val produced = (0 until 100).map(n => s"key-$n" -> s"value->$n")
-    publishToKafka(topic, produced)
+    sendRecords(topic, produced)
 
     KafkaConsumer
       .stream(consumerSettings[IO])

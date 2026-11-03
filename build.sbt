@@ -12,7 +12,7 @@ val scala213Version = "2.13.18"
 val scala3Version = "3.3.9"
 val slf4jNopVersion = "2.0.20"
 val slf4jVersion = "1.7.36"
-val testcontainersScalaVersion = "0.44.1"
+val testcontainersVersion = "2.0.5"
 val vulcanVersion = "1.14.1"
 
 inThisBuild(
@@ -82,7 +82,9 @@ lazy val core = project
       "org.typelevel" %% "cats-kernel" % catsVersion
     ),
     headerSettings,
-    testSettings
+    testSettings,
+    libraryDependencies += "org.testcontainers" % "testcontainers-kafka" % testcontainersVersion % Test,
+    Test / javaOptions += s"-Dfs2.kafka.test.image=apache/kafka:$kafkaVersion"
   )
 
 lazy val vulcan = project
@@ -345,8 +347,6 @@ lazy val headerSettings = Seq(
 
 lazy val testSettings = Seq(
   libraryDependencies ++= Seq(
-    "com.dimafeng" %% "testcontainers-scala-scalatest" % testcontainersScalaVersion,
-    "com.dimafeng" %% "testcontainers-scala-kafka" % testcontainersScalaVersion,
     "org.typelevel" %% "discipline-scalatest" % disciplineVersion,
     "org.typelevel" %% "cats-effect-laws" % catsEffectVersion,
     "org.typelevel" %% "cats-effect-testkit" % catsEffectVersion,
