@@ -74,7 +74,7 @@ final private[kafka] case class State[F[_], K, V](
 
   /**
     * Records offsets to be committed on revoke. Offsets for partitions which are not currently
-    * assigned are ignored: they come from commits which completed after their partition was
+    * assigned are ignored: they come from commit requests handled after their partition was
     * revoked, and committing them on a later revoke would rewind the consumer group.
     */
   def withRequestedCommitOffsets(
