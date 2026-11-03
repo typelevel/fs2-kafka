@@ -61,7 +61,13 @@ final class CommitOnRevokeSpec extends BaseSpec {
               _ <- duringPoll {
                 mockConsumer.rebalance(List(p0, p1).asJava)
                 mockConsumer.addRecord(
-                  new KafkaByteConsumerRecord(topic, p1.partition, 0L, Array.emptyByteArray, Array.emptyByteArray)
+                  new KafkaByteConsumerRecord(
+                    topic,
+                    p1.partition,
+                    0L,
+                    Array.emptyByteArray,
+                    Array.emptyByteArray
+                  )
                 )
               }
               record <- records.take
