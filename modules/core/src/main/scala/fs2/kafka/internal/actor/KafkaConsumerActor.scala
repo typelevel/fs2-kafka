@@ -96,8 +96,7 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
         commitOnRevokeSync(partitions.asScala.toSet)
       dispatcher.unsafeRunSync {
         state.evalUpdate { state =>
-          val currentAssignment = state.partitionGroupState.keys.toList.flatten.toSet
-          val targetAssignment = currentAssignment -- partitions.asScala
+          val targetAssignment = state.assignedPartitions -- partitions.asScala
           alignPartitionState(targetAssignment, state.partitionGroupState).map(state.withGroupState)
         }
       }
@@ -107,11 +106,10 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
       dispatcher.unsafeRunSync {
         val assigned = SortedSet(partitions.asScala.toList: _*)
         state.evalUpdate { state =>
-          val currentAssignment = state.partitionGroupState.keys.toList.flatten.toSet
-          val targetAssignment = currentAssignment ++ assigned
+          val targetAssignment = state.assignedPartitions ++ assigned
           for {
             groups <- alignPartitionState(targetAssignment, state.partitionGroupState)
-            newState = state.withGroupState(groups)
+            newState = state.withGroupState(groups).withoutRequestedCommitOffsets(assigned)
             _ <- logging.log(AssignedPartitions(assigned, newState))
           } yield newState
         }
