@@ -36,7 +36,7 @@ final class KafkaProducerSpec extends BaseKafkaSpec {
 
   it("should be able to produce records with single") {
     withTopic { topic =>
-      createCustomTopic(topic, partitions = 3)
+      createTopic(topic, partitions = 3)
       val toProduce = (0 until 100).map(n => s"key-$n" -> s"value->$n")
 
       val produced =
@@ -59,7 +59,7 @@ final class KafkaProducerSpec extends BaseKafkaSpec {
       produced should contain theSameElementsAs toProduce
 
       val consumed =
-        consumeNumberKeyedMessagesFrom[String, String](topic, produced.size)
+        readRecords(topic, produced.size)
 
       consumed should contain theSameElementsAs produced
     }
@@ -67,7 +67,7 @@ final class KafkaProducerSpec extends BaseKafkaSpec {
 
   it("should be able to produce with different serializers") {
     withTopic { topic =>
-      createCustomTopic(topic, partitions = 3)
+      createTopic(topic, partitions = 3)
       (for {
         stringProducer <- KafkaProducer.stream(producerSettings[IO])
         unitProducer = stringProducer.withSerializers[Unit, Unit](implicitly, implicitly)
@@ -81,7 +81,7 @@ final class KafkaProducerSpec extends BaseKafkaSpec {
 
   it("should be able to produce with a mapped effect type") {
     withTopic { topic =>
-      createCustomTopic(topic, partitions = 3)
+      createTopic(topic, partitions = 3)
       val toProduce = (0 until 100).map(n => s"key-$n" -> s"value->$n")
 
       val fk: IO ~> OptionT[IO, *] = new (IO ~> OptionT[IO, *]) {
@@ -119,7 +119,7 @@ final class KafkaProducerSpec extends BaseKafkaSpec {
       produced should contain theSameElementsAs toProduce
 
       val consumed =
-        consumeNumberKeyedMessagesFrom[String, String](topic, produced.size)
+        readRecords(topic, produced.size)
 
       consumed should contain theSameElementsAs produced
     }
@@ -127,7 +127,7 @@ final class KafkaProducerSpec extends BaseKafkaSpec {
 
   it("should be able to produce with different serializers after imapK") {
     withTopic { topic =>
-      createCustomTopic(topic, partitions = 3)
+      createTopic(topic, partitions = 3)
 
       val fk: IO ~> OptionT[IO, *] = new (IO ~> OptionT[IO, *]) {
 
@@ -158,7 +158,7 @@ final class KafkaProducerSpec extends BaseKafkaSpec {
 
   it("should preserve order of records within a partition") {
     withTopic { topic =>
-      createCustomTopic(topic)
+      createTopic(topic)
       val toProduce = (0 until 100).map(n => s"key-$n" -> s"value->$n")
 
       (for {
@@ -174,7 +174,7 @@ final class KafkaProducerSpec extends BaseKafkaSpec {
       } yield ()).compile.toVector.unsafeRunSync()
 
       val consumed =
-        consumeNumberKeyedMessagesFrom[String, String](topic, toProduce.size)
+        readRecords(topic, toProduce.size)
 
       (consumed should contain).theSameElementsInOrderAs(toProduce)
     }
@@ -182,7 +182,7 @@ final class KafkaProducerSpec extends BaseKafkaSpec {
 
   it("should be able to produce records with multiple") {
     withTopic { topic =>
-      createCustomTopic(topic, partitions = 3)
+      createTopic(topic, partitions = 3)
       val toProduce = (0 until 10).map(n => s"key-$n" -> s"value->$n").toList
 
       val produced =
@@ -202,7 +202,7 @@ final class KafkaProducerSpec extends BaseKafkaSpec {
       assert(records == toProduce)
 
       val consumed =
-        consumeNumberKeyedMessagesFrom[String, String](topic, toProduce.size)
+        readRecords(topic, toProduce.size)
 
       consumed should contain theSameElementsAs toProduce
     }
@@ -210,7 +210,7 @@ final class KafkaProducerSpec extends BaseKafkaSpec {
 
   it("should be able to produce zero records with multiple") {
     withTopic { topic =>
-      createCustomTopic(topic, partitions = 3)
+      createTopic(topic, partitions = 3)
       val passthrough = "passthrough"
 
       val result =
@@ -226,7 +226,7 @@ final class KafkaProducerSpec extends BaseKafkaSpec {
 
   it("should be able to produce zero records with passthrough") {
     withTopic { topic =>
-      createCustomTopic(topic, partitions = 3)
+      createTopic(topic, partitions = 3)
       val passthrough = "passthrough"
 
       val result =
@@ -243,7 +243,7 @@ final class KafkaProducerSpec extends BaseKafkaSpec {
 
   it("should produce one without passthrough") {
     withTopic { topic =>
-      createCustomTopic(topic, partitions = 3)
+      createTopic(topic, partitions = 3)
       val toProduce = "some-key" -> "some-value"
 
       val produced =
@@ -256,7 +256,7 @@ final class KafkaProducerSpec extends BaseKafkaSpec {
         } yield ()).compile.toVector.unsafeRunSync()
 
       val consumed =
-        consumeNumberKeyedMessagesFrom[String, String](topic, produced.size)
+        readRecords(topic, produced.size)
 
       consumed should contain only toProduce
     }
@@ -264,7 +264,7 @@ final class KafkaProducerSpec extends BaseKafkaSpec {
 
   it("should produce one from individual topic, key and value without passthrough") {
     withTopic { topic =>
-      createCustomTopic(topic, partitions = 3)
+      createTopic(topic, partitions = 3)
       val toProduce = "some-key" -> "some-value"
 
       val produced =
@@ -276,7 +276,7 @@ final class KafkaProducerSpec extends BaseKafkaSpec {
         } yield ()).compile.toVector.unsafeRunSync()
 
       val consumed =
-        consumeNumberKeyedMessagesFrom[String, String](topic, produced.size)
+        readRecords(topic, produced.size)
 
       consumed should contain only toProduce
     }
@@ -284,7 +284,7 @@ final class KafkaProducerSpec extends BaseKafkaSpec {
 
   it("should produce one") {
     withTopic { topic =>
-      createCustomTopic(topic, partitions = 3)
+      createTopic(topic, partitions = 3)
       val toProduce = "some-key" -> "some-value"
       val passthrough = "passthrough"
 
@@ -306,7 +306,7 @@ final class KafkaProducerSpec extends BaseKafkaSpec {
 
   it("should produce one from individual topic, key and value") {
     withTopic { topic =>
-      createCustomTopic(topic, partitions = 3)
+      createTopic(topic, partitions = 3)
       val toProduce = "some-key" -> "some-value"
       val passthrough = "passthrough"
 
@@ -326,7 +326,7 @@ final class KafkaProducerSpec extends BaseKafkaSpec {
 
   it("should be able to produce records with multiple without passthrough") {
     withTopic { topic =>
-      createCustomTopic(topic, partitions = 3)
+      createTopic(topic, partitions = 3)
       val toProduce = (0 until 10).map(n => s"key-$n" -> s"value->$n").toList
 
       val produced =
@@ -346,7 +346,7 @@ final class KafkaProducerSpec extends BaseKafkaSpec {
       assert(records == toProduce)
 
       val consumed =
-        consumeNumberKeyedMessagesFrom[String, String](topic, toProduce.size)
+        readRecords(topic, toProduce.size)
 
       consumed should contain theSameElementsAs toProduce
     }
@@ -376,7 +376,7 @@ final class KafkaProducerSpec extends BaseKafkaSpec {
 
   it("should get metrics") {
     withTopic { topic =>
-      createCustomTopic(topic, partitions = 3)
+      createTopic(topic, partitions = 3)
 
       val info =
         KafkaProducer.stream(producerSettings[IO]).evalMap(_.metrics)
@@ -393,7 +393,7 @@ final class KafkaProducerSpec extends BaseKafkaSpec {
       withTopic { topic =>
         val partitions = List(0, 1, 2)
 
-        createCustomTopic(topic, partitions = partitions.size)
+        createTopic(topic, partitions = partitions.size)
 
         val info =
           KafkaProducer.stream(producerSettings[IO]).evalMap(_.partitionsFor(topic))
