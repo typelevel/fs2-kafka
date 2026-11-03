@@ -10,11 +10,14 @@ import cats.effect.Deferred
 import cats.effect.IO
 import cats.effect.std.Queue
 import cats.effect.std.Semaphore
-import cats.effect.unsafe.implicits.global
 import cats.syntax.apply.*
+import fs2.Chunk
 import fs2.kafka.BaseSpec
+import fs2.kafka.CommittableConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.TopicPartition
+
+import cats.effect.unsafe.implicits.global
 
 final class StateSpec extends BaseSpec {
 
@@ -25,7 +28,7 @@ final class StateSpec extends BaseSpec {
     val group = (
       Semaphore[IO](1),
       Deferred[IO, Either[Throwable, Unit]],
-      Queue.unbounded[IO, fs2.Chunk[fs2.kafka.CommittableConsumerRecord[IO, String, String]]]
+      Queue.unbounded[IO, Chunk[CommittableConsumerRecord[IO, String, String]]]
     ).mapN(PartitionGroupState(_, _, _, Nil)).unsafeRunSync()
     State.empty[IO, String, String].withGroupState(Map(partitions.toSet -> group))
   }
