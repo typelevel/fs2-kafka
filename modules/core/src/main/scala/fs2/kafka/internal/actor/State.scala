@@ -72,6 +72,11 @@ final private[kafka] case class State[F[_], K, V](
   def assignedPartitions: Set[TopicPartition] =
     partitionGroupState.keySet.flatten
 
+  /**
+    * Records offsets to be committed on revoke. Offsets for partitions which are not currently
+    * assigned are ignored: they come from commits which completed after their partition was
+    * revoked, and committing them on a later revoke would rewind the consumer group.
+    */
   def withRequestedCommitOffsets(
     offsets: Map[TopicPartition, OffsetAndMetadata]
   ): State[F, K, V] = {
@@ -84,6 +89,10 @@ final private[kafka] case class State[F[_], K, V](
     })
   }
 
+  /**
+    * Forgets requested offsets of newly assigned partitions, which may be left from an earlier
+    * assignment of the same partitions.
+    */
   def withoutRequestedCommitOffsets(partitions: Set[TopicPartition]): State[F, K, V] =
     copy(requestedCommitOffsets = requestedCommitOffsets -- partitions)
 
