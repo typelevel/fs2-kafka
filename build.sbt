@@ -34,7 +34,7 @@ inThisBuild(
     semanticdbEnabled := true,
     semanticdbVersion := scalafixSemanticdb.revision,
     startYear := Some(2018),
-    tlBaseVersion := "4.1",
+    tlBaseVersion := "4.2",
     tlSiteKeepFiles := false,
     mimaBinaryIssueFilters ++= {
       import com.typesafe.tools.mima.core.*
@@ -55,7 +55,13 @@ inThisBuild(
         ProblemFilters.exclude[MissingClassProblem]("fs2.kafka.KafkaConsumer$AssignmentSignals$EagerSignals$"),
         ProblemFilters.exclude[MissingClassProblem]("fs2.kafka.KafkaConsumer$AssignmentSignals$GracefulSignals"),
         ProblemFilters.exclude[MissingClassProblem]("fs2.kafka.KafkaConsumer$AssignmentSignals$GracefulSignals$"),
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("fs2.kafka.KafkaCommitter.source")
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("fs2.kafka.KafkaCommitter.source"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.kafka.KafkaProducer.pipe"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.kafka.KafkaProducer.resource"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.kafka.KafkaProducer.stream"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.kafka.KafkaProducer.transactional"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.kafka.KafkaProducer.transactionalStream"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.kafka.package.commitBatchWithin")
       )
       // scalafmt: {}
     }

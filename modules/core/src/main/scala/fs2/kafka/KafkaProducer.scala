@@ -11,6 +11,7 @@ import cats.Functor
 import cats.Parallel
 import cats.effect.*
 import cats.effect.Resource.ExitCase
+import cats.effect.kernel.instances.spawn
 import cats.effect.std.Semaphore
 import cats.effect.syntax.all.*
 import cats.syntax.all.*
@@ -263,10 +264,18 @@ object KafkaProducer {
     settings: ProducerSettings[F, K, V]
   )(implicit
     F: Async[F],
+    mk: MkProducer[F]
+  ): Stream[F, KafkaProducer.WithSettings[F, K, V]] =
+    Stream.resource(KafkaProducer.resource(settings)(F, mk))
+
+  @deprecated("Preserved for binary compatibility", "4.2.0")
+  private[kafka] def stream[F[_], K, V](
+    settings: ProducerSettings[F, K, V],
+    F: Async[F],
     mk: MkProducer[F],
     P: Parallel[F]
   ): Stream[F, KafkaProducer.WithSettings[F, K, V]] =
-    Stream.resource(KafkaProducer.resource(settings)(F, mk, P))
+    stream(settings)(F, mk)
 
   /**
     * Creates a new transactional [[KafkaProducer]] in the `Resource` context, using the specified
@@ -279,14 +288,22 @@ object KafkaProducer {
     settings: ProducerSettings[F, K, V]
   )(implicit
     F: Async[F],
-    mk: MkProducer[F],
-    P: Parallel[F]
+    mk: MkProducer[F]
   ): Resource[F, KafkaProducer.WithSettings[F, K, V]] = {
     for {
-      producer <- KafkaProducer.resource(settings)(F, mk, P)
+      producer <- KafkaProducer.resource(settings)(F, mk)
       _ <- producer.initTransactions.toResource
     } yield producer
   }
+
+  @deprecated("Preserved for binary compatibility", "4.2.0")
+  private[kafka] def transactional[F[_], K, V](
+    settings: ProducerSettings[F, K, V],
+    F: Async[F],
+    mk: MkProducer[F],
+    P: Parallel[F]
+  ): Resource[F, KafkaProducer.WithSettings[F, K, V]] =
+    transactional(settings)(F, mk)
 
   /**
     * Creates a new transactional [[KafkaProducer]] in the `Stream` context, using the specified
@@ -299,10 +316,18 @@ object KafkaProducer {
     settings: ProducerSettings[F, K, V]
   )(implicit
     F: Async[F],
+    mk: MkProducer[F]
+  ): Stream[F, KafkaProducer.WithSettings[F, K, V]] =
+    Stream.resource(transactional(settings)(F, mk))
+
+  @deprecated("Preserved for binary compatibility", "4.2.0")
+  private[kafka] def transactionalStream[F[_], K, V](
+    settings: ProducerSettings[F, K, V],
+    F: Async[F],
     mk: MkProducer[F],
     P: Parallel[F]
   ): Stream[F, KafkaProducer.WithSettings[F, K, V]] =
-    Stream.resource(transactional(settings)(F, mk, P))
+    transactionalStream(settings)(F, mk)
 
   /**
     * Creates a [[KafkaProducer]] using the provided settings and produces record in batches.
@@ -311,10 +336,18 @@ object KafkaProducer {
     settings: ProducerSettings[F, K, V]
   )(implicit
     F: Async[F],
+    mk: MkProducer[F]
+  ): Pipe[F, ProducerRecords[K, V], ProducerResult[K, V]] =
+    records => stream(settings)(F, mk).flatMap(pipe(_).apply(records))
+
+  @deprecated("Preserved for binary compatibility", "4.2.0")
+  private[kafka] def pipe[F[_], K, V](
+    settings: ProducerSettings[F, K, V],
+    F: Async[F],
     mk: MkProducer[F],
     P: Parallel[F]
   ): Pipe[F, ProducerRecords[K, V], ProducerResult[K, V]] =
-    records => stream(settings)(F, mk, P).flatMap(pipe(_).apply(records))
+    pipe(settings)(F, mk)
 
   /**
     * Produces records in batches using the provided [[KafkaProducer]].
@@ -337,8 +370,7 @@ object KafkaProducer {
     settings: ProducerSettings[F, K, V]
   )(implicit
     F: Async[F],
-    mk: MkProducer[F],
-    P: Parallel[F]
+    mk: MkProducer[F]
   ): Resource[F, KafkaProducer.WithSettings[F, K, V]] = {
     for {
       keySerializer <- settings.keySerializer
@@ -360,6 +392,15 @@ object KafkaProducer {
     } yield fs2KafkaProducer
   }
 
+  @deprecated("Preserved for binary compatibility", "4.2.0")
+  private[kafka] def resource[F[_], K, V](
+    settings: ProducerSettings[F, K, V],
+    F: Async[F],
+    mk: MkProducer[F],
+    P: Parallel[F]
+  ): Resource[F, KafkaProducer.WithSettings[F, K, V]] =
+    resource(settings)(F, mk)
+
   private def resourceInternal[F[_], K, V](
     settings: ProducerSettings[F, K, V],
     keySerializer: KeySerializer[F, K],
@@ -367,7 +408,8 @@ object KafkaProducer {
     producer: KafkaByteProducer,
     txSemaphore: Semaphore[F],
     blocking: Blocking[F]
-  )(implicit F: Async[F], P: Parallel[F]): KafkaProducer.WithSettings[F, K, V] = {
+  )(implicit F: Async[F]): KafkaProducer.WithSettings[F, K, V] = {
+    implicit val P: Parallel[F] = spawn.parallelForGenSpawn[F, Throwable]
     val _settings = settings
     new KafkaProducer.WithSettings[F, K, V] {
       override def produce(records: ProducerRecords[K, V]): F[F[ProducerResult[K, V]]] = {
@@ -556,10 +598,18 @@ object KafkaProducer {
       */
     def resource[K, V](settings: ProducerSettings[F, K, V])(implicit
       F: Async[F],
+      mk: MkProducer[F]
+    ): Resource[F, KafkaProducer.WithSettings[F, K, V]] =
+      KafkaProducer.resource(settings)(F, mk)
+
+    @deprecated("Preserved for binary compatibility", "4.2.0")
+    private[kafka] def resource[K, V](
+      settings: ProducerSettings[F, K, V],
+      F: Async[F],
       mk: MkProducer[F],
       P: Parallel[F]
     ): Resource[F, KafkaProducer.WithSettings[F, K, V]] =
-      KafkaProducer.resource(settings)(F, mk, P)
+      resource(settings)(F, mk)
 
     /**
       * Alternative version of `stream` where the `F[_]` is specified explicitly, and where the key
@@ -572,10 +622,18 @@ object KafkaProducer {
       */
     def stream[K, V](settings: ProducerSettings[F, K, V])(implicit
       F: Async[F],
+      mk: MkProducer[F]
+    ): Stream[F, KafkaProducer.WithSettings[F, K, V]] =
+      KafkaProducer.stream(settings)(F, mk)
+
+    @deprecated("Preserved for binary compatibility", "4.2.0")
+    private[kafka] def stream[K, V](
+      settings: ProducerSettings[F, K, V],
+      F: Async[F],
       mk: MkProducer[F],
       P: Parallel[F]
     ): Stream[F, KafkaProducer.WithSettings[F, K, V]] =
-      KafkaProducer.stream(settings)(F, mk, P)
+      stream(settings)(F, mk)
 
     override def toString: String =
       "ProducerPartiallyApplied$" + System.identityHashCode(this)

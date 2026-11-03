@@ -9,6 +9,7 @@ package fs2
 import cats.Parallel
 import cats.Traverse
 import cats.effect.*
+import cats.effect.kernel.instances.spawn
 import org.apache.kafka.clients.producer.RecordMetadata
 import scala.concurrent.duration.FiniteDuration
 
@@ -81,11 +82,22 @@ package object kafka {
     * happens first. If there are no offsets to commit within a time window, no attempt will be made
     * to commit offsets for that time window.
     */
-  def commitBatchWithin[F[_]: Parallel: Temporal](
+  def commitBatchWithin[F[_]](
     n: Int,
     d: FiniteDuration
-  ): Pipe[F, CommittableOffset[F], Unit] =
+  )(implicit F: Temporal[F]): Pipe[F, CommittableOffset[F], Unit] = {
+    implicit val P: Parallel[F] = spawn.parallelForGenSpawn[F, Throwable]
     _.groupWithin(n, d).evalMap(CommittableOffsetBatch.fromFoldable(_).commit)
+  }
+
+  @deprecated("Preserved for binary compatibility", "4.2.0")
+  private[kafka] def commitBatchWithin[F[_]](
+    n: Int,
+    d: FiniteDuration,
+    P: Parallel[F],
+    F: Temporal[F]
+  ): Pipe[F, CommittableOffset[F], Unit] =
+    commitBatchWithin(n, d)(F)
 
   type Serializer[F[_], A] = GenericSerializer[KeyOrValue, F, A]
   type KeySerializer[F[_], A] = GenericSerializer[Key, F, A]
