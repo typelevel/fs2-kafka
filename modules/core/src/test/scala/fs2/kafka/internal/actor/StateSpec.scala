@@ -53,7 +53,6 @@ final class StateSpec extends BaseSpec {
         assigned(p0, p1)
           .withRequestedCommitOffsets(Map(p1 -> offset(10)))
           .removeRequestedCommitOffsets(Set(p1))
-      // The commit of an in-flight record completes after the revoke.
       val state =
         revokedState
           .withGroupState(assigned(p0).partitionGroupState)
