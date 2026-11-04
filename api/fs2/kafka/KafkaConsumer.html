@@ -33,7 +33,7 @@
     </li>
     <li>
      <p><span><a href="KafkaConsumer.html#partitionsMapStream-0">partitionsMapStream</a> provides a stream where each element contains a current assignment. The current assignment is the <code>Map</code>, where keys is a <code>TopicPartition</code>, and values are streams with records for a particular <code>TopicPartition</code>. 
-       <br> For the streams, records are wrapped in <a href="CommittableConsumerRecord.html">CommittableConsumerRecord</a>s which provide <a href="CommittableOffset.html">CommittableOffset</a>s with the ability to commit record offsets to Kafka. For performance reasons, offsets are usually committed in batches using <a href="CommittableOffsetBatch.html">CommittableOffsetBatch</a>. Provided <code>Pipe</code>s, like <a href="../kafka.html#commitBatchWithin-fffffc90">commitBatchWithin</a> are available for batch committing offsets. If you are not committing offsets to Kafka, you can simply discard the <a href="CommittableOffset.html">CommittableOffset</a>, and only make use of the record.
+       <br> For the streams, records are wrapped in <a href="CommittableConsumerRecord.html">CommittableConsumerRecord</a>s which provide <a href="CommittableOffset.html">CommittableOffset</a>s with the ability to commit record offsets to Kafka. For performance reasons, offsets are usually committed in batches using <a href="CommittableOffsetBatch.html">CommittableOffsetBatch</a>. Provided <code>Pipe</code>s, like <span data-unresolved-link="">commitBatchWithin</span> are available for batch committing offsets. If you are not committing offsets to Kafka, you can simply discard the <a href="CommittableOffset.html">CommittableOffset</a>, and only make use of the record.
        <br>
        <br></span></p>
     </li>
@@ -50,7 +50,7 @@
    </dd>
    <dt class="body-small">Source</dt>
    <dd class="body-medium">
-    <a href="https://github.com/typelevel/fs2-kafka/blob/afbd646bdaefde652756af7cead4ba160a67a6cb/modules/core/src/main/scala/fs2/kafka/KafkaConsumer.scala#L74" target="_blank">KafkaConsumer.scala</a>
+    <a href="https://github.com/typelevel/fs2-kafka/blob/7d23e8056affca388e76e1966fa7f4fd7a58bed0/modules/core/src/main/scala/fs2/kafka/KafkaConsumer.scala#L74" target="_blank">KafkaConsumer.scala</a>
    </dd>
    <dt class="body-small">Graph</dt>
    <dd class="body-medium">
@@ -191,7 +191,7 @@ node12 -> node1;
              <dl class="attributes attributes-small">
               <dt class="body-small">Source</dt>
               <dd class="body-medium">
-               <a href="https://github.com/typelevel/fs2-kafka/blob/afbd646bdaefde652756af7cead4ba160a67a6cb/modules/core/src/main/scala/fs2/kafka/KafkaConsumer.scala#L88" target="_blank">KafkaConsumer.scala</a>
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7d23e8056affca388e76e1966fa7f4fd7a58bed0/modules/core/src/main/scala/fs2/kafka/KafkaConsumer.scala#L88" target="_blank">KafkaConsumer.scala</a>
               </dd>
              </dl>
             </div>
@@ -255,7 +255,7 @@ node12 -> node1;
               </dd>
               <dt class="body-small">Source</dt>
               <dd class="body-medium">
-               <a href="https://github.com/typelevel/fs2-kafka/blob/afbd646bdaefde652756af7cead4ba160a67a6cb/modules/core/src/main/scala/fs2/kafka/consumer/KafkaAssignment.scala#L66" target="_blank">KafkaAssignment.scala</a>
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7d23e8056affca388e76e1966fa7f4fd7a58bed0/modules/core/src/main/scala/fs2/kafka/consumer/KafkaAssignment.scala#L66" target="_blank">KafkaAssignment.scala</a>
               </dd>
              </dl>
             </div>
@@ -263,12 +263,12 @@ node12 -> node1;
           </div>
          </div>
         </div>
-        <div class="documentableElement" id="consumeChunk-fffff138" data-f-keywords="final" data-f-inherited="KafkaConsumeChunk">
+        <div class="documentableElement" id="consumeChunk-266" data-f-keywords="final" data-f-inherited="KafkaConsumeChunk">
          <div class="documentableElement-expander">
           <button class="icon-button ar show-content"></button>
           <div class="header monospace mono-medium">
            <div class="signature">
-            <span class="modifiers"><span t="k">final </span></span><span class="kind"><span t="k">def </span></span><a href="KafkaConsumer.html#consumeChunk-fffff138" t="n" class="documentableName ">consumeChunk</a>(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">processor</span>: (<a href="https://javadoc.io/doc/co.fs2/fs2-docs_3/3.14.0/fs2/Chunk.html" t="t">Chunk</a>[<a href="ConsumerRecord.html" t="t">ConsumerRecord</a>[<span t="t">K</span>, <span t="t">V</span>]])<span t="k"> =&gt; </span><span t="t">F</span>[<a href="consumer/KafkaConsumeChunk$.html#CommitNow-0" t="t">CommitNow</a>])(<span t="k">implicit </span><span t="k"></span><span data-unresolved-link="" t="n">F</span>: <a href="https://typelevel.org/cats-effect/api/3.x/cats/effect/kernel.html#Concurrent" t="t">Concurrent</a>[<span t="t">F</span>], <span t="k"></span><span data-unresolved-link="" t="n">P</span>: <a href="https://www.javadoc.io/doc/org.typelevel/cats-docs_3/2.13.0/cats/Parallel.html" t="t">Parallel</a>[<span t="t">F</span>]): <span t="t">F</span>[<span data-unresolved-link="" t="t">Nothing</span>]
+            <span class="modifiers"><span t="k">final </span></span><span class="kind"><span t="k">def </span></span><a href="KafkaConsumer.html#consumeChunk-266" t="n" class="documentableName ">consumeChunk</a>(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">processor</span>: (<a href="https://javadoc.io/doc/co.fs2/fs2-docs_3/3.14.0/fs2/Chunk.html" t="t">Chunk</a>[<a href="ConsumerRecord.html" t="t">ConsumerRecord</a>[<span t="t">K</span>, <span t="t">V</span>]])<span t="k"> =&gt; </span><span t="t">F</span>[<a href="consumer/KafkaConsumeChunk$.html#CommitNow-0" t="t">CommitNow</a>])(<span t="k">implicit </span><span t="k"></span><span data-unresolved-link="" t="n">F</span>: <a href="https://typelevel.org/cats-effect/api/3.x/cats/effect/kernel.html#Concurrent" t="t">Concurrent</a>[<span t="t">F</span>]): <span t="t">F</span>[<span data-unresolved-link="" t="t">Nothing</span>]
            </div>
           </div>
          </div>
@@ -340,11 +340,11 @@ node12 -> node1;
               </dd>
               <dt class="body-small">Inherited from:</dt>
               <dd class="body-medium">
-               <a href="consumer/KafkaConsumeChunk.html#consumeChunk-fffff138">KafkaConsumeChunk</a>
+               <a href="consumer/KafkaConsumeChunk.html#consumeChunk-266">KafkaConsumeChunk</a>
               </dd>
               <dt class="body-small">Source</dt>
               <dd class="body-medium">
-               <a href="https://github.com/typelevel/fs2-kafka/blob/afbd646bdaefde652756af7cead4ba160a67a6cb/modules/core/src/main/scala/fs2/kafka/consumer/KafkaConsumeChunk.scala#L61" target="_blank">KafkaConsumeChunk.scala</a>
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7d23e8056affca388e76e1966fa7f4fd7a58bed0/modules/core/src/main/scala/fs2/kafka/consumer/KafkaConsumeChunk.scala#L62" target="_blank">KafkaConsumeChunk.scala</a>
               </dd>
              </dl>
             </div>
@@ -381,7 +381,7 @@ node12 -> node1;
               </dd>
               <dt class="body-small">Source</dt>
               <dd class="body-medium">
-               <a href="https://github.com/typelevel/fs2-kafka/blob/afbd646bdaefde652756af7cead4ba160a67a6cb/modules/core/src/main/scala/fs2/kafka/consumer/KafkaConsume.scala#L36" target="_blank">KafkaConsume.scala</a>
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7d23e8056affca388e76e1966fa7f4fd7a58bed0/modules/core/src/main/scala/fs2/kafka/consumer/KafkaConsume.scala#L36" target="_blank">KafkaConsume.scala</a>
               </dd>
              </dl>
             </div>
@@ -418,7 +418,7 @@ node12 -> node1;
               </dd>
               <dt class="body-small">Source</dt>
               <dd class="body-medium">
-               <a href="https://github.com/typelevel/fs2-kafka/blob/afbd646bdaefde652756af7cead4ba160a67a6cb/modules/core/src/main/scala/fs2/kafka/consumer/KafkaConsume.scala#L19" target="_blank">KafkaConsume.scala</a>
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7d23e8056affca388e76e1966fa7f4fd7a58bed0/modules/core/src/main/scala/fs2/kafka/consumer/KafkaConsume.scala#L19" target="_blank">KafkaConsume.scala</a>
               </dd>
              </dl>
             </div>
@@ -460,7 +460,7 @@ node12 -> node1;
               </dd>
               <dt class="body-small">Source</dt>
               <dd class="body-medium">
-               <a href="https://github.com/typelevel/fs2-kafka/blob/afbd646bdaefde652756af7cead4ba160a67a6cb/modules/core/src/main/scala/fs2/kafka/consumer/KafkaOffsets.scala#L46" target="_blank">KafkaOffsets.scala</a>
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7d23e8056affca388e76e1966fa7f4fd7a58bed0/modules/core/src/main/scala/fs2/kafka/consumer/KafkaOffsets.scala#L46" target="_blank">KafkaOffsets.scala</a>
               </dd>
              </dl>
             </div>
@@ -502,7 +502,7 @@ node12 -> node1;
               </dd>
               <dt class="body-small">Source</dt>
               <dd class="body-medium">
-               <a href="https://github.com/typelevel/fs2-kafka/blob/afbd646bdaefde652756af7cead4ba160a67a6cb/modules/core/src/main/scala/fs2/kafka/consumer/KafkaOffsets.scala#L62" target="_blank">KafkaOffsets.scala</a>
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7d23e8056affca388e76e1966fa7f4fd7a58bed0/modules/core/src/main/scala/fs2/kafka/consumer/KafkaOffsets.scala#L62" target="_blank">KafkaOffsets.scala</a>
               </dd>
              </dl>
             </div>
@@ -539,7 +539,7 @@ node12 -> node1;
               </dd>
               <dt class="body-small">Source</dt>
               <dd class="body-medium">
-               <a href="https://github.com/typelevel/fs2-kafka/blob/afbd646bdaefde652756af7cead4ba160a67a6cb/modules/core/src/main/scala/fs2/kafka/consumer/KafkaSubscription.scala#L21" target="_blank">KafkaSubscription.scala</a>
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7d23e8056affca388e76e1966fa7f4fd7a58bed0/modules/core/src/main/scala/fs2/kafka/consumer/KafkaSubscription.scala#L21" target="_blank">KafkaSubscription.scala</a>
               </dd>
              </dl>
             </div>
@@ -584,7 +584,7 @@ node12 -> node1;
               </dd>
               <dt class="body-small">Source</dt>
               <dd class="body-medium">
-               <a href="https://github.com/typelevel/fs2-kafka/blob/afbd646bdaefde652756af7cead4ba160a67a6cb/modules/core/src/main/scala/fs2/kafka/consumer/KafkaAssignment.scala#L72" target="_blank">KafkaAssignment.scala</a>
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7d23e8056affca388e76e1966fa7f4fd7a58bed0/modules/core/src/main/scala/fs2/kafka/consumer/KafkaAssignment.scala#L72" target="_blank">KafkaAssignment.scala</a>
               </dd>
              </dl>
             </div>
@@ -640,7 +640,7 @@ node12 -> node1;
               </dd>
               <dt class="body-small">Source</dt>
               <dd class="body-medium">
-               <a href="https://github.com/typelevel/fs2-kafka/blob/afbd646bdaefde652756af7cead4ba160a67a6cb/modules/core/src/main/scala/fs2/kafka/consumer/KafkaAssignment.scala#L46" target="_blank">KafkaAssignment.scala</a>
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7d23e8056affca388e76e1966fa7f4fd7a58bed0/modules/core/src/main/scala/fs2/kafka/consumer/KafkaAssignment.scala#L46" target="_blank">KafkaAssignment.scala</a>
               </dd>
              </dl>
             </div>
@@ -677,7 +677,7 @@ node12 -> node1;
               </dd>
               <dt class="body-small">Source</dt>
               <dd class="body-medium">
-               <a href="https://github.com/typelevel/fs2-kafka/blob/afbd646bdaefde652756af7cead4ba160a67a6cb/modules/core/src/main/scala/fs2/kafka/consumer/KafkaAssignment.scala#L20" target="_blank">KafkaAssignment.scala</a>
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7d23e8056affca388e76e1966fa7f4fd7a58bed0/modules/core/src/main/scala/fs2/kafka/consumer/KafkaAssignment.scala#L20" target="_blank">KafkaAssignment.scala</a>
               </dd>
              </dl>
             </div>
@@ -714,7 +714,7 @@ node12 -> node1;
               </dd>
               <dt class="body-small">Source</dt>
               <dd class="body-medium">
-               <a href="https://github.com/typelevel/fs2-kafka/blob/afbd646bdaefde652756af7cead4ba160a67a6cb/modules/core/src/main/scala/fs2/kafka/consumer/KafkaAssignment.scala#L26" target="_blank">KafkaAssignment.scala</a>
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7d23e8056affca388e76e1966fa7f4fd7a58bed0/modules/core/src/main/scala/fs2/kafka/consumer/KafkaAssignment.scala#L26" target="_blank">KafkaAssignment.scala</a>
               </dd>
              </dl>
             </div>
@@ -756,7 +756,7 @@ node12 -> node1;
               </dd>
               <dt class="body-small">Source</dt>
               <dd class="body-medium">
-               <a href="https://github.com/typelevel/fs2-kafka/blob/afbd646bdaefde652756af7cead4ba160a67a6cb/modules/core/src/main/scala/fs2/kafka/consumer/KafkaConsumerLifecycle.scala#L25" target="_blank">KafkaConsumerLifecycle.scala</a>
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7d23e8056affca388e76e1966fa7f4fd7a58bed0/modules/core/src/main/scala/fs2/kafka/consumer/KafkaConsumerLifecycle.scala#L25" target="_blank">KafkaConsumerLifecycle.scala</a>
               </dd>
              </dl>
             </div>
@@ -793,7 +793,7 @@ node12 -> node1;
               </dd>
               <dt class="body-small">Source</dt>
               <dd class="body-medium">
-               <a href="https://github.com/typelevel/fs2-kafka/blob/afbd646bdaefde652756af7cead4ba160a67a6cb/modules/core/src/main/scala/fs2/kafka/consumer/KafkaTopics.scala#L40" target="_blank">KafkaTopics.scala</a>
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7d23e8056affca388e76e1966fa7f4fd7a58bed0/modules/core/src/main/scala/fs2/kafka/consumer/KafkaTopics.scala#L40" target="_blank">KafkaTopics.scala</a>
               </dd>
              </dl>
             </div>
@@ -837,7 +837,7 @@ node12 -> node1;
               </dd>
               <dt class="body-small">Source</dt>
               <dd class="body-medium">
-               <a href="https://github.com/typelevel/fs2-kafka/blob/afbd646bdaefde652756af7cead4ba160a67a6cb/modules/core/src/main/scala/fs2/kafka/consumer/KafkaTopics.scala#L35" target="_blank">KafkaTopics.scala</a>
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7d23e8056affca388e76e1966fa7f4fd7a58bed0/modules/core/src/main/scala/fs2/kafka/consumer/KafkaTopics.scala#L35" target="_blank">KafkaTopics.scala</a>
               </dd>
              </dl>
             </div>
@@ -902,7 +902,7 @@ node12 -> node1;
               </dd>
               <dt class="body-small">Source</dt>
               <dd class="body-medium">
-               <a href="https://github.com/typelevel/fs2-kafka/blob/afbd646bdaefde652756af7cead4ba160a67a6cb/modules/core/src/main/scala/fs2/kafka/consumer/KafkaCommit.scala#L38" target="_blank">KafkaCommit.scala</a>
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7d23e8056affca388e76e1966fa7f4fd7a58bed0/modules/core/src/main/scala/fs2/kafka/consumer/KafkaCommit.scala#L38" target="_blank">KafkaCommit.scala</a>
               </dd>
              </dl>
             </div>
@@ -967,7 +967,7 @@ node12 -> node1;
               </dd>
               <dt class="body-small">Source</dt>
               <dd class="body-medium">
-               <a href="https://github.com/typelevel/fs2-kafka/blob/afbd646bdaefde652756af7cead4ba160a67a6cb/modules/core/src/main/scala/fs2/kafka/consumer/KafkaCommit.scala#L62" target="_blank">KafkaCommit.scala</a>
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7d23e8056affca388e76e1966fa7f4fd7a58bed0/modules/core/src/main/scala/fs2/kafka/consumer/KafkaCommit.scala#L62" target="_blank">KafkaCommit.scala</a>
               </dd>
              </dl>
             </div>
@@ -1011,7 +1011,7 @@ node12 -> node1;
               </dd>
               <dt class="body-small">Source</dt>
               <dd class="body-medium">
-               <a href="https://github.com/typelevel/fs2-kafka/blob/afbd646bdaefde652756af7cead4ba160a67a6cb/modules/core/src/main/scala/fs2/kafka/consumer/KafkaOffsets.scala#L27" target="_blank">KafkaOffsets.scala</a>
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7d23e8056affca388e76e1966fa7f4fd7a58bed0/modules/core/src/main/scala/fs2/kafka/consumer/KafkaOffsets.scala#L27" target="_blank">KafkaOffsets.scala</a>
               </dd>
              </dl>
             </div>
@@ -1048,7 +1048,7 @@ node12 -> node1;
               </dd>
               <dt class="body-small">Source</dt>
               <dd class="body-medium">
-               <a href="https://github.com/typelevel/fs2-kafka/blob/afbd646bdaefde652756af7cead4ba160a67a6cb/modules/core/src/main/scala/fs2/kafka/consumer/KafkaOffsets.scala#L19" target="_blank">KafkaOffsets.scala</a>
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7d23e8056affca388e76e1966fa7f4fd7a58bed0/modules/core/src/main/scala/fs2/kafka/consumer/KafkaOffsets.scala#L19" target="_blank">KafkaOffsets.scala</a>
               </dd>
              </dl>
             </div>
@@ -1085,7 +1085,7 @@ node12 -> node1;
               </dd>
               <dt class="body-small">Source</dt>
               <dd class="body-medium">
-               <a href="https://github.com/typelevel/fs2-kafka/blob/afbd646bdaefde652756af7cead4ba160a67a6cb/modules/core/src/main/scala/fs2/kafka/consumer/KafkaTopics.scala#L56" target="_blank">KafkaTopics.scala</a>
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7d23e8056affca388e76e1966fa7f4fd7a58bed0/modules/core/src/main/scala/fs2/kafka/consumer/KafkaTopics.scala#L56" target="_blank">KafkaTopics.scala</a>
               </dd>
              </dl>
             </div>
@@ -1129,7 +1129,7 @@ node12 -> node1;
               </dd>
               <dt class="body-small">Source</dt>
               <dd class="body-medium">
-               <a href="https://github.com/typelevel/fs2-kafka/blob/afbd646bdaefde652756af7cead4ba160a67a6cb/modules/core/src/main/scala/fs2/kafka/consumer/KafkaTopics.scala#L51" target="_blank">KafkaTopics.scala</a>
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7d23e8056affca388e76e1966fa7f4fd7a58bed0/modules/core/src/main/scala/fs2/kafka/consumer/KafkaTopics.scala#L51" target="_blank">KafkaTopics.scala</a>
               </dd>
              </dl>
             </div>
@@ -1166,7 +1166,7 @@ node12 -> node1;
               </dd>
               <dt class="body-small">Source</dt>
               <dd class="body-medium">
-               <a href="https://github.com/typelevel/fs2-kafka/blob/afbd646bdaefde652756af7cead4ba160a67a6cb/modules/core/src/main/scala/fs2/kafka/consumer/KafkaSubscription.scala#L52" target="_blank">KafkaSubscription.scala</a>
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7d23e8056affca388e76e1966fa7f4fd7a58bed0/modules/core/src/main/scala/fs2/kafka/consumer/KafkaSubscription.scala#L52" target="_blank">KafkaSubscription.scala</a>
               </dd>
              </dl>
             </div>
@@ -1205,7 +1205,7 @@ node12 -> node1;
               </dd>
               <dt class="body-small">Source</dt>
               <dd class="body-medium">
-               <a href="https://github.com/typelevel/fs2-kafka/blob/afbd646bdaefde652756af7cead4ba160a67a6cb/modules/core/src/main/scala/fs2/kafka/consumer/KafkaTopics.scala#L74" target="_blank">KafkaTopics.scala</a>
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7d23e8056affca388e76e1966fa7f4fd7a58bed0/modules/core/src/main/scala/fs2/kafka/consumer/KafkaTopics.scala#L74" target="_blank">KafkaTopics.scala</a>
               </dd>
              </dl>
             </div>
@@ -1247,7 +1247,7 @@ node12 -> node1;
               </dd>
               <dt class="body-small">Source</dt>
               <dd class="body-medium">
-               <a href="https://github.com/typelevel/fs2-kafka/blob/afbd646bdaefde652756af7cead4ba160a67a6cb/modules/core/src/main/scala/fs2/kafka/consumer/KafkaTopics.scala#L68" target="_blank">KafkaTopics.scala</a>
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7d23e8056affca388e76e1966fa7f4fd7a58bed0/modules/core/src/main/scala/fs2/kafka/consumer/KafkaTopics.scala#L68" target="_blank">KafkaTopics.scala</a>
               </dd>
              </dl>
             </div>
@@ -1292,7 +1292,7 @@ node12 -> node1;
               </dd>
               <dt class="body-small">Source</dt>
               <dd class="body-medium">
-               <a href="https://github.com/typelevel/fs2-kafka/blob/afbd646bdaefde652756af7cead4ba160a67a6cb/modules/core/src/main/scala/fs2/kafka/consumer/KafkaMetrics.scala#L20" target="_blank">KafkaMetrics.scala</a>
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7d23e8056affca388e76e1966fa7f4fd7a58bed0/modules/core/src/main/scala/fs2/kafka/consumer/KafkaMetrics.scala#L20" target="_blank">KafkaMetrics.scala</a>
               </dd>
              </dl>
             </div>
@@ -1332,7 +1332,7 @@ node12 -> node1;
               </dd>
               <dt class="body-small">Source</dt>
               <dd class="body-medium">
-               <a href="https://github.com/typelevel/fs2-kafka/blob/afbd646bdaefde652756af7cead4ba160a67a6cb/modules/core/src/main/scala/fs2/kafka/consumer/KafkaTopics.scala#L99" target="_blank">KafkaTopics.scala</a>
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7d23e8056affca388e76e1966fa7f4fd7a58bed0/modules/core/src/main/scala/fs2/kafka/consumer/KafkaTopics.scala#L99" target="_blank">KafkaTopics.scala</a>
               </dd>
              </dl>
             </div>
@@ -1377,7 +1377,7 @@ node12 -> node1;
               </dd>
               <dt class="body-small">Source</dt>
               <dd class="body-medium">
-               <a href="https://github.com/typelevel/fs2-kafka/blob/afbd646bdaefde652756af7cead4ba160a67a6cb/modules/core/src/main/scala/fs2/kafka/consumer/KafkaTopics.scala#L87" target="_blank">KafkaTopics.scala</a>
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7d23e8056affca388e76e1966fa7f4fd7a58bed0/modules/core/src/main/scala/fs2/kafka/consumer/KafkaTopics.scala#L87" target="_blank">KafkaTopics.scala</a>
               </dd>
              </dl>
             </div>
@@ -1427,7 +1427,7 @@ node12 -> node1;
               </dd>
               <dt class="body-small">Source</dt>
               <dd class="body-medium">
-               <a href="https://github.com/typelevel/fs2-kafka/blob/afbd646bdaefde652756af7cead4ba160a67a6cb/modules/core/src/main/scala/fs2/kafka/consumer/KafkaConsume.scala#L54" target="_blank">KafkaConsume.scala</a>
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7d23e8056affca388e76e1966fa7f4fd7a58bed0/modules/core/src/main/scala/fs2/kafka/consumer/KafkaConsume.scala#L54" target="_blank">KafkaConsume.scala</a>
               </dd>
              </dl>
             </div>
@@ -1464,7 +1464,7 @@ node12 -> node1;
               </dd>
               <dt class="body-small">Source</dt>
               <dd class="body-medium">
-               <a href="https://github.com/typelevel/fs2-kafka/blob/afbd646bdaefde652756af7cead4ba160a67a6cb/modules/core/src/main/scala/fs2/kafka/consumer/KafkaTopics.scala#L27" target="_blank">KafkaTopics.scala</a>
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7d23e8056affca388e76e1966fa7f4fd7a58bed0/modules/core/src/main/scala/fs2/kafka/consumer/KafkaTopics.scala#L27" target="_blank">KafkaTopics.scala</a>
               </dd>
              </dl>
             </div>
@@ -1504,7 +1504,7 @@ node12 -> node1;
               </dd>
               <dt class="body-small">Source</dt>
               <dd class="body-medium">
-               <a href="https://github.com/typelevel/fs2-kafka/blob/afbd646bdaefde652756af7cead4ba160a67a6cb/modules/core/src/main/scala/fs2/kafka/consumer/KafkaTopics.scala#L22" target="_blank">KafkaTopics.scala</a>
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7d23e8056affca388e76e1966fa7f4fd7a58bed0/modules/core/src/main/scala/fs2/kafka/consumer/KafkaTopics.scala#L22" target="_blank">KafkaTopics.scala</a>
               </dd>
              </dl>
             </div>
@@ -1571,7 +1571,7 @@ node12 -> node1;
               </dd>
               <dt class="body-small">Source</dt>
               <dd class="body-medium">
-               <a href="https://github.com/typelevel/fs2-kafka/blob/afbd646bdaefde652756af7cead4ba160a67a6cb/modules/core/src/main/scala/fs2/kafka/consumer/KafkaConsume.scala#L85" target="_blank">KafkaConsume.scala</a>
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7d23e8056affca388e76e1966fa7f4fd7a58bed0/modules/core/src/main/scala/fs2/kafka/consumer/KafkaConsume.scala#L85" target="_blank">KafkaConsume.scala</a>
               </dd>
              </dl>
             </div>
@@ -1608,7 +1608,7 @@ node12 -> node1;
               </dd>
               <dt class="body-small">Source</dt>
               <dd class="body-medium">
-               <a href="https://github.com/typelevel/fs2-kafka/blob/afbd646bdaefde652756af7cead4ba160a67a6cb/modules/core/src/main/scala/fs2/kafka/consumer/KafkaOffsets.scala#L83" target="_blank">KafkaOffsets.scala</a>
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7d23e8056affca388e76e1966fa7f4fd7a58bed0/modules/core/src/main/scala/fs2/kafka/consumer/KafkaOffsets.scala#L83" target="_blank">KafkaOffsets.scala</a>
               </dd>
              </dl>
             </div>
@@ -1652,7 +1652,7 @@ node12 -> node1;
               </dd>
               <dt class="body-small">Source</dt>
               <dd class="body-medium">
-               <a href="https://github.com/typelevel/fs2-kafka/blob/afbd646bdaefde652756af7cead4ba160a67a6cb/modules/core/src/main/scala/fs2/kafka/consumer/KafkaOffsets.scala#L78" target="_blank">KafkaOffsets.scala</a>
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7d23e8056affca388e76e1966fa7f4fd7a58bed0/modules/core/src/main/scala/fs2/kafka/consumer/KafkaOffsets.scala#L78" target="_blank">KafkaOffsets.scala</a>
               </dd>
              </dl>
             </div>
@@ -1689,7 +1689,7 @@ node12 -> node1;
               </dd>
               <dt class="body-small">Source</dt>
               <dd class="body-medium">
-               <a href="https://github.com/typelevel/fs2-kafka/blob/afbd646bdaefde652756af7cead4ba160a67a6cb/modules/core/src/main/scala/fs2/kafka/consumer/KafkaOffsets.scala#L38" target="_blank">KafkaOffsets.scala</a>
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7d23e8056affca388e76e1966fa7f4fd7a58bed0/modules/core/src/main/scala/fs2/kafka/consumer/KafkaOffsets.scala#L38" target="_blank">KafkaOffsets.scala</a>
               </dd>
              </dl>
             </div>
@@ -1731,7 +1731,7 @@ node12 -> node1;
               </dd>
               <dt class="body-small">Source</dt>
               <dd class="body-medium">
-               <a href="https://github.com/typelevel/fs2-kafka/blob/afbd646bdaefde652756af7cead4ba160a67a6cb/modules/core/src/main/scala/fs2/kafka/consumer/KafkaOffsets.scala#L54" target="_blank">KafkaOffsets.scala</a>
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7d23e8056affca388e76e1966fa7f4fd7a58bed0/modules/core/src/main/scala/fs2/kafka/consumer/KafkaOffsets.scala#L54" target="_blank">KafkaOffsets.scala</a>
               </dd>
              </dl>
             </div>
@@ -1773,7 +1773,7 @@ node12 -> node1;
               </dd>
               <dt class="body-small">Source</dt>
               <dd class="body-medium">
-               <a href="https://github.com/typelevel/fs2-kafka/blob/afbd646bdaefde652756af7cead4ba160a67a6cb/modules/core/src/main/scala/fs2/kafka/consumer/KafkaOffsets.scala#L70" target="_blank">KafkaOffsets.scala</a>
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7d23e8056affca388e76e1966fa7f4fd7a58bed0/modules/core/src/main/scala/fs2/kafka/consumer/KafkaOffsets.scala#L70" target="_blank">KafkaOffsets.scala</a>
               </dd>
              </dl>
             </div>
@@ -1829,7 +1829,7 @@ node12 -> node1;
               </dd>
               <dt class="body-small">Source</dt>
               <dd class="body-medium">
-               <a href="https://github.com/typelevel/fs2-kafka/blob/afbd646bdaefde652756af7cead4ba160a67a6cb/modules/core/src/main/scala/fs2/kafka/consumer/KafkaConsume.scala#L102" target="_blank">KafkaConsume.scala</a>
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7d23e8056affca388e76e1966fa7f4fd7a58bed0/modules/core/src/main/scala/fs2/kafka/consumer/KafkaConsume.scala#L102" target="_blank">KafkaConsume.scala</a>
               </dd>
              </dl>
             </div>
@@ -1882,7 +1882,7 @@ node12 -> node1;
               </dd>
               <dt class="body-small">Source</dt>
               <dd class="body-medium">
-               <a href="https://github.com/typelevel/fs2-kafka/blob/afbd646bdaefde652756af7cead4ba160a67a6cb/modules/core/src/main/scala/fs2/kafka/consumer/KafkaConsume.scala#L31" target="_blank">KafkaConsume.scala</a>
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7d23e8056affca388e76e1966fa7f4fd7a58bed0/modules/core/src/main/scala/fs2/kafka/consumer/KafkaConsume.scala#L31" target="_blank">KafkaConsume.scala</a>
               </dd>
              </dl>
             </div>
@@ -1926,7 +1926,7 @@ node12 -> node1;
               </dd>
               <dt class="body-small">Source</dt>
               <dd class="body-medium">
-               <a href="https://github.com/typelevel/fs2-kafka/blob/afbd646bdaefde652756af7cead4ba160a67a6cb/modules/core/src/main/scala/fs2/kafka/consumer/KafkaSubscription.scala#L42" target="_blank">KafkaSubscription.scala</a>
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7d23e8056affca388e76e1966fa7f4fd7a58bed0/modules/core/src/main/scala/fs2/kafka/consumer/KafkaSubscription.scala#L42" target="_blank">KafkaSubscription.scala</a>
               </dd>
              </dl>
             </div>
@@ -1970,7 +1970,7 @@ node12 -> node1;
               </dd>
               <dt class="body-small">Source</dt>
               <dd class="body-medium">
-               <a href="https://github.com/typelevel/fs2-kafka/blob/afbd646bdaefde652756af7cead4ba160a67a6cb/modules/core/src/main/scala/fs2/kafka/consumer/KafkaSubscription.scala#L32" target="_blank">KafkaSubscription.scala</a>
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7d23e8056affca388e76e1966fa7f4fd7a58bed0/modules/core/src/main/scala/fs2/kafka/consumer/KafkaSubscription.scala#L32" target="_blank">KafkaSubscription.scala</a>
               </dd>
              </dl>
             </div>
@@ -2007,7 +2007,7 @@ node12 -> node1;
               </dd>
               <dt class="body-small">Source</dt>
               <dd class="body-medium">
-               <a href="https://github.com/typelevel/fs2-kafka/blob/afbd646bdaefde652756af7cead4ba160a67a6cb/modules/core/src/main/scala/fs2/kafka/consumer/KafkaConsumerLifecycle.scala#L16" target="_blank">KafkaConsumerLifecycle.scala</a>
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7d23e8056affca388e76e1966fa7f4fd7a58bed0/modules/core/src/main/scala/fs2/kafka/consumer/KafkaConsumerLifecycle.scala#L16" target="_blank">KafkaConsumerLifecycle.scala</a>
               </dd>
              </dl>
             </div>
@@ -2044,7 +2044,7 @@ node12 -> node1;
               </dd>
               <dt class="body-small">Source</dt>
               <dd class="body-medium">
-               <a href="https://github.com/typelevel/fs2-kafka/blob/afbd646bdaefde652756af7cead4ba160a67a6cb/modules/core/src/main/scala/fs2/kafka/consumer/KafkaSubscription.scala#L47" target="_blank">KafkaSubscription.scala</a>
+               <a href="https://github.com/typelevel/fs2-kafka/blob/7d23e8056affca388e76e1966fa7f4fd7a58bed0/modules/core/src/main/scala/fs2/kafka/consumer/KafkaSubscription.scala#L47" target="_blank">KafkaSubscription.scala</a>
               </dd>
              </dl>
             </div>
