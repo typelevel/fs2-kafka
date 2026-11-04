@@ -125,7 +125,6 @@
     <li class="level1 nav-leaf"><a href="transactions.html">Transactions</a></li>
     <li class="level1 nav-leaf"><a href="admin.html">Admin</a></li>
     <li class="level1 nav-leaf"><a href="certificates.html">Security &amp; Certificates</a></li>
-    <li class="level1 nav-leaf"><a href="modules.html">Modules</a></li>
     <li class="level1 nav-leaf"><a href="technical-details.html">Technical Details</a></li>
   </ul>
 
@@ -139,7 +138,7 @@
 
   <ul class="nav-list">
     <li class="level1 nav-node"><a href="#getting-started">Getting Started</a></li>
-    <li class="level2 nav-leaf"><a href="#modules">Modules</a></li>
+    <li class="level2 nav-leaf"><a href="#external-modules">External Modules</a></li>
     <li class="level2 nav-leaf"><a href="#signatures">Signatures</a></li>
     <li class="level2 nav-leaf"><a href="#compatibility">Compatibility</a></li>
     <li class="level2 nav-leaf"><a href="#snapshot-releases">Snapshot Releases</a></li>
@@ -168,18 +167,10 @@
         <p>For Scala 2.12, enable partial unification by adding the following line to <code>build.sbt</code>.</p>
         <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">scalacOptions</span><span> += </span><span class="string-literal">&quot;-Ypartial-unification&quot;</span></code></pre>
         
-        <h3 id="modules" class="section"><a class="anchor-link left" href="#modules"><i class="icofont-laika link">&#xef71;</i></a>Modules</h3>
-        <p>For <a href="https://avro.apache.org">Avro</a> support using <a href="modules.html#vulcan">Vulcan</a>, add the following lines to your <code>build.sbt</code> file.</p>
-        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">resolvers</span><span> += </span><span class="string-literal">&quot;confluent&quot;</span><span> </span><span class="identifier">at</span><span> </span><span class="string-literal">&quot;https://packages.confluent.io/maven/&quot;</span><span>
-
-</span><span class="identifier">libraryDependencies</span><span> += </span><span class="string-literal">&quot;org.typelevel&quot;</span><span> %% </span><span class="string-literal">&quot;fs2-kafka-vulcan&quot;</span><span> % </span><span class="string-literal">&quot;4.1.3&quot;</span></code></pre>
-        <p>In order to test vulcan codecs against a <a href="https://docs.confluent.io/platform/current/schema-registry/index.html">schema registry</a> using
-        <a href="https://scalameta.org/munit/">munit</a>, add the following line to your <code>build.sbt</code> file.</p>
-        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">libraryDependencies</span><span> += </span><span class="string-literal">&quot;org.typelevel&quot;</span><span> %% </span><span class="string-literal">&quot;fs2-kafka-vulcan-testkit-munit&quot;</span><span> % </span><span class="string-literal">&quot;4.1.3&quot;</span></code></pre>
-        
-        <h4 id="external-modules" class="section"><a class="anchor-link left" href="#external-modules"><i class="icofont-laika link">&#xef71;</i></a>External Modules</h4>
-        <p>Following is an incomplete list of third-party integrations.</p>
+        <h3 id="external-modules" class="section"><a class="anchor-link left" href="#external-modules"><i class="icofont-laika link">&#xef71;</i></a>External Modules</h3>
+        <p>Following is an incomplete list of modules maintained in separate repositories.</p>
         <ul>
+          <li><a href="https://github.com/typelevel/fs2-kafka-vulcan">fs2-kafka-vulcan</a> for <a href="https://avro.apache.org">Avro</a> support using <a href="https://typelevel.org/vulcan">Vulcan</a>.</li>
           <li><a href="https://github.com/trace4cats/trace4cats-kafka">trace4cats-kafka</a></li>
         </ul>
         
@@ -195,7 +186,7 @@
         <p>To use the latest snapshot release, add the following lines to your <code>build.sbt</code> file.</p>
         <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">resolvers</span><span> += </span><span class="type-name">Resolver</span><span>.</span><span class="identifier">sonatypeCentralSnapshots</span><span>
 
-</span><span class="identifier">libraryDependencies</span><span> += </span><span class="string-literal">&quot;org.typelevel&quot;</span><span> %% </span><span class="string-literal">&quot;fs2-kafka&quot;</span><span> % </span><span class="string-literal">&quot;4.2-7d23e80-SNAPSHOT&quot;</span></code></pre>
+</span><span class="identifier">libraryDependencies</span><span> += </span><span class="string-literal">&quot;org.typelevel&quot;</span><span> %% </span><span class="string-literal">&quot;fs2-kafka&quot;</span><span> % </span><span class="string-literal">&quot;4.2-0af9b66-SNAPSHOT&quot;</span></code></pre>
         
         <h2 id="dependencies" class="section"><a class="anchor-link left" href="#dependencies"><i class="icofont-laika link">&#xef71;</i></a>Dependencies</h2>
         <p>Refer to the table below for dependencies and version support across modules.</p>
@@ -211,11 +202,6 @@
             <tr>
               <td><code>fs2-kafka</code></td>
               <td><a href="https://github.com/typelevel/fs2">FS2 3.14.0</a>, <a href="https://github.com/apache/kafka">Apache Kafka Client 4.4.0</a></td>
-              <td>Scala 2.12, 2.13 and 3.3</td>
-            </tr>
-            <tr>
-              <td><a href="modules.html#vulcan"><code>fs2-kafka-vulcan</code></a></td>
-              <td><a href="https://github.com/typelevel/vulcan">Vulcan 1.14.1</a>, <a href="https://github.com/confluentinc/schema-registry">Confluent Kafka Avro Serializer 8.4.0</a></td>
               <td>Scala 2.12, 2.13 and 3.3</td>
             </tr>
           </tbody>
