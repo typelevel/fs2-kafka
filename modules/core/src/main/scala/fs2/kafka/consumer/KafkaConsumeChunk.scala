@@ -9,6 +9,7 @@ package fs2.kafka.consumer
 import cats.FlatMap
 import cats.Parallel
 import cats.effect.Concurrent
+import cats.effect.kernel.instances.spawn
 import cats.syntax.flatMap.*
 import fs2.*
 import fs2.kafka.CommittableConsumerRecord
@@ -60,14 +61,25 @@ trait KafkaConsumeChunk[F[_], K, V] extends KafkaConsume[F, K, V] {
     */
   final def consumeChunk(
     processor: Chunk[ConsumerRecord[K, V]] => F[CommitNow]
-  )(implicit F: Concurrent[F], P: Parallel[F]): F[Nothing] = partitionedStream
-    .map(
-      _.chunks.evalMap(consume(processor))
-    )
-    .parJoinUnbounded
-    .drain
-    .compile
-    .onlyOrError
+  )(implicit F: Concurrent[F]): F[Nothing] = {
+    implicit val P: Parallel[F] = spawn.parallelForGenSpawn[F, Throwable]
+    partitionedStream
+      .map(
+        _.chunks.evalMap(consume(processor))
+      )
+      .parJoinUnbounded
+      .drain
+      .compile
+      .onlyOrError
+  }
+
+  @deprecated("Preserved for binary compatibility", "4.2.0")
+  final private[kafka] def consumeChunk(
+    processor: Chunk[ConsumerRecord[K, V]] => F[CommitNow],
+    F: Concurrent[F],
+    P: Parallel[F]
+  ): F[Nothing] =
+    consumeChunk(processor)(F)
 
   private def consume(processor: Chunk[ConsumerRecord[K, V]] => F[CommitNow])(
     chunk: Chunk[CommittableConsumerRecord[F, K, V]]
