@@ -22,27 +22,11 @@ For Scala 2.12, enable partial unification by adding the following line to `buil
 scalacOptions += "-Ypartial-unification"
 ```
 
-### Modules
+### External Modules
 
-For [Avro](https://avro.apache.org) support using [Vulcan](modules.md#vulcan), add the following lines to your `build.sbt` file.
+Following is an incomplete list of modules maintained in separate repositories.
 
-```scala
-resolvers += "confluent" at "https://packages.confluent.io/maven/"
-
-libraryDependencies += "@ORGANIZATION@" %% "@VULCAN_MODULE_NAME@" % "@VERSION@"
-```
-
-In order to test vulcan codecs against a [schema registry](https://docs.confluent.io/platform/current/schema-registry/index.html) using
-[munit](https://scalameta.org/munit/), add the following line to your `build.sbt` file.
-
-```scala
-libraryDependencies += "@ORGANIZATION@" %% "@VULCAN_TESTKIT_MUNIT_MODULE_NAME@" % "@VERSION@"
-```
-
-#### External Modules
-
-Following is an incomplete list of third-party integrations.
-
+- [fs2-kafka-vulcan](https://github.com/typelevel/fs2-kafka-vulcan) for [Avro](https://avro.apache.org) support using [Vulcan](https://typelevel.org/vulcan).
 - [trace4cats-kafka](https://github.com/trace4cats/trace4cats-kafka)
 
 ### Signatures
@@ -71,10 +55,9 @@ libraryDependencies += "@ORGANIZATION@" %% "@CORE_MODULE_NAME@" % "@SNAPSHOT_VER
 
 Refer to the table below for dependencies and version support across modules.
 
-| Module                                      | Dependencies                                                                                                                                                           | Scala                               |
-| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
-| `@CORE_MODULE_NAME@`                        | [FS2 @FS2_VERSION@](https://github.com/typelevel/fs2), [Apache Kafka Client @KAFKA_VERSION@](https://github.com/apache/kafka)                                          | Scala @CORE_CROSS_SCALA_VERSIONS@   |
-| [`@VULCAN_MODULE_NAME@`](modules.md#vulcan) | [Vulcan @VULCAN_VERSION@](https://github.com/typelevel/vulcan), [Confluent Kafka Avro Serializer @CONFLUENT_VERSION@](https://github.com/confluentinc/schema-registry) | Scala @VULCAN_CROSS_SCALA_VERSIONS@ |
+| Module               | Dependencies                                                                                                                  | Scala                             |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| `@CORE_MODULE_NAME@` | [FS2 @FS2_VERSION@](https://github.com/typelevel/fs2), [Apache Kafka Client @KAFKA_VERSION@](https://github.com/apache/kafka) | Scala @CORE_CROSS_SCALA_VERSIONS@ |
 
 ## Adopters
 
