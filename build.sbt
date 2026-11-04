@@ -1,19 +1,15 @@
-val avroVersion = "1.12.2"
 val catsEffectVersion = "3.7.1"
 val catsVersion = "2.13.0"
-val confluentVersion = "8.4.0"
 val disciplineVersion = "2.3.0"
 val fs2Version = "3.14.0"
 val kafkaVersion = "4.4.0"
 val logbackVersion = "1.6.6"
-val munitVersion = "1.3.6"
 val scala212Version = "2.12.21"
 val scala213Version = "2.13.18"
 val scala3Version = "3.3.9"
 val slf4jNopVersion = "2.0.20"
 val slf4jVersion = "1.7.36"
 val testcontainersVersion = "2.0.5"
-val vulcanVersion = "1.14.1"
 
 inThisBuild(
   Seq(
@@ -29,7 +25,6 @@ inThisBuild(
     mergifyRequiredJobs += "site",
     mergifyStewardConfig ~= (_.map(_.withAuthor("typelevel-steward[bot]"))),
     organization := "org.typelevel",
-    resolvers += "confluent".at("https://packages.confluent.io/maven/"),
     scalaVersion := scala3Version,
     semanticdbEnabled := true,
     semanticdbVersion := scalafixSemanticdb.revision,
@@ -71,7 +66,7 @@ inThisBuild(
 lazy val root = project
   .in(file("."))
   .enablePlugins(NoPublishPlugin)
-  .aggregate(core, vulcan, `vulcan-testkit-munit`, unidocs)
+  .aggregate(core, unidocs)
 
 lazy val core = project
   .in(file("modules/core"))
@@ -93,48 +88,10 @@ lazy val core = project
     Test / javaOptions += s"-Dfs2.kafka.test.image=apache/kafka:$kafkaVersion"
   )
 
-lazy val vulcan = project
-  .in(file("modules/vulcan"))
-  .dependsOn(core)
-  .settings(
-    name := "fs2-kafka-vulcan",
-    libraryDependencies ++= Seq(
-      "com.github.fd4s" %% "vulcan" % vulcanVersion,
-      "io.confluent" % "kafka-avro-serializer" % confluentVersion,
-      "io.confluent" % "kafka-schema-registry-client" % confluentVersion,
-      "io.confluent" % "kafka-schema-serializer" % confluentVersion,
-      "org.apache.avro" % "avro" % avroVersion,
-      "org.typelevel" %% "cats-core" % catsVersion,
-      "org.typelevel" %% "cats-effect-kernel" % catsEffectVersion,
-      "org.typelevel" %% "cats-effect" % catsEffectVersion
-    ),
-    headerSettings,
-    testSettings
-  )
-
-lazy val `vulcan-testkit-munit` = project
-  .in(file("modules/vulcan-testkit-munit"))
-  .dependsOn(vulcan)
-  .settings(
-    name := "fs2-kafka-vulcan-testkit-munit",
-    libraryDependencies ++= Seq(
-      "com.github.fd4s" %% "vulcan" % vulcanVersion,
-      "io.confluent" % "kafka-schema-registry-client" % confluentVersion,
-      "org.apache.avro" % "avro" % avroVersion,
-      "org.scalameta" %% "munit-diff" % munitVersion,
-      "org.scalameta" %% "munit" % munitVersion,
-      "org.typelevel" %% "cats-effect" % catsEffectVersion
-    ),
-    headerSettings,
-    testSettings,
-    apiURL := None, // not part of the unified API docs in fs2-kafka-docs
-    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "2.2.0").toMap
-  )
-
 lazy val docs = project
   .in(file("site"))
   .enablePlugins(TypelevelSitePlugin)
-  .dependsOn(core, vulcan, `vulcan-testkit-munit`)
+  .dependsOn(core)
   .settings {
     import laika.ast.Image
     import laika.ast.InlineSVGIcon
@@ -170,7 +127,6 @@ lazy val docs = project
       tlSiteApiUrl := None,
       tlSitePreview := tlSitePreview.dependsOn(laikaGenerateAPI).value,
       mdocVariables ++= Map(
-        "CONFLUENT_VERSION" -> confluentVersion,
         "CORE_CROSS_SCALA_VERSIONS" -> crossScalaVersionsOf(core).value,
         "CORE_MODULE_NAME" -> (core / moduleName).value,
         "FS2_VERSION" -> fs2Version,
@@ -179,11 +135,7 @@ lazy val docs = project
         "MAJOR_VERSION" -> majorVersion(version.value),
         "ORGANIZATION" -> (ThisBuild / organization).value,
         "SCALA_DOCS_VERSION" -> scalaVersionOf(scalaVersion.value),
-        "SCALA_PUBLISH_VERSIONS" -> crossScalaVersionsOf(core).value,
-        "VULCAN_CROSS_SCALA_VERSIONS" -> crossScalaVersionsOf(vulcan).value,
-        "VULCAN_MODULE_NAME" -> (vulcan / moduleName).value,
-        "VULCAN_TESTKIT_MUNIT_MODULE_NAME" -> (`vulcan-testkit-munit` / moduleName).value,
-        "VULCAN_VERSION" -> vulcanVersion
+        "SCALA_PUBLISH_VERSIONS" -> crossScalaVersionsOf(core).value
       ),
       tlSiteHelium := {
         val gitHubUrl = "https://github.com/typelevel/fs2-kafka"
@@ -310,7 +262,7 @@ lazy val unidocs = project
     headerSettings,
     crossScalaVersions := Seq(scala3Version),
     semanticdbEnabled := false,
-    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(core, vulcan),
+    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(core),
     ScalaUnidoc / unidoc / apiMappings := {
       val docsApiUrl = apiURL.value.map(_.toString)
       (ScalaUnidoc / unidoc / apiMappings).value
