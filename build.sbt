@@ -14,12 +14,7 @@ val testcontainersVersion = "2.0.5"
 inThisBuild(
   Seq(
     crossScalaVersions := Seq(scala212Version, scala213Version, scala3Version),
-    developers := List(
-      tlGitHubDev("vlovgr", "Viktor Rudebeck").withUrl(url("https://vlovgr.se")),
-      tlGitHubDev("bplommer", "Ben Plommer"),
-      tlGitHubDev("LMNet", "Yuriy Badalyantc").withEmail("lmnet89@gmail.com"),
-      tlGitHubDev("aartigao", "Alan Artigao").withEmail("alanartigao@gmail.com")
-    ),
+    developers := List(tlGitHubDev("vlovgr", "Viktor Rudebeck")),
     githubWorkflowJavaVersions := Seq(JavaSpec.temurin("21")),
     mergifyLabelPaths := Map.empty,
     mergifyRequiredJobs += "site",
