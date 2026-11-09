@@ -18,6 +18,10 @@ private[kafka] object converters {
       def toJava: Optional[A] = self.fold[Optional[A]](Optional.empty())(Optional.of)
     }
 
+    implicit class OptionalOps[A](private val self: Optional[A]) extends AnyVal {
+      def toScala: Option[A] = if (self.isPresent) Some(self.get) else None
+    }
+
   }
 
   def unsafeWrapArray[A](array: Array[A]): Seq[A] =
