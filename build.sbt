@@ -105,7 +105,7 @@ lazy val share = project
 lazy val docs = project
   .in(file("site"))
   .enablePlugins(TypelevelSitePlugin)
-  .dependsOn(core)
+  .dependsOn(core, share)
   .settings {
     import laika.ast.Image
     import laika.ast.InlineSVGIcon
@@ -149,6 +149,7 @@ lazy val docs = project
         "MAJOR_VERSION" -> majorVersion(version.value),
         "ORGANIZATION" -> (ThisBuild / organization).value,
         "SCALA_DOCS_VERSION" -> scalaVersionOf(scalaVersion.value),
+        "SHARE_MODULE_NAME" -> (share / moduleName).value,
         "SCALA_PUBLISH_VERSIONS" -> crossScalaVersionsOf(core).value
       ),
       tlSiteHelium := {
