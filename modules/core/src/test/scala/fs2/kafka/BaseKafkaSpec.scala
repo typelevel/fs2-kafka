@@ -212,6 +212,8 @@ private object BaseKafkaSpec {
           "org.apache.kafka.metadata.authorizer.StandardAuthorizer"
         )
         .withEnv("KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND", "true")
+        .withEnv("KAFKA_SHARE_COORDINATOR_STATE_TOPIC_REPLICATION_FACTOR", "1")
+        .withEnv("KAFKA_SHARE_COORDINATOR_STATE_TOPIC_MIN_ISR", "1")
 
     container.start()
     container.getBootstrapServers
