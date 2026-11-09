@@ -61,7 +61,7 @@ inThisBuild(
 lazy val root = project
   .in(file("."))
   .enablePlugins(NoPublishPlugin)
-  .aggregate(core, unidocs)
+  .aggregate(core, share, unidocs)
 
 lazy val core = project
   .in(file("modules/core"))
@@ -81,6 +81,25 @@ lazy val core = project
     testSettings,
     libraryDependencies += "org.testcontainers" % "testcontainers-kafka" % testcontainersVersion % Test,
     Test / javaOptions += s"-Dfs2.kafka.test.image=apache/kafka:$kafkaVersion"
+  )
+
+lazy val share = project
+  .in(file("modules/share"))
+  .dependsOn(core % "compile->compile;test->test")
+  .settings(
+    name := "fs2-kafka-share",
+    libraryDependencies ++= Seq(
+      "co.fs2" %% "fs2-core" % fs2Version,
+      "org.apache.kafka" % "kafka-clients" % kafkaVersion,
+      "org.typelevel" %% "cats-core" % catsVersion,
+      "org.typelevel" %% "cats-effect-kernel" % catsEffectVersion,
+      "org.typelevel" %% "cats-effect-std" % catsEffectVersion,
+      "org.typelevel" %% "cats-effect" % catsEffectVersion
+    ),
+    headerSettings,
+    testSettings,
+    Test / javaOptions += s"-Dfs2.kafka.test.image=apache/kafka:$kafkaVersion",
+    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "4.2.1").toMap
   )
 
 lazy val docs = project
@@ -257,7 +276,7 @@ lazy val unidocs = project
     headerSettings,
     crossScalaVersions := Seq(scala3Version),
     semanticdbEnabled := false,
-    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(core),
+    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(core, share),
     ScalaUnidoc / unidoc / apiMappings := {
       val docsApiUrl = apiURL.value.map(_.toString)
       (ScalaUnidoc / unidoc / apiMappings).value
