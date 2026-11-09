@@ -8,7 +8,7 @@ package fs2.kafka
 
 /**
   * The share consumer's acknowledgement mode, the `share.acknowledgement.mode` property, set with
-  * `ShareConsumerSettings.withAcknowledgementMode`.
+  * [[ShareConsumerSettings.withAcknowledgementMode]].
   */
 sealed abstract class ShareAcknowledgementMode
 
@@ -29,7 +29,7 @@ object ShareAcknowledgementMode {
 
   /**
     * Every record of a poll is accepted once `process` returned, see
-    * `KafkaShareConsumer.autoConsume`. Java's default.
+    * [[KafkaShareConsumer.autoConsume]]. Java's default.
     */
   val Implicit: ShareAcknowledgementMode = ImplicitAcknowledgement
 

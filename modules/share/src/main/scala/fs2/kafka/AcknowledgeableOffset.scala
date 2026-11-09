@@ -17,7 +17,7 @@ import fs2.kafka.internal.Acknowledger
 import org.apache.kafka.common.TopicPartition
 
 /**
-  * The offset of a record held by a `KafkaShareConsumer`, with the delivery it belongs to.
+  * The offset of a record held by a [[KafkaShareConsumer]], with the delivery it belongs to.
   */
 sealed abstract class AcknowledgeableOffset[F[_]] { self =>
 
@@ -40,7 +40,7 @@ sealed abstract class AcknowledgeableOffset[F[_]] { self =>
 
   /**
     * Records the acknowledgement in the consumer, as Java's `acknowledge` does. It is sent with the
-    * next poll or renewal, after the `ShareConsumerSettings.maxAcknowledgementDelay`, at once
+    * next poll or renewal, after the [[ShareConsumerSettings.maxAcknowledgementDelay]], at once
     * while paused, or when consuming ends; until then, a later acknowledgement replaces it. An
     * acknowledgement after it was sent, or for a delivery the consumer no longer holds, fails with
     * a [[RecordNotInFlightException]].<br><br>

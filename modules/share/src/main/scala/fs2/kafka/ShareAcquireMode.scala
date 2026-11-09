@@ -8,7 +8,7 @@ package fs2.kafka
 
 /**
   * How the share consumer acquires records, the `share.acquire.mode` property, set with
-  * `ShareConsumerSettings.withAcquireMode`.
+  * [[ShareConsumerSettings.withAcquireMode]].
   */
 sealed abstract class ShareAcquireMode
 

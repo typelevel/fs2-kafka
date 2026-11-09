@@ -28,7 +28,7 @@ import cats.~>
   * acknowledged together with [[acknowledgeChunks]].<br><br>
   *
   * In implicit acknowledgement mode, records cannot be acknowledged, see
-  * `KafkaShareConsumer.autoConsume`.
+  * [[KafkaShareConsumer.autoConsume]].
   *
   * @note
   *   this API is experimental, as are Kafka's share groups.

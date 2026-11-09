@@ -14,7 +14,7 @@ import org.apache.kafka.clients.consumer.ConsumerConfig
 import scala.concurrent.duration.*
 
 /**
-  * [[ShareConsumerSettings]] contain settings necessary to create a `KafkaShareConsumer`. At the
+  * [[ShareConsumerSettings]] contain settings necessary to create a [[KafkaShareConsumer]]. At the
   * very least, this includes key and value deserializers.<br><br>
   *
   * Unlike Java's share consumer, these settings default to `explicit` acknowledgement and

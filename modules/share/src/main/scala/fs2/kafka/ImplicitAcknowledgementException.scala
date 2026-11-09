@@ -10,7 +10,7 @@ import org.apache.kafka.common.KafkaException
 
 /**
   * [[ImplicitAcknowledgementException]] indicates `consume` on a share consumer in implicit
-  * acknowledgement mode, where records cannot be acknowledged: `KafkaShareConsumer.autoConsume`
+  * acknowledgement mode, where records cannot be acknowledged: [[KafkaShareConsumer.autoConsume]]
   * accepts a poll once `process` returned instead.
   */
 sealed abstract class ImplicitAcknowledgementException

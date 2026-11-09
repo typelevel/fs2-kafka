@@ -14,8 +14,8 @@ import org.apache.kafka.common.serialization.ByteArrayDeserializer
 
 /**
   * A capability trait representing the ability to instantiate the Java `ShareConsumer` underlying
-  * the fs2 `KafkaShareConsumer`. This is needed in order to instantiate
-  * `KafkaShareConsumer`.<br><br>
+  * the fs2 [[KafkaShareConsumer]]. This is needed in order to instantiate
+  * [[KafkaShareConsumer]].<br><br>
   *
   * By default, the instance provided by [[MkShareConsumer.mkShareConsumerForSync]] will be used.
   * However, this behaviour can be overridden, e.g. for testing purposes, by placing an alternative
