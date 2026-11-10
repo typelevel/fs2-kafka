@@ -6,7 +6,7 @@
 
 package fs2.kafka
 
-import cats.Apply
+import cats.FlatMap
 import cats.Functor
 import cats.Parallel
 import cats.effect.*
@@ -552,33 +552,37 @@ object KafkaProducer {
     }
   }
 
+  /**
+    * Serializes the key and then the value of the record, returning the headers returned by the
+    * value serializer, which is given the headers returned by the key serializer, like the Java
+    * Kafka producer, where both serializers modify the same headers.
+    */
   private[this] def serializeToBytes[F[_], K, V](
     keySerializer: KeySerializer[F, K],
     valueSerializer: ValueSerializer[F, V],
     record: ProducerRecord[K, V]
-  )(implicit F: Apply[F]): F[(Array[Byte], Array[Byte])] = {
-    val keyBytes =
-      keySerializer.serialize(record.topic, record.headers, record.key)
-
-    val valueBytes =
-      valueSerializer.serialize(record.topic, record.headers, record.value)
-
-    keyBytes.product(valueBytes)
-  }
+  )(implicit F: FlatMap[F]): F[(Headers, Array[Byte], Array[Byte])] =
+    keySerializer.serializeWithHeaders(record.topic, record.headers, record.key).flatMap {
+      case (headers, keyBytes) =>
+        valueSerializer.serializeWithHeaders(record.topic, headers, record.value).map {
+          case (headers, valueBytes) =>
+            (headers, keyBytes, valueBytes)
+        }
+    }
 
   private[this] def asJavaRecord[F[_], K, V](
     keySerializer: KeySerializer[F, K],
     valueSerializer: ValueSerializer[F, V],
     record: ProducerRecord[K, V]
-  )(implicit F: Apply[F]): F[KafkaByteProducerRecord] =
-    serializeToBytes(keySerializer, valueSerializer, record).map { case (keyBytes, valueBytes) =>
+  )(implicit F: FlatMap[F]): F[KafkaByteProducerRecord] =
+    serializeToBytes(keySerializer, valueSerializer, record).map { case (headers, keyBytes, valueBytes) =>
       new KafkaByteProducerRecord(
         record.topic,
         record.partition.fold[java.lang.Integer](null)(identity),
         record.timestamp.fold[java.lang.Long](null)(identity),
         keyBytes,
         valueBytes,
-        record.headers.asJava
+        headers.asJava
       )
     }
 

@@ -8,10 +8,12 @@ package fs2.kafka
 
 import cats.data.OptionT
 import cats.effect.IO
+import cats.effect.Resource
 import cats.syntax.all.*
 import cats.~>
 import fs2.Chunk
 import fs2.Stream
+import java.nio.charset.StandardCharsets
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.errors.TimeoutException
 
@@ -76,6 +78,42 @@ final class KafkaProducerSpec extends BaseKafkaSpec {
         _ <- Stream.eval(unitProducer.produceOne(ProducerRecord(topic, (), ())).flatten)
         _ <- Stream.eval(intProducer.produceOne(ProducerRecord(topic, 1, 2)).flatten)
       } yield ()).compile.toVector.unsafeRunSync()
+    }
+  }
+
+  it("should produce records with the headers returned by serializers") {
+    withTopic { topic =>
+      createTopic(topic, partitions = 1)
+
+      val keySerializer =
+        Serializer.instanceWithHeaders[IO, String] { (_, headers, key) =>
+          IO.pure((headers.append("key-header", "key"), key.getBytes(StandardCharsets.UTF_8)))
+        }
+
+      // The value serializer is given the headers returned by the key serializer
+      val valueSerializer =
+        Serializer.instanceWithHeaders[IO, String] { (_, headers, value) =>
+          val keyHeader = headers.exists("key-header").toString
+          IO.pure((headers.append("value-header", keyHeader), value.getBytes(StandardCharsets.UTF_8)))
+        }
+
+      val settings =
+        producerSettings[IO].withSerializers(Resource.pure(keySerializer), Resource.pure(valueSerializer))
+
+      val record =
+        ProducerRecord(topic, "key", "value").withHeaders(Headers(Header("record-header", "record")))
+
+      val headers =
+        (for {
+          producer <- KafkaProducer.stream(settings)
+          _ <- Stream.eval(producer.produceOne(record).flatten)
+          consumed <- KafkaConsumer.stream(consumerSettings[IO]).subscribeTo(topic).records.take(1)
+        } yield consumed.record.headers.toChain.toList.map(header =>
+          header.key -> header.as[String]
+        )).compile.lastOrError
+          .unsafeRunSync()
+
+      headers shouldBe List("record-header" -> "record", "key-header" -> "key", "value-header" -> "true")
     }
   }
 

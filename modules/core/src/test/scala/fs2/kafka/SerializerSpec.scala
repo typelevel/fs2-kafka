@@ -7,6 +7,7 @@
 package fs2.kafka
 
 import cats.*
+import cats.arrow.FunctionK
 import cats.effect.IO
 import cats.laws.discipline.*
 import java.nio.charset.StandardCharsets
@@ -239,6 +240,72 @@ final class SerializerSpec extends BaseCatsSpec {
 
   test("Serializer#toString") {
     assert(Serializer[IO, Int].toString.startsWith("Serializer$"))
+    assert(
+      Serializer
+        .instanceWithHeaders[IO, Int]((_, headers, _) => IO.pure((headers, null)))
+        .toString
+        .startsWith("Serializer$")
+    )
+  }
+
+  test("Serializer#serializeWithHeaders") {
+    val serializer =
+      Serializer[IO, String]
+
+    forAll { (topic: String, headers: Headers, s: String) =>
+      val (serializedHeaders, serialized) = serializer.serializeWithHeaders(topic, headers, s).unsafeRunSync()
+      serializedHeaders.toChain.toList shouldBe headers.toChain.toList
+      serialized shouldBe serializer.serialize(topic, headers, s).unsafeRunSync()
+    }
+  }
+
+  /** Serializer which adds a header with the topic, and serializes strings as UTF-8. */
+  val topicHeaderSerializer: Serializer[IO, String] =
+    Serializer.instanceWithHeaders[IO, String] { (topic, headers, s) =>
+      IO.pure((headers.append("topic", topic), s.getBytes(StandardCharsets.UTF_8)))
+    }
+
+  test("Serializer#instanceWithHeaders") {
+    forAll { (topic: String, headers: Headers, s: String) =>
+      val (serializedHeaders, serialized) =
+        topicHeaderSerializer.serializeWithHeaders(topic, headers, s).unsafeRunSync()
+
+      serializedHeaders.toChain.toList.map(header => header.key -> header.as[String]) shouldBe
+        headers.append("topic", topic).toChain.toList.map(header => header.key -> header.as[String])
+      serialized shouldBe s.getBytes(StandardCharsets.UTF_8)
+      topicHeaderSerializer.serialize(topic, headers, s).unsafeRunSync() shouldBe serialized
+    }
+  }
+
+  test("Serializer#instanceWithHeaders keeps the headers when combined") {
+    val serializers: List[Serializer[IO, String]] =
+      List(
+        topicHeaderSerializer.contramap[String](identity),
+        topicHeaderSerializer.mapBytes(identity),
+        topicHeaderSerializer.suspend,
+        topicHeaderSerializer.mapK(FunctionK.id),
+        topicHeaderSerializer.option.contramap[String](Some(_)),
+        Serializer.headers(_ => topicHeaderSerializer),
+        Serializer.topic { case _ => topicHeaderSerializer }
+      )
+
+    forAll { (topic: String, s: String) =>
+      serializers.foreach { serializer =>
+        val (headers, serialized) = serializer.serializeWithHeaders(topic, Headers.empty, s).unsafeRunSync()
+        headers("topic").map(_.as[String]) shouldBe Some(topic)
+        serialized shouldBe s.getBytes(StandardCharsets.UTF_8)
+      }
+    }
+  }
+
+  test("Serializer#instanceWithHeaders.option") {
+    forAll { (topic: String, headers: Headers) =>
+      val (serializedHeaders, serialized) =
+        topicHeaderSerializer.option.serializeWithHeaders(topic, headers, None).unsafeRunSync()
+
+      serializedHeaders.toChain.toList shouldBe headers.toChain.toList
+      serialized shouldBe null
+    }
   }
 
   def roundtrip[A: Arbitrary: Eq](

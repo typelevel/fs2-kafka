@@ -24,7 +24,7 @@ inThisBuild(
     semanticdbEnabled := true,
     semanticdbVersion := scalafixSemanticdb.revision,
     startYear := Some(2018),
-    tlBaseVersion := "4.2",
+    tlBaseVersion := "4.3",
     tlSiteKeepFiles := false,
     mimaBinaryIssueFilters ++= {
       import com.typesafe.tools.mima.core.*
@@ -46,6 +46,7 @@ inThisBuild(
         ProblemFilters.exclude[MissingClassProblem]("fs2.kafka.KafkaConsumer$AssignmentSignals$GracefulSignals"),
         ProblemFilters.exclude[MissingClassProblem]("fs2.kafka.KafkaConsumer$AssignmentSignals$GracefulSignals$"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("fs2.kafka.KafkaCommitter.source"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("fs2.kafka.GenericSerializer.serializeWithHeaders"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.kafka.KafkaProducer.pipe"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.kafka.KafkaProducer.resource"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.kafka.KafkaProducer.stream"),

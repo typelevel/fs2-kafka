@@ -24,6 +24,18 @@ sealed abstract class GenericSerializer[-T <: KeyOrValue, F[_], A] { self =>
   def serialize(topic: String, headers: Headers, a: A): F[Array[Byte]]
 
   /**
+    * Attempts to serialize the specified value of type `A` into bytes, returning the record headers
+    * along with the bytes. The Kafka topic name, to which the serialized bytes are going to be sent,
+    * and record headers are available.<br><br>
+    *
+    * Serializers created with [[GenericSerializer.instanceWithHeaders]] can modify the headers, for
+    * example to include a schema identifier in a header, while other serializers return the headers
+    * unchanged. Producers send records with the headers returned by serializers, where the value
+    * serializer is given the headers returned by the key serializer.
+    */
+  def serializeWithHeaders(topic: String, headers: Headers, a: A): F[(Headers, Array[Byte])]
+
+  /**
     * Creates a new serializer in which the effect type has been changed using the specified
     * `FunctionK`.
     */
@@ -32,6 +44,9 @@ sealed abstract class GenericSerializer[-T <: KeyOrValue, F[_], A] { self =>
 
       override def serialize(topic: String, headers: Headers, a: A): G[Array[Byte]] =
         f(self.serialize(topic, headers, a))
+
+      override def serializeWithHeaders(topic: String, headers: Headers, a: A): G[(Headers, Array[Byte])] =
+        f(self.serializeWithHeaders(topic, headers, a))
 
       override def contramap[B](g: B => A): GenericSerializer[T, G, B] =
         self.contramap(g).mapK(f)
@@ -136,8 +151,8 @@ object GenericSerializer {
     * headers.
     */
   def headers[F[_], A](f: Headers => Serializer[F, A])(implicit F: Sync[F]): Serializer[F, A] =
-    Serializer.instance { (topic, headers, a) =>
-      f(headers).serialize(topic, headers, a)
+    Serializer.instanceWithHeaders { (topic, headers, a) =>
+      f(headers).serializeWithHeaders(topic, headers, a)
     }
 
   /**
@@ -151,6 +166,9 @@ object GenericSerializer {
 
       override def serialize(topic: String, headers: Headers, a: A): F[Array[Byte]] =
         f(topic, headers, a)
+
+      override def serializeWithHeaders(topic: String, headers: Headers, a: A): F[(Headers, Array[Byte])] =
+        f(topic, headers, a).map((headers, _))
 
       override def contramap[B](f: B => A): Serializer[F, B] =
         Serializer.instance { (topic, headers, b) =>
@@ -179,6 +197,51 @@ object GenericSerializer {
     }
 
   /**
+    * Creates a new [[Serializer]] from the specified function, which returns the record headers
+    * along with the bytes, so that the serializer can modify the headers, for example to include a
+    * schema identifier in a header. Producers send records with the returned headers, where the value
+    * serializer is given the headers returned by the key serializer.<br><br>
+    *
+    * Use [[instance]] instead if the serializer does not need to modify the record headers.
+    */
+  def instanceWithHeaders[F[_], A](
+    f: (String, Headers, A) => F[(Headers, Array[Byte])]
+  )(implicit F: Sync[F]): Serializer[F, A] =
+    new Serializer[F, A] {
+
+      override def serialize(topic: String, headers: Headers, a: A): F[Array[Byte]] =
+        f(topic, headers, a).map(_._2)
+
+      override def serializeWithHeaders(topic: String, headers: Headers, a: A): F[(Headers, Array[Byte])] =
+        f(topic, headers, a)
+
+      override def contramap[B](g: B => A): Serializer[F, B] =
+        Serializer.instanceWithHeaders { (topic, headers, b) =>
+          serializeWithHeaders(topic, headers, g(b))
+        }
+
+      override def mapBytes(g: Array[Byte] => Array[Byte]): Serializer[F, A] =
+        Serializer.instanceWithHeaders { (topic, headers, a) =>
+          serializeWithHeaders(topic, headers, a).map { case (headers, bytes) => (headers, g(bytes)) }
+        }
+
+      override def option: Serializer[F, Option[A]] =
+        Serializer.instanceWithHeaders {
+          case (topic, headers, Some(a)) => serializeWithHeaders(topic, headers, a)
+          case (_, headers, None) => F.pure((headers, null))
+        }
+
+      override def suspend: Serializer[F, A] =
+        Serializer.instanceWithHeaders { (topic, headers, a) =>
+          F.defer(serializeWithHeaders(topic, headers, a))
+        }
+
+      override def toString: String =
+        "Serializer$" + System.identityHashCode(this)
+
+    }
+
+  /**
     * Creates a new [[Serializer]] from the specified function, ignoring to which Kafka topic the
     * bytes are going to be sent and any record headers. Use [[instance]] instead if the serializer
     * needs access to the Kafka topic name or the record headers.
@@ -196,8 +259,8 @@ object GenericSerializer {
   def topic[T <: KeyOrValue, F[_], A](
     f: PartialFunction[String, GenericSerializer[T, F, A]]
   )(implicit F: Sync[F]): GenericSerializer[T, F, A] =
-    Serializer.instance[F, A] { (topic, headers, a) =>
-      f.applyOrElse(topic, unexpectedTopic).serialize(topic, headers, a)
+    Serializer.instanceWithHeaders[F, A] { (topic, headers, a) =>
+      f.applyOrElse(topic, unexpectedTopic).serializeWithHeaders(topic, headers, a)
     }
 
   /**
