@@ -18,7 +18,7 @@ import org.apache.kafka.common.TopicPartition
 
 ## Producing and Committing Offsets
 
-To produce data and commit offsets transactionally, we first need to create a `KafkaConsumer` and `ProducerSettings`. The `ProducerSettings` must have idempotence enabled, retries set to a value greater than zero, and a transactional ID configured.
+To produce data and commit offsets transactionally, we first need to create a `ConsumerSettings` and `ProducerSettings`. The `ProducerSettings` must have idempotence enabled, retries set to a value greater than zero, and a transactional ID configured.
 
 ```scala mdoc:silent
 val consumerSettings =
