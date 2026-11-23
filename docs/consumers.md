@@ -189,7 +189,7 @@ Note that only automatic partition assignment is supported. Like in the [consume
 
 ## Record Streaming
 
-Once subscribed to at least one topic, we can use `stream` for a `Stream` of @:api(fs2.kafka.CommittableConsumerRecord)s. Each record contains a deserialized @:api(fs2.kafka.ConsumerRecord), as well as a @:api(fs2.kafka.CommittableOffset) for managing [offset commits](#offset-commits). Streams guarantee records in topic-partition order, but not ordering across partitions. This is the same ordering guarantee that Kafka provides.
+Once subscribed to at least one topic, we can use `records` (which is an alias for `stream`) for a `Stream` of @:api(fs2.kafka.CommittableConsumerRecord)s. Each record contains a deserialized @:api(fs2.kafka.ConsumerRecord), as well as a @:api(fs2.kafka.CommittableOffset) for managing [offset commits](#offset-commits). Streams guarantee records in topic-partition order, but not ordering across partitions. This is the same ordering guarantee that Kafka provides.
 
 ```scala mdoc:silent
 object ConsumerStreamExample extends IOApp.Simple {
@@ -200,9 +200,9 @@ object ConsumerStreamExample extends IOApp.Simple {
 }
 ```
 
-Note that this is an infinite stream, meaning it will only terminate if it's interrupted, errors, or if we turn it into a finite stream (using e.g. `take`). It's usually desired that consumer streams keep running indefinitely, so that incoming records get processed quickly — one notable exception being when testing streams. Also, you could gracefully stop stream using `stopConsuming` method. More info about it in the [graceful shutdown](#graceful-shutdown) section.
+Note that this is an infinite stream, meaning it will only terminate if it's interrupted, errors occur, or if we turn it into a finite stream (using e.g. `take`). It's usually desired that consumer streams keep running indefinitely, so that incoming records get processed quickly — one notable exception being when testing streams. Also, you could gracefully stop stream using `stopConsuming` method. More info about it in the [graceful shutdown](#graceful-shutdown) section.
 
-When using `stream`, records on all assigned partitions end up in the same `Stream`. Depending on how records are processed, we might want to separate records per topic-partition. This exact functionality is provided by `partitionedStream`.
+When using `stream`, records on all assigned partitions end up in the same `Stream`. Depending on how records are processed, we might want to separate records per topic-partition. This exact functionality is provided by `partitionedRecords` (an alias for `partitionedStream`).
 
 ```scala mdoc:silent
 object ConsumerPartitionedStreamExample extends IOApp.Simple {
@@ -245,7 +245,7 @@ New assignments will be received on each rebalance. On rebalance, Kafka revoke a
 
 Note, that partition streams for revoked partitions will be closed after the new assignment comes.
 
-When processing of records is independent of each other, as is the case with `processRecord` above, it's often easier and more performant to use `stream` and `mapAsync`, as seen in the example below. Generally, it's crucial to ensure there are no data races between processing of any two records.
+When processing of records is independent of each other, as is the case with `processRecord` above, it's often easier and more performant to use `records` and `mapAsync`, as seen in the example below. Generally, it's crucial to ensure there are no data races between processing of any two records.
 
 ```scala mdoc:silent
 object ConsumerMapAsyncExample extends IOApp.Simple {
