@@ -402,7 +402,7 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
     offsets: Map[TopicPartition, OffsetAndMetadata]
   )(k: (Either[Throwable, Unit] => Unit) => F[Unit]): F[Unit] =
     Async[F]
-      .async[Unit]((cb: Either[Throwable, Unit] => Unit) => k(cb).as(None))
+      .async[Unit]((cb: Either[Throwable, Unit] => Unit) => k(cb).as(Some(F.unit)))
       .timeoutTo(
         settings.commitTimeout,
         CommitTimeoutException(settings.commitTimeout, offsets).raiseError[F, Unit]
