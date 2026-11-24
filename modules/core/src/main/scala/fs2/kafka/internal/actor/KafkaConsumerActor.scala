@@ -408,7 +408,7 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
     ).rethrow
       .timeoutTo(
         settings.commitTimeout,
-        CommitTimeoutException(settings.commitTimeout, offsets).raiseError[F, Unit]
+        F.defer(CommitTimeoutException(settings.commitTimeout, offsets).raiseError[F, Unit])
       )
 
   private[this] def committableConsumerRecord(
