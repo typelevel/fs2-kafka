@@ -51,17 +51,35 @@ final class CommitAsyncSpec extends BaseSpec {
       assert(outcome.isCanceled)
     }
 
-    it("should fail with CommitTimeoutException when committing after the consumer has terminated") {
+    it("should fail with ConsumerShutdownException when committing after the consumer has terminated") {
       val mockConsumer = new MockConsumer[Array[Byte], Array[Byte]]("earliest")
 
       val result =
         runWithin(10.seconds) {
-          kafkaConsumer(mockConsumer, commitTimeout = 100.millis).use { consumer =>
+          kafkaConsumer(mockConsumer, commitTimeout = 1.hour).use { consumer =>
             consumer.terminate >> consumer.awaitTermination >> consumer.commitAsync(offsets).attempt
           }
         }
 
-      assert(result.left.exists(_.isInstanceOf[CommitTimeoutException]))
+      assert(result.left.exists(_.isInstanceOf[ConsumerShutdownException]))
+    }
+
+    it("should fail with ConsumerShutdownException if the consumer terminates while committing") {
+      val mockConsumer = new InFlightCommitsConsumer
+
+      val result =
+        runWithin(10.seconds) {
+          kafkaConsumer(mockConsumer, commitTimeout = 1.hour).use { consumer =>
+            for {
+              commit <- consumer.commitAsync(offsets).attempt.start
+              _ <- mockConsumer.commitInFlight
+              _ <- consumer.terminate
+              result <- commit.joinWithNever
+            } yield result
+          }
+        }
+
+      assert(result.left.exists(_.isInstanceOf[ConsumerShutdownException]))
     }
   }
 

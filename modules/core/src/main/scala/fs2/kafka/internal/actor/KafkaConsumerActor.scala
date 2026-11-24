@@ -73,7 +73,8 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
   currentAssignmentRef: SignallingRef[F, Option[SortedSet[TopicPartition]]],
   state: AtomicCell[F, State[F, K, V]],
   withConsumer: WithConsumer[F],
-  maxParallel: Int
+  maxParallel: Int,
+  awaitTermination: F[Unit]
 )(implicit
   F: Async[F],
   dispatcher: Dispatcher[F],
@@ -401,8 +402,10 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
   private[this] def runCommitAsync(
     offsets: Map[TopicPartition, OffsetAndMetadata]
   )(k: (Either[Throwable, Unit] => Unit) => F[Unit]): F[Unit] =
-    Async[F]
-      .async[Unit]((cb: Either[Throwable, Unit] => Unit) => k(cb).as(Some(F.unit)))
+    F.race(
+      awaitTermination.as(ConsumerShutdownException()),
+      Async[F].async[Unit]((cb: Either[Throwable, Unit] => Unit) => k(cb).as(Some(F.unit)))
+    ).rethrow
       .timeoutTo(
         settings.commitTimeout,
         CommitTimeoutException(settings.commitTimeout, offsets).raiseError[F, Unit]
