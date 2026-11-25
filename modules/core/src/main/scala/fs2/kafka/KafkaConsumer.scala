@@ -129,7 +129,8 @@ object KafkaConsumer {
     requests: QueueSource[F, Request[F, K, V]],
     polls: Queue[F, Request.Poll[F]],
     actor: KafkaConsumerActor[F, K, V],
-    pollInterval: FiniteDuration
+    pollInterval: FiniteDuration,
+    terminated: Deferred[F, Unit]
   )(implicit
     F: Async[F]
   ): Resource[F, Fiber[F, Throwable, Unit]] =
@@ -138,6 +139,7 @@ object KafkaConsumer {
         runConsumerActor(requests, polls, actor),
         runPollScheduler(polls, pollInterval)
       ).void
+        .guarantee(terminated.complete(()).void)
         .start
     }(_.cancel.start.void)
 
@@ -467,6 +469,7 @@ object KafkaConsumer {
       )
       dispatcher <- Dispatcher.sequential[F]
       stopConsumingDeferred <- Resource.eval(Deferred[F, Unit])
+      terminated <- Resource.eval(Deferred[F, Unit])
       withConsumer <- WithConsumer(mk, settings)
       assignment <-
         Resource.eval(
@@ -486,10 +489,11 @@ object KafkaConsumer {
           currentAssignmentRef = assignmentRef,
           state = stateRef,
           withConsumer = withConsumer,
-          maxParallel = settings.maxParallelism
+          maxParallel = settings.maxParallelism,
+          awaitTermination = terminated.get
         )
       }
-      fiber <- startBackgroundConsumer(requests, polls, actor, settings.pollInterval)
+      fiber <- startBackgroundConsumer(requests, polls, actor, settings.pollInterval, terminated)
     } yield createKafkaConsumer(
       requests,
       settings,
