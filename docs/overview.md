@@ -22,6 +22,12 @@ For Scala 2.12, enable partial unification by adding the following line to `buil
 scalacOptions += "-Ypartial-unification"
 ```
 
+For [share groups](https://cwiki.apache.org/confluence/display/KAFKA/KIP-932%3A+Queues+for+Kafka) (KIP-932), add the experimental [share consumers](share-consumers.md) module.
+
+```scala
+libraryDependencies += "@ORGANIZATION@" %% "@SHARE_MODULE_NAME@" % "@VERSION@"
+```
+
 ### External Modules
 
 Following is an incomplete list of modules maintained in separate repositories.

@@ -24,6 +24,12 @@ package object kafka {
     org.apache.kafka.clients.consumer.Consumer[Array[Byte], Array[Byte]]
 
   /**
+    * Alias for Java Kafka `ShareConsumer[Array[Byte], Array[Byte]]`.
+    */
+  type KafkaByteShareConsumer =
+    org.apache.kafka.clients.consumer.ShareConsumer[Array[Byte], Array[Byte]]
+
+  /**
     * Alias for Java Kafka `Producer[Array[Byte], Array[Byte]]`.
     */
   type KafkaByteProducer =

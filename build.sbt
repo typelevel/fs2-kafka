@@ -61,7 +61,7 @@ inThisBuild(
 lazy val root = project
   .in(file("."))
   .enablePlugins(NoPublishPlugin)
-  .aggregate(core, unidocs)
+  .aggregate(core, share, unidocs)
 
 lazy val core = project
   .in(file("modules/core"))
@@ -83,10 +83,29 @@ lazy val core = project
     Test / javaOptions += s"-Dfs2.kafka.test.image=apache/kafka:$kafkaVersion"
   )
 
+lazy val share = project
+  .in(file("modules/share"))
+  .dependsOn(core % "compile->compile;test->test")
+  .settings(
+    name := "fs2-kafka-share",
+    libraryDependencies ++= Seq(
+      "co.fs2" %% "fs2-core" % fs2Version,
+      "org.apache.kafka" % "kafka-clients" % kafkaVersion,
+      "org.typelevel" %% "cats-core" % catsVersion,
+      "org.typelevel" %% "cats-effect-kernel" % catsEffectVersion,
+      "org.typelevel" %% "cats-effect-std" % catsEffectVersion,
+      "org.typelevel" %% "cats-effect" % catsEffectVersion
+    ),
+    headerSettings,
+    testSettings,
+    Test / javaOptions += s"-Dfs2.kafka.test.image=apache/kafka:$kafkaVersion",
+    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "4.2.1").toMap
+  )
+
 lazy val docs = project
   .in(file("site"))
   .enablePlugins(TypelevelSitePlugin)
-  .dependsOn(core)
+  .dependsOn(core, share)
   .settings {
     import laika.ast.Image
     import laika.ast.InlineSVGIcon
@@ -130,6 +149,7 @@ lazy val docs = project
         "MAJOR_VERSION" -> majorVersion(version.value),
         "ORGANIZATION" -> (ThisBuild / organization).value,
         "SCALA_DOCS_VERSION" -> scalaVersionOf(scalaVersion.value),
+        "SHARE_MODULE_NAME" -> (share / moduleName).value,
         "SCALA_PUBLISH_VERSIONS" -> crossScalaVersionsOf(core).value
       ),
       tlSiteHelium := {
@@ -257,7 +277,7 @@ lazy val unidocs = project
     headerSettings,
     crossScalaVersions := Seq(scala3Version),
     semanticdbEnabled := false,
-    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(core),
+    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(core, share),
     ScalaUnidoc / unidoc / apiMappings := {
       val docsApiUrl = apiURL.value.map(_.toString)
       (ScalaUnidoc / unidoc / apiMappings).value
