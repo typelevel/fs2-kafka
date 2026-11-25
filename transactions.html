@@ -155,7 +155,7 @@
 </span><span class="keyword">import</span><span> </span><span class="identifier">org</span><span>.</span><span class="identifier">apache</span><span>.</span><span class="identifier">kafka</span><span>.</span><span class="identifier">common</span><span>.</span><span class="type-name">TopicPartition</span></code></pre>
         
         <h2 id="producing-and-committing-offsets" class="section"><a class="anchor-link left" href="#producing-and-committing-offsets"><i class="icofont-laika link">&#xef71;</i></a>Producing and Committing Offsets</h2>
-        <p>To produce data and commit offsets transactionally, we first need to create a <code>KafkaConsumer</code> and <code>ProducerSettings</code>. The <code>ProducerSettings</code> must have idempotence enabled, retries set to a value greater than zero, and a transactional ID configured.</p>
+        <p>To produce data and commit offsets transactionally, we first need to create a <code>ConsumerSettings</code> and <code>ProducerSettings</code>. The <code>ProducerSettings</code> must have idempotence enabled, retries set to a value greater than zero, and a transactional ID configured.</p>
         <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">val</span><span> </span><span class="identifier">consumerSettings</span><span> =
   </span><span class="type-name">ConsumerSettings</span><span>[</span><span class="type-name">IO</span><span>, </span><span class="type-name">String</span><span>, </span><span class="type-name">String</span><span>]
     .</span><span class="identifier">withIsolationLevel</span><span>(</span><span class="type-name">IsolationLevel</span><span>.</span><span class="type-name">ReadCommitted</span><span>)

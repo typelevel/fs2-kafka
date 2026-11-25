@@ -249,7 +249,7 @@
         <p>In the example above, we simply create the producer and then immediately shutdown after resource cleanup. <a class="api" href="api/fs2/kafka/KafkaProducer.html">KafkaProducer</a> only supports producing records, and there is a separate producer available to support <a href="transactions.html">transactions</a>.</p>
         
         <h2 id="producing-records" class="section"><a class="anchor-link left" href="#producing-records"><i class="icofont-laika link">&#xef71;</i></a>Producing Records</h2>
-        <p>If we&#39;re only producing records in one part of our stream, using <code>produce</code> is convenient.</p>
+        <p>If we&#39;re only producing records in one part of our stream, passing <code>ProducerSettings</code> to <code>KafkaProducer.pipe</code> is convenient.</p>
         <pre><code class="nohighlight"><span class="keyword">val</span><span> </span><span class="identifier">consumerSettings</span><span> =
   </span><span class="type-name">ConsumerSettings</span><span>[</span><span class="type-name">IO</span><span>, </span><span class="type-name">String</span><span>, </span><span class="type-name">String</span><span>]
     .</span><span class="identifier">withAutoOffsetReset</span><span>(</span><span class="type-name">AutoOffsetReset</span><span>.</span><span class="type-name">Earliest</span><span>)
@@ -277,8 +277,8 @@
 
 }</span></code></pre>
         <p>In the stream above, we&#39;re simply producing the records we receive back to the topic.</p>
-        <p>The <code>produce</code> function creates a <code>KafkaProducer</code> and produces records in <code>ProducerRecords</code>, which is al alias for <code>fs2.Chunk</code>. Once all records have been produced in the <code>ProducerRecords</code>, the inner effect will complete with a <code>ProducerResult</code>, which is an alias for <code>Chunk[(ProducerRecord[K, V], RecordMetadata)]</code>.</p>
-        <p>If we&#39;re producing in multiple places in our stream, we can create the <code>KafkaProducer</code> ourselves, and pass it to the <code>pipe</code> function.</p>
+        <p>The <code>pipe</code> function creates a <code>KafkaProducer</code> using the provided settings, and produces records in <code>ProducerRecords</code>, which is an alias for <code>fs2.Chunk</code>. Once all records in a <code>ProducerRecords</code> have been produced, the pipe emits a <code>ProducerResult</code>, which is an alias for <code>Chunk[(ProducerRecord[K, V], RecordMetadata)]</code>.</p>
+        <p>If we&#39;re producing in multiple places in our stream, we can create the <code>KafkaProducer</code> ourselves, and pass it to the overloaded version of the <code>pipe</code> function.</p>
         <pre><code class="nohighlight"><span class="keyword">object</span><span> </span><span class="type-name">PartitionedProduceExample</span><span> </span><span class="keyword">extends</span><span> </span><span class="type-name">IOApp</span><span> {
 
   </span><span class="keyword">def</span><span> </span><span class="declaration-name">run</span><span>(</span><span class="identifier">args</span><span>: </span><span class="type-name">List</span><span>[</span><span class="type-name">String</span><span>]): </span><span class="type-name">IO</span><span>[</span><span class="type-name">ExitCode</span><span>] = {

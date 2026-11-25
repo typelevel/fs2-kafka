@@ -142,9 +142,9 @@
         <h1 id="quick-example" class="title">Quick Example</h1>
         <p>Following is an example showing how to:</p>
         <ul>
-          <li>use <code>KafkaConsumer#records</code> in order to stream records from Kafka,</li>
+          <li>use <code>KafkaConsumer#consumeChunk</code> in order to process records from Kafka in chunks,</li>
           <li>use <code>produce</code> to produce newly created records to Kafka,</li>
-          <li>use <code>commitBatchWithin</code> to commit consumed offsets in batches.</li>
+          <li>return <code>CommitNow</code> to commit consumed offsets after each chunk has been processed.</li>
         </ul>
         <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">effect</span><span>.{</span><span class="type-name">IO</span><span>, </span><span class="type-name">IOApp</span><span>}
 </span><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">_</span><span>
