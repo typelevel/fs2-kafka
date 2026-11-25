@@ -2,9 +2,9 @@
 
 Following is an example showing how to:
 
-- use `KafkaConsumer#records` in order to stream records from Kafka,
+- use `KafkaConsumer#consumeChunk` in order to process records from Kafka in chunks,
 - use `produce` to produce newly created records to Kafka,
-- use `commitBatchWithin` to commit consumed offsets in batches.
+- return `CommitNow` to commit consumed offsets after each chunk has been processed.
 
 ```scala mdoc
 import cats.effect.{IO, IOApp}
