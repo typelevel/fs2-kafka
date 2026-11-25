@@ -147,7 +147,7 @@ In the example above, we simply create the producer and then immediately shutdow
 
 ## Producing Records
 
-If we're only producing records in one part of our stream, using `produce` is convenient.
+If we're only producing records in one part of our stream, passing `ProducerSettings` to `KafkaProducer.pipe` is convenient.
 
 ```scala mdoc:silent
 val consumerSettings =
@@ -180,9 +180,9 @@ object ProduceExample extends IOApp {
 
 In the stream above, we're simply producing the records we receive back to the topic.
 
-The `produce` function creates a `KafkaProducer` and produces records in `ProducerRecords`, which is al alias for `fs2.Chunk`. Once all records have been produced in the `ProducerRecords`, the inner effect will complete with a `ProducerResult`, which is an alias for `Chunk[(ProducerRecord[K, V], RecordMetadata)]`.
+The `pipe` function creates a `KafkaProducer` using the provided settings, and produces records in `ProducerRecords`, which is an alias for `fs2.Chunk`. Once all records in a `ProducerRecords` have been produced, the pipe emits a `ProducerResult`, which is an alias for `Chunk[(ProducerRecord[K, V], RecordMetadata)]`.
 
-If we're producing in multiple places in our stream, we can create the `KafkaProducer` ourselves, and pass it to the `pipe` function.
+If we're producing in multiple places in our stream, we can create the `KafkaProducer` ourselves, and pass it to the overloaded version of the `pipe` function.
 
 ```scala mdoc:silent
 object PartitionedProduceExample extends IOApp {

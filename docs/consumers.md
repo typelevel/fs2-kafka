@@ -185,11 +185,11 @@ object ConsumerSubscribeExample extends IOApp.Simple {
 }
 ```
 
-Note that only automatic partition assignment is supported. Like in the [consumer creation](#consumer-creation) section, the example above only creates a consumer (guaranteeing resource cleanup) and subscribes to a topic. No records are yet streamed from the topic, for which we'll have to use `stream` or `partitionedStream`.
+Note that only automatic partition assignment is supported. Like in the [consumer creation](#consumer-creation) section, the example above only creates a consumer (guaranteeing resource cleanup) and subscribes to a topic. No records are yet streamed from the topic, for which we'll have to use `records` or `partitionedRecords`.
 
 ## Record Streaming
 
-Once subscribed to at least one topic, we can use `stream` for a `Stream` of @:api(fs2.kafka.CommittableConsumerRecord)s. Each record contains a deserialized @:api(fs2.kafka.ConsumerRecord), as well as a @:api(fs2.kafka.CommittableOffset) for managing [offset commits](#offset-commits). Streams guarantee records in topic-partition order, but not ordering across partitions. This is the same ordering guarantee that Kafka provides.
+Once subscribed to at least one topic, we can use `records` (which is an alias for `stream`) for a `Stream` of @:api(fs2.kafka.CommittableConsumerRecord)s. Each record contains a deserialized @:api(fs2.kafka.ConsumerRecord), as well as a @:api(fs2.kafka.CommittableOffset) for managing [offset commits](#offset-commits). Streams guarantee records in topic-partition order, but not ordering across partitions. This is the same ordering guarantee that Kafka provides.
 
 ```scala mdoc:silent
 object ConsumerStreamExample extends IOApp.Simple {
@@ -200,9 +200,9 @@ object ConsumerStreamExample extends IOApp.Simple {
 }
 ```
 
-Note that this is an infinite stream, meaning it will only terminate if it's interrupted, errors, or if we turn it into a finite stream (using e.g. `take`). It's usually desired that consumer streams keep running indefinitely, so that incoming records get processed quickly — one notable exception being when testing streams. Also, you could gracefully stop stream using `stopConsuming` method. More info about it in the [graceful shutdown](#graceful-shutdown) section.
+Note that this is an infinite stream, meaning it will only terminate if it's interrupted, errors occur, or if we turn it into a finite stream (using e.g. `take`). It's usually desired that consumer streams keep running indefinitely, so that incoming records get processed quickly — one notable exception being when testing streams. Also, you could gracefully stop stream using `stopConsuming` method. More info about it in the [graceful shutdown](#graceful-shutdown) section.
 
-When using `stream`, records on all assigned partitions end up in the same `Stream`. Depending on how records are processed, we might want to separate records per topic-partition. This exact functionality is provided by `partitionedStream`.
+When using `records`, records on all assigned partitions end up in the same `Stream`. Depending on how records are processed, we might want to separate records per topic-partition. This exact functionality is provided by `partitionedRecords` (an alias for `partitionedStream`).
 
 ```scala mdoc:silent
 object ConsumerPartitionedStreamExample extends IOApp.Simple {
@@ -229,11 +229,11 @@ object ConsumerPartitionedStreamExample extends IOApp.Simple {
 }
 ```
 
-The `partitionStream` in the example above is a `Stream` of records for a single topic-partition. We define the processing per topic-partition rather than across all partitions, as was the case with `stream`. The example will run `processRecord` on every record, one-at-a-time in-order per topic-partition. However, multiple partitions are processed at the same time when using `parJoinUnbounded`.
+The `partitionStream` in the example above is a `Stream` of records for a single topic-partition. We define the processing per topic-partition rather than across all partitions, as was the case with `records`. The example will run `processRecord` on every record, one-at-a-time in-order per topic-partition. However, multiple partitions are processed at the same time when using `parJoinUnbounded`.
 
-Note that we have to use `parJoinUnbounded` here so that all partitions are processed. While `parJoinUnbounded` doesn't limit the number of streams running concurrently, the actual limit is the number of assigned partitions. In fact, `stream` is just an alias for `partitionedStream.parJoinUnbounded`.
+Note that we have to use `parJoinUnbounded` here so that all partitions are processed. While `parJoinUnbounded` doesn't limit the number of streams running concurrently, the actual limit is the number of assigned partitions. In fact, `records` is just an alias for `partitionedRecords.parJoinUnbounded`.
 
-Sometimes it could be desirable to not just get streams for each topic-partition (like in `partitionedStream`), but also have additional information, from which topic-partition each stream produces records. There is a `partitionsMapStream` method for that. It has the next signature:
+Sometimes it could be desirable to not just get streams for each topic-partition (like in `partitionedRecords`), but also have additional information, from which topic-partition each stream produces records. There is a `partitionsMapStream` method for that. It has the next signature:
 
 ```scala
 def partitionsMapStream: Stream[F, Map[TopicPartition, Stream[F, CommittableConsumerRecord[F, K, V]]]]
@@ -245,7 +245,7 @@ New assignments will be received on each rebalance. On rebalance, Kafka revoke a
 
 Note, that partition streams for revoked partitions will be closed after the new assignment comes.
 
-When processing of records is independent of each other, as is the case with `processRecord` above, it's often easier and more performant to use `stream` and `mapAsync`, as seen in the example below. Generally, it's crucial to ensure there are no data races between processing of any two records.
+When processing of records is independent of each other, as is the case with `processRecord` above, it's often easier and more performant to use `records` and `mapAsync`, as seen in the example below. Generally, it's crucial to ensure there are no data races between processing of any two records.
 
 ```scala mdoc:silent
 object ConsumerMapAsyncExample extends IOApp.Simple {
@@ -296,7 +296,7 @@ object ConsumerChunkExample extends IOApp.Simple {
 }
 ```
 
-Note that this method uses `partitionedStream`, which means that all the partitions assigned to the consumer will be processed concurrently.
+Note that this method uses `partitionedRecords`, which means that all the partitions assigned to the consumer will be processed concurrently.
 
 As a user, you don't have to care about the offset commits, all you have to do is implement a function that processes all records in the `Chunk`, and return a `IO[CommitNow]`. After this action finished, the offsets for all messages in the `Chunk` will be committed. `CommitNow` is basically the same as `Unit`, but helps in making it clear when the processing of messages has been finished and it's time to commit.
 
