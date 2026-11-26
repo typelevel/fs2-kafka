@@ -118,15 +118,13 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
   }
 
   /**
-    * Emits the current partition-group assignment as a stream of record streams.
+    * Emits the current partition-group assignment.
     *
-    * Each element is a `Map` from a partition group (`Set[TopicPartition]`) to a stream of `Chunk`s
-    * of [[CommittableConsumerRecord]]s for that group. The outer stream advances whenever the
-    * assignment is realigned (subscribe, rebalance).
-    *
-    * Partition groups
+    * Each element is a `Map` from a partition group (`Set[TopicPartition]`) to the state of that
+    * group, from which record streams for the group can be created. The outer stream advances
+    * whenever the assignment is realigned (subscribe, rebalance).
     */
-  def consume(): Stream[F, Map[Set[TopicPartition], Stream[F, Chunk[CommittableConsumerRecord[F, K, V]]]]] =
+  def consume(): Stream[F, Map[Set[TopicPartition], PartitionGroupState[F, K, V]]] =
     for {
       _ <-
         Stream.eval(
@@ -135,17 +133,7 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
       _ <- Stream.eval(state.update(_.withStreaming()))
       assignments0 = Stream.eval(state.get.map(_.partitionGroupState)).filter(_.nonEmpty)
       assignmentUpdates = Stream.fromQueueNoneTerminated(assignment)
-      assignment <- (assignments0 ++ assignmentUpdates).map { assignment =>
-        assignment.map { case (k, state) =>
-          k ->
-            (for {
-              hasPermit <- Stream.resource(state.groupSemaphore.tryPermit)
-              result <-
-                if (hasPermit) Stream.fromQueueUnterminated(state.queue)
-                else Stream.empty
-            } yield result).interruptWhen(state.interrupt)
-        }
-      }
+      assignment <- assignments0 ++ assignmentUpdates
     } yield assignment
 
   def assignments: Stream[F, SortedSet[TopicPartition]] =
@@ -212,7 +200,7 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
         for {
           _ <- assignment.offer(None)
           _ <- state.partitionGroupState.values.toList
-            .parTraverse(group => group.interrupt.complete(().asRight) >> group.groupSemaphore.acquire)
+            .parTraverse(group => group.interrupt.complete(().asRight) >> group.awaitStreams)
           newState = state.withUnsubscribed()
           _ <- logging.log(Unsubscribed(newState))
         } yield newState
@@ -226,8 +214,8 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
     *
     *   1. Computes the target grouping via [[PartitionGroupingCalculator.align]].
     *   2. For each existing group whose partition set is not a key in `groupGoal`, interrupts its
-    *      record stream, acquires `groupSemaphore` (so dequeuing has stopped), and drains its queue
-    *      and `spillover` buffer.
+    *      record streams, waits for them to finish (so dequeuing has stopped), and drains its
+    *      unprocessed records: in-flight, queued, and in the `spillover` buffer.
     *   3. Keeps existing groups whose partition set is a key in `groupGoal` unchanged.
     *   4. From drained records, keeps only chunks whose partition is still in `targetAssignment`,
     *      groups them by `TopicPartition`, and carries them into newly created groups.
@@ -273,20 +261,11 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
         newPartitions <- needsAdding.toList
           .traverse { group =>
             for {
-              semaphore <- Semaphore[F](1)
-              deferred <- Deferred[F, Either[Throwable, Unit]]
-              queue <- Queue.bounded[F, Chunk[CommittableConsumerRecord[F, K, V]]](
-                maxPrefetch
-              )
+              groupState <- PartitionGroupState.create[F, K, V](maxPrefetch)
               carryOver =
                 group.toList.foldMap(tp => spilloverMap.get(tp).toList.flatten)
-              spillover <- queue.tryOfferN(carryOver.map(_.toList).map(Chunk.from))
-            } yield group -> PartitionGroupState(
-              semaphore,
-              deferred,
-              queue,
-              spillover
-            )
+              spillover <- groupState.queue.tryOfferN(carryOver.map(_.toList).map(Chunk.from))
+            } yield group -> groupState.setSpillover(spillover)
           }
         newState = newPartitions.toMap ++ toKeep
         _ <- newPartitions.toMap.some
@@ -313,15 +292,14 @@ final private[kafka] class KafkaConsumerActor[F[_], K, V](
       result <-
         if (!skipWaitForCompletion) {
           for {
-            _ <- state.groupSemaphore.acquire
+            _ <- state.awaitStreams
               .timeoutTo(
                 settings.sessionTimeout,
                 logging.log(LogEntry.RevokeTimeoutOccurred(group, state)) // TODO: throw exception here ?
               )
-            queued <- state.queue.tryTakeN(none)
-            spillover = state.spillover
+            unprocessed <- state.unprocessed
             records =
-              (queued ++ spillover)
+              unprocessed
                 .map(_.filter(r => targetAssignment.contains(r.offset.topicPartition)))
                 .filter(_.nonEmpty)
           } yield records

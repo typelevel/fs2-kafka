@@ -157,6 +157,27 @@ object KafkaConsumer {
 
       override def groupedPartitionsMapStream
         : Stream[F, Map[Set[TopicPartition], Stream[F, CommittableConsumerRecord[F, K, V]]]] =
+        consumeAssignments { (partitions, group) =>
+          Map(partitions -> group.records).pure[F]
+        }
+
+      override def partitionsMapStream
+        : Stream[F, Map[TopicPartition, Stream[F, CommittableConsumerRecord[F, K, V]]]] =
+        consumeAssignments { (partitions, group) =>
+          if (partitions.size == 1) Map(partitions.head -> group.records).pure[F]
+          else group.partitionRecords(partitions)
+        }
+
+      /**
+        * Emits record streams for partition groups as they are assigned, where the streams for a
+        * group are created with `recordStreams`. Streams are interrupted when consumption stops.
+        */
+      private def consumeAssignments[A](
+        recordStreams: (
+          Set[TopicPartition],
+          PartitionGroupState[F, K, V]
+        ) => F[Map[A, Stream[F, CommittableConsumerRecord[F, K, V]]]]
+      ): Stream[F, Map[A, Stream[F, CommittableConsumerRecord[F, K, V]]]] =
         for {
           interruptConsumption <- Stream.eval(SignallingRef[F].of(false))
           waitOnGlobalStop =
@@ -172,10 +193,12 @@ object KafkaConsumer {
             .drain
           resultS = actor
             .consume()
-            .map(assignment =>
-              assignment.view.map { case (k, v) =>
-                k -> v.unchunks.interruptWhen(interruptConsumption)
-              }.toMap
+            .evalMap(assignment =>
+              assignment.toList
+                .flatTraverse { case (partitions, group) =>
+                  recordStreams(partitions, group).map(_.toList)
+                }
+                .map(_.map { case (k, v) => k -> v.interruptWhen(interruptConsumption) }.toMap)
             )
           result <-
             resultS
@@ -183,58 +206,6 @@ object KafkaConsumer {
               .mergeHaltBoth(Stream.eval(waitOnGlobalStop).drain)
               .interruptWhen(interruptConsumption)
         } yield result
-
-      override def partitionsMapStream
-        : Stream[F, Map[TopicPartition, Stream[F, CommittableConsumerRecord[F, K, V]]]] = {
-        for {
-          assignment <- groupedPartitionsMapStream
-          assignmentList <- assignment.toList
-            .traverse { case (tps, records) =>
-              if (tps.size == 1) {
-                Stream.emit(Map(tps.head -> records)).covary[F]
-              } else {
-                for {
-                  interrupt <- Stream.eval(Deferred[F, Either[Throwable, Unit]])
-                  initialize <- Stream.eval(Deferred[F, Unit])
-                  queues <- Stream.eval(
-                    tps.toList
-                      .traverse(
-                        Queue
-                          .bounded[F, Chunk[
-                            CommittableConsumerRecord[F, K, V]
-                          ]](1)
-                          .tupleLeft
-                      )
-                  )
-                  queuesMap = queues.toMap
-                  enqueueS = (for {
-                    isFirst <- Stream.eval(initialize.complete(()))
-                    result <-
-                      if (isFirst)
-                        records.chunks
-                          .evalMap(chunk =>
-                            queuesMap(
-                              chunk.head.get.offset.topicPartition
-                            ).offer(chunk)
-                          )
-                          .drain
-                      else Stream.never
-                  } yield result).onFinalize(
-                    interrupt.complete(().asRight).void
-                  )
-                  streams = queues.map { case (k, q) =>
-                    k -> Stream
-                      .fromQueueUnterminatedChunk(q)
-                      .interruptWhen(interrupt)
-                      .onFinalize(interrupt.complete(().asRight).void)
-                      .mergeHaltBoth(enqueueS)
-                  }
-                } yield streams.toMap
-              }
-            }
-          result = assignmentList.foldMap(identity)
-        } yield result
-      }
 
       override def partitionedStream: Stream[F, Stream[F, CommittableConsumerRecord[F, K, V]]] =
         partitionsMapStream.flatMap(partitionsMap => Stream.iterable(partitionsMap.values))

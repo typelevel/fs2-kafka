@@ -6,14 +6,8 @@
 
 package fs2.kafka.internal.actor
 
-import cats.effect.Deferred
 import cats.effect.IO
-import cats.effect.std.Queue
-import cats.effect.std.Semaphore
-import cats.syntax.apply.*
-import fs2.Chunk
 import fs2.kafka.BaseSpec
-import fs2.kafka.CommittableConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.TopicPartition
 
@@ -25,11 +19,7 @@ final class StateSpec extends BaseSpec {
   private val p1 = new TopicPartition("topic", 1)
 
   private def assigned(partitions: TopicPartition*): State[IO, String, String] = {
-    val group = (
-      Semaphore[IO](1),
-      Deferred[IO, Either[Throwable, Unit]],
-      Queue.unbounded[IO, Chunk[CommittableConsumerRecord[IO, String, String]]]
-    ).mapN(PartitionGroupState(_, _, _, Nil)).unsafeRunSync()
+    val group = PartitionGroupState.create[IO, String, String](queueSize = 2).unsafeRunSync()
     State.empty[IO, String, String].withGroupState(Map(partitions.toSet -> group))
   }
 
