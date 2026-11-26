@@ -14,6 +14,7 @@ import cats.effect.Ref
 import cats.effect.Resource
 import cats.effect.std.Queue
 import cats.effect.std.Semaphore
+import cats.effect.std.Supervisor
 import cats.syntax.all.*
 import fs2.Stream
 import fs2.concurrent.SignallingRef
@@ -930,6 +931,14 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
       }
     }
 
+    it("#1562 should not lose records when partition groups are split on rebalance") {
+      testRealignmentWithInFlightRecords(secondConsumerJoins = true)(_.groupedPartitionsMapStream)
+    }
+
+    it("#1562 should not lose records when partition groups are merged on rebalance") {
+      testRealignmentWithInFlightRecords(secondConsumerJoins = false)(_.groupedPartitionsMapStream)
+    }
+
     it("should close all old streams on rebalance") {
       withTopic { topic =>
         val numPartitions = 3
@@ -1213,6 +1222,18 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
           }
         }).unsafeRunSync()
       }
+    }
+
+    it("#1562 should not lose records when partition groups are split on rebalance") {
+      testRealignmentWithInFlightRecords(secondConsumerJoins = true)(
+        _.partitionsMapStream.map(_.map { case (partition, stream) => Set(partition) -> stream })
+      )
+    }
+
+    it("#1562 should not lose records when partition groups are merged on rebalance") {
+      testRealignmentWithInFlightRecords(secondConsumerJoins = false)(
+        _.partitionsMapStream.map(_.map { case (partition, stream) => Set(partition) -> stream })
+      )
     }
 
     it("should close all old streams on rebalance") {
@@ -1814,6 +1835,108 @@ final class KafkaConsumerSpec extends BaseKafkaSpec {
           offsets == actuallyCommitted
         }
       }
+    }
+
+  /**
+    * Checks that no records are lost when the first consumer realigns
+    * its partition groups during a cooperative rebalance. Having four
+    * partitions and a max parallelism of two, the first consumer gets
+    * groups of two partitions on its own, and groups of one partition
+    * when a second consumer shares the partitions.
+    *
+    * This means groups will be split when the second consumer joins,
+    * and merged when it leaves. The first consumer pauses processing
+    * until after the rebalance, so that its streams have in-flight
+    * records when they are interrupted by the rebalance.
+    */
+  private def testRealignmentWithInFlightRecords(secondConsumerJoins: Boolean)(
+    streams: KafkaConsumer.KafkaConsumerGrouped[IO, String, String] => Stream[
+      IO,
+      Map[Set[TopicPartition], ConsumerStream]
+    ]
+  ): Assertion =
+    withTopic { topic =>
+      createTopic(topic, partitions = 4)
+      val produced = (0 until 4000).map(n => s"key-$n" -> s"value->$n")
+
+      val settings =
+        consumerSettings[IO]
+          .withGroupId(s"realignment-${UUID.randomUUID()}")
+          .withProperties(
+            ConsumerConfig.PARTITION_ASSIGNMENT_STRATEGY_CONFIG -> classOf[
+              CooperativeStickyAssignor
+            ].getName
+          )
+          .withMaxParallelism(2)
+
+      def consume(
+        paused: SignallingRef[IO, Boolean],
+        assigned: SignallingRef[IO, Set[TopicPartition]],
+        receiving: Ref[IO, Set[Set[TopicPartition]]],
+        consumed: SignallingRef[IO, Set[String]]
+      ): IO[Unit] =
+        KafkaConsumer
+          .stream(settings)
+          .subscribeTo(topic)
+          .flatMap { consumer =>
+            streams(consumer)
+              .flatMap(Stream.iterable(_))
+              .map { case (partitions, stream) =>
+                stream.evalMap { committable =>
+                  receiving.update(_ + partitions) >>
+                    paused.waitUntil(!_) >>
+                    consumed.update(_ + committable.record.key)
+                }
+              }
+              .parJoinUnbounded
+              .concurrently(consumer.assignmentStream.evalMap(as => assigned.set(as.toSet)))
+          }
+          .compile
+          .drain
+
+      def awaitUntil[A](signal: SignallingRef[IO, A])(p: A => Boolean): IO[Unit] =
+        signal.waitUntil(p).timeout(30.seconds)
+
+      def awaitReceiving(
+        assigned: SignallingRef[IO, Set[TopicPartition]],
+        receiving: Ref[IO, Set[Set[TopicPartition]]]
+      ): IO[Unit] =
+        eventually((assigned.get, receiving.get).flatMapN { (assigned, receiving) =>
+          val receivingPartitions = receiving.flatten
+          IO(assert(assigned.nonEmpty && assigned.subsetOf(receivingPartitions)))
+        }).void
+
+      val consumed =
+        Supervisor[IO](await = false).use { supervisor =>
+          for {
+            paused <- SignallingRef[IO, Boolean](true)
+            unpaused <- SignallingRef[IO, Boolean](false)
+            assigned1 <- SignallingRef[IO, Set[TopicPartition]](Set.empty)
+            assigned2 <- SignallingRef[IO, Set[TopicPartition]](Set.empty)
+            receiving1 <- Ref[IO].of(Set.empty[Set[TopicPartition]])
+            receiving2 <- Ref[IO].of(Set.empty[Set[TopicPartition]])
+            consumed <- SignallingRef[IO, Set[String]](Set.empty)
+            startConsumer2 =
+              supervisor.supervise(consume(unpaused, assigned2, receiving2, consumed)) <*
+                awaitUntil(assigned2)(_.nonEmpty)
+            _ <- supervisor.supervise(consume(paused, assigned1, receiving1, consumed))
+            _ <- awaitUntil(assigned1)(_.size == 4)
+            consumer2 <-
+              if (secondConsumerJoins) IO.none
+              else (startConsumer2 <* awaitUntil(assigned1)(_.size == 2)).map(_.some)
+            _ <- IO(sendRecords(topic, produced))
+            _ <- awaitReceiving(assigned1, receiving1)
+            _ <- consumer2 match {
+              case None => startConsumer2
+              case Some(consumer2) => consumer2.cancel >> awaitUntil(assigned1)(_.size == 4)
+            }
+            _ <- paused.set(false)
+            _ <- consumed.waitUntil(_.size == produced.size).timeoutTo(30.seconds, IO.unit)
+            consumed <- consumed.get
+          } yield consumed
+        }
+
+      consumed.unsafeRunSync().size shouldBe produced.size
     }
 
   def buildRecordFor(topic: String, partition: Int, key: String) =
